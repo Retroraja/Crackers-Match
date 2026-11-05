@@ -2,8 +2,9 @@
 <html lang="en"><head><meta charset="utf-8"><title>Crackers Match</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <link rel="stylesheet" href="style.css"></head><body>
+<section id="intro"><canvas id="introGL"></canvas><img src="art/retroraja_logo.png" alt="RetroRaja Games"><div class="studio">RETRORAJA GAMES</div><div class="itl" id="itl"></div></section>
 <div id="stage">
-<section id="intro" class="scr on"><img src="art/retroraja_logo.png" alt="RetroRaja Games"><div class="studio">RETRORAJA GAMES</div></section>
+
 <section id="home" class="scr">
  <div class="bar"><div class="pill"><img src="art/ui-coin.webp" alt="Coins"><b id="hCoins">0</b></div><div class="pill"><span class="heart">&#9829;</span><b>5</b></div><div class="pill"><img src="art/ui-diya.webp" alt="Diyas"><b id="hDiyas">0</b></div></div>
  <div class="brand">Crackers<br><i>Match</i></div>
@@ -14,14 +15,13 @@
 </section>
 <section id="game" class="scr">
  <div class="hud"><button class="sq sm" id="bQuit" aria-label="Back to home">&#8249;</button><div class="hgoals" id="gGoals"></div><div class="mv"><small>Moves</small><b id="gMoves">20</b></div></div>
- <canvas id="board"></canvas><div class="cheer" id="cheer"></div>
+ <canvas id="board"></canvas><div class="cheer" id="cheer"></div><div class="burst" id="burst"><span>BLAST!</span></div>
  <div class="slots" id="slots"></div>
- <div class="modal" id="tip"><div class="box"><h2 id="tLevel"></h2><p id="tText"></p><div class="goals" id="tGoals"></div><button class="play" id="bGo">Start</button></div></div>
 </section>
 <section id="win" class="scr"><canvas id="guy"></canvas><h1>Level Complete!</h1><div class="reward" id="wReward"></div><button class="play nxt" id="bNext">Next Level</button></section>
 <section id="lose" class="scr"><div class="box"><h1 class="dark">Out of moves</h1><p id="lText">So close. Try again?</p><button class="play" id="bRetry">Try Again</button><button class="ghost" id="bHome">Home</button></div></section>
 <section id="done" class="scr"><div class="box"><h1 class="dark">Level 10 done!</h1><p>You've finished every level for now. More levels are coming.</p><button class="play" id="bHome2">Home</button></div></section>
-<img id="ghost" alt="">
+<div class="modal" id="tip"><div class="box"><h2 id="tLevel"></h2><img id="tImg" alt=""><p id="tText"></p><div class="goals" id="tGoals"></div><button class="play" id="bGo">Start</button></div></div><svg id="hand" width="72" height="88" viewBox="0 0 72 88" aria-hidden="true"><path d="M26 8c0-7 11-7 11 0v28c1-6 11-6 11 1 1-5 10-4 10 2 1-4 9-3 9 3v18c0 13-8 24-22 24H37c-9 0-14-5-19-13L4 47c-3-6 5-11 9-6l13 13z" fill="#FFD9B8" stroke="#1F1B3A" stroke-width="3" stroke-linejoin="round"/></svg><img id="ghost" alt="">
 </div>
-<script src="art/crackers.js"></script><script src="fx.js"></script><script src="win.js"></script><script src="sound.js"></script><script src="levels.js"></script><script src="app.js"></script>
+<script src="art/crackers.js"></script><script src="fx.js"></script><script src="win.js"></script><script src="art/sounds-data.js"></script><script src="sound.js"></script><script src="art/three.min.js"></script><script src="intro.js"></script><script src="levels.js"></script><script src="app.js"></script>
 </body></html>
