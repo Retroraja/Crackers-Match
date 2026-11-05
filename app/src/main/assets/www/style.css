@@ -1,0 +1,32 @@
+@font-face{font-family:Lilita;src:url(art/LilitaOne.ttf)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;background:linear-gradient(160deg,#FFE3D2,#CFF7F1 55%,#E6DAFF);font-family:system-ui,-apple-system,Roboto,sans-serif;color:#1F1B3A}
+#stage{position:absolute;left:50%;top:50%;width:390px;height:844px;margin:-422px 0 0 -195px;transform-origin:center}
+.scr{position:absolute;inset:0;display:none}.scr.on{display:block}
+button{font-family:inherit;cursor:pointer;color:inherit}
+h1,h2{margin:0;font-family:Lilita,sans-serif;font-weight:400}
+#intro{position:absolute;inset:-300px;background:radial-gradient(circle at 50% 42%,#3566e8 0%,#18287a 45%,#070c2c 100%);z-index:9}
+#intro img{position:absolute;left:50%;top:50%;width:300px;margin:-210px 0 0 -150px;animation:pop .7s cubic-bezier(.2,1.6,.4,1) both}
+.studio{position:absolute;left:0;right:0;top:calc(50% + 110px);text-align:center;color:#fff;font:400 26px Lilita,sans-serif;letter-spacing:.12em;animation:fade 1s .4s both}
+@keyframes pop{from{transform:scale(.2);opacity:0}to{transform:none;opacity:1}}@keyframes fade{from{opacity:0;letter-spacing:.32em}to{opacity:1}}
+.bar{position:absolute;left:16px;right:16px;top:18px;display:flex;gap:8px}
+.pill{height:40px;flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #ffffffe6;border-radius:14px;background:#ffffff8c;font-size:14px}.pill img{width:25px;height:24px;object-fit:contain}.heart{color:#E8123C;font-size:20px}
+.brand{position:absolute;left:24px;top:76px;font:400 42px/1 Lilita,sans-serif}.brand i{font-style:normal;color:#E8123C}
+.show{position:absolute;left:0;right:0;top:170px;height:236px}.show img{position:absolute;object-fit:contain}.plinth{position:absolute;left:40px;right:40px;bottom:0;height:34px;border-radius:50%;background:#ffffffbf}
+.s1{left:44px;bottom:16px;width:104px;height:128px}.s3{right:46px;bottom:16px;width:104px;height:112px}.s2{left:115px;bottom:14px;width:160px;height:216px;animation:bob 3s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px)}}
+.card{position:absolute;left:16px;right:16px;top:424px;padding:16px 20px;border:1px solid #fffffff2;border-radius:24px;background:#ffffff9e}
+.row{display:flex;justify-content:space-between;align-items:baseline}.row h2{font-size:28px}.card p{margin:2px 0 0;font-size:14px;font-weight:600;color:#4B4668}.small{font-size:13px;font-weight:700}
+.goals{margin-top:10px;display:flex;gap:12px}.goals div{height:76px;flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:16px;background:#ffffffbf;font-size:22px;font-weight:800}.goals img{width:50px;height:66px;object-fit:contain}
+.prog{position:absolute;left:16px;right:16px;top:640px}.strip{margin-top:8px;display:flex;align-items:center;gap:4px}.strip i{height:10px;flex:1;border-radius:5px;background:#1f1b3a24}.strip i.d{background:#1F1B3A}.strip i.n{background:#E8123C}.strip img{width:36px;height:32px;margin-left:4px;object-fit:contain}
+.foot{position:absolute;left:16px;right:16px;bottom:28px;display:flex;gap:10px}.sq{width:64px;height:64px;flex:none;border:1px solid #fff;border-radius:18px;background:#ffffff9e;font-size:26px}.sq.off{opacity:.45}.sq.sm{width:48px;height:48px;font-size:30px;line-height:1}
+.play{height:64px;flex:1;border:0;border-radius:18px;background:#1F1B3A;color:#fff;font-size:20px;font-weight:700}.ghost{height:52px;width:100%;margin-top:10px;border:1px solid #1F1B3A;border-radius:16px;background:none;font-size:16px;font-weight:700}
+.hud{position:absolute;left:12px;right:12px;top:18px;height:92px;display:flex;align-items:center;gap:8px}.hgoals{flex:1;height:88px;display:flex;gap:6px;justify-content:center;padding:6px;border:1px solid #fff;border-radius:18px;background:#ffffff9e}.hgoals div{position:relative;width:76px;text-align:center}.hgoals img{height:56px;width:56px;object-fit:contain}.hgoals b{display:block;font-size:18px;line-height:1}.hgoals .ok{color:#0a8f4f}
+.mv{width:84px;height:88px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:18px;background:#1F1B3A;color:#fff}.mv small{font-size:12px;font-weight:600}.mv b{font:400 38px/1 Lilita,sans-serif}
+#board{position:absolute;left:0;top:120px;width:390px;height:560px;display:block}
+.cheer{position:absolute;left:0;right:0;top:360px;text-align:center;font:400 46px Lilita,sans-serif;color:#E8123C;pointer-events:none;opacity:0}.cheer.go{animation:ch .8s both}@keyframes ch{0%{transform:scale(.4);opacity:0}25%{transform:scale(1.1);opacity:1}70%{opacity:1}100%{transform:translateY(-30px);opacity:0}}
+.slots{position:absolute;left:16px;right:16px;bottom:26px;height:124px;display:flex;gap:8px}.slot{flex:1;position:relative;border:1px solid #fff;border-radius:18px;background:#ffffff9e;display:flex;align-items:center;justify-content:center;touch-action:none}.slot img{height:92px;width:70px;object-fit:contain;pointer-events:none}.slot b{position:absolute;right:6px;top:6px;min-width:24px;height:24px;line-height:24px;border-radius:12px;background:#E8123C;color:#fff;text-align:center;font-size:13px}.slot.none{opacity:.38}
+.modal{position:absolute;inset:0;background:#1f1b3a59;display:none;align-items:center;justify-content:center}.modal.on{display:flex}.box{width:340px;padding:24px 22px;border-radius:26px;background:#ffffffeb}.box h2{font-size:32px}.box p{font-size:17px;line-height:1.45;margin:8px 0 12px}.box .play{width:100%;margin-top:16px;flex:none}.dark{color:#1F1B3A;font-size:38px}
+#lose,#done{}#lose.on,#done.on{display:flex;align-items:center;justify-content:center}
+#guy{position:absolute;left:0;top:0;width:390px;height:844px}#win h1{position:absolute;left:0;right:0;top:52px;text-align:center;font-size:44px;color:#E8123C}.nxt{position:absolute;left:85px;right:85px;top:212px;height:58px;flex:none}.reward{position:absolute;left:0;right:0;top:112px;text-align:center;font-size:15px;font-weight:700;display:none}
+#ghost{position:absolute;width:90px;height:110px;object-fit:contain;display:none;pointer-events:none;z-index:8}
