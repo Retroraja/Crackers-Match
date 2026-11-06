@@ -24,3 +24,5 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 }
+
+dependencies { implementation("com.google.android.gms:play-services-ads:23.6.0"); implementation("androidx.annotation:annotation:1.8.0") }

@@ -5,9 +5,9 @@ function b2a(b){var s=atob(b),u=new Uint8Array(s.length);for(var i=0;i<s.length;
 var S={ready:function(){if(pr)return pr;if(!ctx())return pr=Promise.resolve();pr=Promise.all(Object.keys(SND).map(function(k){return new Promise(function(ok){try{X.decodeAudioData(b2a(SND[k]),function(d){buf[k]=d;ok()},function(){ok()})}catch(e){ok()}})}));return pr},
 unlock:function(){ctx();S.ready().then(S.music)},
 play:function(n,o){o=o||{};if(!on||!X||!buf[n])return;var s=X.createBufferSource(),g=X.createGain();s.buffer=buf[n];s.playbackRate.value=o.rate||1;g.gain.value=o.v==null?1:o.v;s.connect(g);g.connect(master);var t=X.currentTime+(o.at||0);s.start(t);if(o.cut){g.gain.setValueAtTime(g.gain.value,t+o.cut-.2);g.gain.linearRampToValueAtTime(.001,t+o.cut);s.stop(t+o.cut)}},
-cracker:function(k,c,n,at){n=Math.min(n||3,6);at=at||0;var base=1+Math.min(c||0,6)*.03;for(var i=0;i<n;i++)S.play('lakshmi',{rate:base*(.94+Math.random()*.14),at:at+i*.105,v:.9+Math.random()*.1});return n*.105+.03},special:function(k){S.play(SP[k]||'rocket')},
+cracker:function(k,c,n,at){n=Math.min(n||3,6);at=at||0;for(var i=0;i<n;i++)S.play('lakshmi',{rate:.97+Math.random()*.06,at:at+i*.2,v:1});return n*.2},special:function(k){S.play(SP[k]||'rocket')},
 make:function(){S.play('tick',{v:.8})},swap:function(){S.play('swap',{v:.55})},nope:function(){S.play('nope',{v:.6})},paper:function(){S.play('paper',{v:.8})},tick:function(){S.play('tick')},blastWord:function(){S.play('blast')},crack:function(){},cascade:function(){},
 win:function(){S.play('win')},lose:function(){S.play('lose')},
-music:function(){if(mus||!X||!buf.music)return;mus=X.createBufferSource();mus.buffer=buf.music;mus.loop=true;mg=X.createGain();mg.gain.value=on?.5:0;mus.connect(mg);mg.connect(X.destination);mus.start()},duck:function(v){if(mg&&on)mg.gain.setTargetAtTime(v,X.currentTime,.15)},
-toggle:function(){on=!on;if(mg)mg.gain.value=on?.5:0;try{localStorage.setItem('cm_sound',on?'1':'0')}catch(e){}return on},isOn:function(){return on}};
-window.SFX=S})();
+music:function(){if(mus||!X||!buf.music)return;mus=X.createBufferSource();mus.buffer=buf.music;mus.loop=true;mg=X.createGain();mg.gain.value=on?.3:0;mus.connect(mg);mg.connect(X.destination);mus.start()},duck:function(v){if(mg&&on)mg.gain.setTargetAtTime(v,X.currentTime,.15)},
+pause:function(){if(X)X.suspend()},resume:function(){if(X)X.resume()},say:function(w){try{if(window.AndroidVoice&&on)AndroidVoice.say(w)}catch(e){}},toggle:function(){on=!on;if(mg)mg.gain.value=on?.3:0;try{localStorage.setItem('cm_sound',on?'1':'0')}catch(e){}return on},isOn:function(){return on}};
+window.SFX=S;document.addEventListener('visibilitychange',function(){if(document.hidden)S.pause();else S.resume()})})();
