@@ -74,6 +74,7 @@ public class MainActivity extends Activity {
                     @Override public void onAdDismissedFullScreenContent() { rewarded = null; adResult(earned); loadAd(); }
                     @Override public void onAdFailedToShowFullScreenContent(@NonNull AdError e) { rewarded = null; adResult(false); loadAd(); }
                 });
+                rewarded.setImmersiveMode(false);
                 rewarded.show(MainActivity.this, item -> earned = true);
             });
         }
