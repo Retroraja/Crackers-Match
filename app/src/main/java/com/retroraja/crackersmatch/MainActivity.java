@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.view.View;
+import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -21,6 +22,8 @@ import java.util.Locale;
 public class MainActivity extends Activity {
     /** Google's public test unit. Swap for the real rewarded ad unit before release. */
     private static final String REWARDED_UNIT = "ca-app-pub-3940256099942544/5224354917";
+    /** While on Google test ads, closing the ad still gives the reward so testing can continue. */
+    private static final boolean TEST_ADS = true;
     private WebView web;
     private RewardedAd rewarded;
     private boolean earned;
@@ -71,13 +74,19 @@ public class MainActivity extends Activity {
                 if (rewarded == null) { adResult(false); loadAd(); return; }
                 earned = false;
                 rewarded.setFullScreenContentCallback(new FullScreenContentCallback() {
-                    @Override public void onAdDismissedFullScreenContent() { rewarded = null; adResult(earned); loadAd(); }
-                    @Override public void onAdFailedToShowFullScreenContent(@NonNull AdError e) { rewarded = null; adResult(false); loadAd(); }
+                    @Override public void onAdDismissedFullScreenContent() { rewarded = null; fullScreen(true); adResult(earned || TEST_ADS); loadAd(); }
+                    @Override public void onAdFailedToShowFullScreenContent(@NonNull AdError e) { rewarded = null; fullScreen(true); adResult(false); loadAd(); }
                 });
+                fullScreen(false);
                 rewarded.setImmersiveMode(false);
                 rewarded.show(MainActivity.this, item -> earned = true);
             });
         }
+    }
+
+    private void fullScreen(boolean on) {
+        if (on) { getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN); hideBars(); }
+        else { getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN); web.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE); }
     }
 
     private void hideBars() {
