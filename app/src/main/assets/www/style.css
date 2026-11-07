@@ -73,3 +73,4 @@ h1,h2,h3{margin:0;font-family:Sora,sans-serif;font-weight:800;letter-spacing:-.5
 .cg.sm{text-align:left}.cg.sm>div{justify-content:flex-start}.cg.sm span{font-size:22px;-webkit-text-stroke:3px #fff;filter:drop-shadow(0 2px 0 var(--d)) drop-shadow(0 3px 3px #1f1b3a40)}.cg.sm{letter-spacing:.5px}.cg.sm>div{gap:0}
 .cg.big{position:absolute;left:0;right:0;top:24%}.cg.big>div:first-child span{font-size:58px;opacity:0}.cg.big>div+div span{font-size:74px;opacity:0}.cg .shine{position:absolute;left:-40%;top:0;width:30%;height:100%;background:linear-gradient(100deg,#fff0,#ffffffb0,#fff0);mix-blend-mode:overlay;opacity:0;pointer-events:none}
 .tlak{position:absolute;left:50%;top:56%;width:90px;height:130px;margin-left:-45px;object-fit:contain;opacity:0}#tfx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#guy{position:absolute;left:0;top:0;width:390px;height:844px}#win h1,.wstars,.wcoin,.wrew,.nxt{z-index:2}
