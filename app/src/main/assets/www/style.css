@@ -166,3 +166,4 @@ h1,h2,h3{margin:0;font-family:Sora,sans-serif;font-weight:800;letter-spacing:-.5
 #bonusEnd .play.nxt{position:static;display:block;width:100%;margin-top:14px;height:62px;border-radius:20px;background:#4CAF50;box-shadow:0 6px 0 #2E7D32;font:26px Titan,sans-serif;color:#fff}
 #bonusEnd .ghost{font:18px Titan,sans-serif;margin-top:10px}
 #bonusEnd .ghost{position:static;display:block;width:100%}
+.hgoals{min-width:0;gap:2px!important}.hgoals .gi{flex:0 1 66px;min-width:0;height:66px}.hgoals .gi img{width:100%;max-width:56px;height:56px}.mv{flex:none}
