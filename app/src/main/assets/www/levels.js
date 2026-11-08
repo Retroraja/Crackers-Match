@@ -66,4 +66,7 @@ L({name:'Grand Hall',moves:26,colors:C5,big:[B('cups',3,1,2,2,12),B('diyas',3,6,
 L({name:'Gifts and Sweets',moves:28,colors:C5,big:[B('gifts',1,3,3,3,18),B('sweets',6,3,2,2,12)],shape:full(9)}),
 L({name:'Grand Finale',moves:32,colors:C5,big:[B('gifts',2,1,2,2,12),B('fruit',2,6,2,2,12)],ob:{wet:[[6,4],[5,4],[6,3],[6,5]],glass:[[0,0],[0,8],[8,0],[8,8],[4,0],[4,8]]},shape:full(9)})
 ];
+// tuning from bot play: [moves, goal factor]
+var TUNE=[[14, 3], [15, 3], [15, 3], [14, 3], [22, 1], [18, 1.5], [18, 2.5], [19, 3], [20, 1.5], [21, 1], [19, 1], [17, 2.5], [21, 1], [14, 1], [21, 1], [21, 1], [18, 3], [27, 1], [14, 1], [26, 1], [20, 1], [14, 1], [25, 1], [18, 1], [20, 1], [21, 1], [14, 1], [27, 1], [17, 1], [30, 1], [18, 1], [28, 1], [19, 1], [19, 1], [14, 1], [22, 1], [19, 1], [19, 1], [21, 1], [34, 1], [21, 1], [14, 1], [14, 1], [14, 1.0], [19, 1], [21, 1], [19, 1], [27, 1], [22, 1], [24, 1]];
+window.LEVELS.forEach(function(l,i){var t=TUNE[i];if(!t)return;l.moves=t[0];if(t[1]>1){for(var k in l.goal)if(/^\d+$/.test(k))l.goal[k]=Math.round(l.goal[k]*t[1]);(l.big||[]).forEach(function(b){l.goal[b.t]-=b.n;b.n=Math.round(b.n*t[1]);l.goal[b.t]+=b.n})}});
 })();
