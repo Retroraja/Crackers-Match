@@ -161,3 +161,8 @@ h1,h2,h3{margin:0;font-family:Sora,sans-serif;font-weight:800;letter-spacing:-.5
 .sfill{height:100%;width:0;border-radius:7px;background:linear-gradient(#FFE36B,#F5A623);transition:width .35s}
 .sbar i{position:absolute;top:-8px;margin-left:-14px;font-style:normal;font-size:28px;line-height:1;color:#E6DCCB;text-shadow:0 2px 0 #a99;transition:transform .3s}.sbar i.on{color:#FFB400;text-shadow:0 2px 0 #C77A00,0 0 10px #FFD24A;transform:scale(1.2)}
 .slots{grid-template-columns:repeat(4,1fr)!important}.gcoin{bottom:96px!important}
+#bonusEnd{background:#7CC8F5;overflow:hidden}#bonusEnd.on .wcard{animation:wcin .55s cubic-bezier(.2,1.4,.4,1) .1s forwards}
+.becoin{display:flex;justify-content:center;align-items:center;gap:10px;margin:16px 0 8px;font:56px Titan,sans-serif;color:var(--ink)}.becoin img{width:64px;height:64px}
+#bonusEnd .play.nxt{position:static;display:block;width:100%;margin-top:14px;height:62px;border-radius:20px;background:#4CAF50;box-shadow:0 6px 0 #2E7D32;font:26px Titan,sans-serif;color:#fff}
+#bonusEnd .ghost{font:18px Titan,sans-serif;margin-top:10px}
+#bonusEnd .ghost{position:static;display:block;width:100%}
