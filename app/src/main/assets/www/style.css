@@ -155,3 +155,9 @@ h1,h2,h3{margin:0;font-family:Sora,sans-serif;font-weight:800;letter-spacing:-.5
 #lose .play.alt{background:var(--red)!important;box-shadow:0 5px 0 #8E0A3E!important}
 .box{background:#FFF8EE!important;border-radius:26px!important;box-shadow:0 8px 0 #E2D2B6,0 18px 40px #1f1b3a55!important}.box h1,.bin h2{font-family:Titan,sans-serif!important;font-weight:400!important}
 .mv b,.gi b,.hud small{font-family:Titan,sans-serif!important;font-weight:400!important}
+/* game top: face, score bar, one-row reward bar */
+.face{width:72px;height:88px;flex:none;border-radius:18px;overflow:hidden;background:linear-gradient(#FFF8EE,#F1E4CF);box-shadow:inset 0 0 0 3px #fff,0 3px 0 #E2D2B6}.face canvas{width:72px;height:88px;display:block}
+.sbar{position:absolute;left:24px;right:24px;top:110px;height:14px;border-radius:7px;background:#1f1b3a40;box-shadow:inset 0 2px 0 #0002;z-index:6}
+.sfill{height:100%;width:0;border-radius:7px;background:linear-gradient(#FFE36B,#F5A623);transition:width .35s}
+.sbar i{position:absolute;top:-8px;margin-left:-14px;font-style:normal;font-size:28px;line-height:1;color:#E6DCCB;text-shadow:0 2px 0 #a99;transition:transform .3s}.sbar i.on{color:#FFB400;text-shadow:0 2px 0 #C77A00,0 0 10px #FFD24A;transform:scale(1.2)}
+.slots{grid-template-columns:repeat(4,1fr)!important}.gcoin{bottom:96px!important}
