@@ -11,7 +11,7 @@ P.calm=function(){this.base='idle'};
 P.step=function(dt){this.t+=dt;if(this.mt>0){this.mt-=dt;if(this.mt<=0)this.m=this.base}var g=M[this.m],v=this.v,k=Math.min(1,dt*10);for(var i in g)v[i]+=(g[i]-v[i])*k;
  this.nb-=dt;if(this.nb<=0){this.bl=.14;this.nb=2.2+Math.random()*3}if(this.bl>0)this.bl-=dt;
  this.lt-=dt;if(this.lt<=0){this.lt=1.5+Math.random()*2.5;this.lk=this.m=='idle'?[-1,0,1,0][Math.random()*4|0]:0}this.look+=(this.lk-this.look)*Math.min(1,dt*6);if(this.bounce>0)this.bounce=Math.max(0,this.bounce-dt*2.2)};
-P.draw=function(){var c=this.x,W=this.W,H=this.H,v=this.v;c.clearRect(0,0,W,H);c.save();var sc=W/150;c.translate(W/2,H+2-Math.sin(this.bounce*Math.PI)*4);c.scale(sc,sc);
+P.draw=function(){var c=this.x,W=this.W,H=this.H,v=this.v;c.clearRect(0,0,W,H);c.save();var sc=Math.min(W/150,H/235);c.translate(W/2,H+2-Math.sin(this.bounce*Math.PI)*4);c.scale(sc,sc);
  // coat shoulders
  c.fillStyle='#2C2B34';c.beginPath();c.moveTo(-80,0);c.bezierCurveTo(-80,-40,-60,-62,-30,-70);c.lineTo(30,-70);c.bezierCurveTo(60,-62,80,-40,80,0);c.closePath();c.fill();
  c.fillStyle='#F2F3F7';c.beginPath();c.moveTo(-22,-72);c.lineTo(22,-72);c.lineTo(4,0);c.lineTo(-4,0);c.closePath();c.fill();
