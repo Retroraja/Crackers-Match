@@ -141,3 +141,5 @@
 .bin p{color:#fff}
 .bin small{color:#C9B8E8!important}
 .bin img{filter:drop-shadow(0 8px 10px #0008)}
+
+.spdb{display:flex;gap:6px;flex:none!important}.spdb .sbtn{min-width:46px;padding:0 10px}
