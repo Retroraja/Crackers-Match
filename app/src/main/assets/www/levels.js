@@ -22,14 +22,20 @@ function star(){return['....x....','...xxx...','xxxxxxxxx','.xxxxxxx.','..xxxxx.
 function diyaB(){return['....x....','...xxx...','..xxxxx..','xxxxxxxxx','xxxxxxxxx','xxxxxxxxx','.xxxxxxx.','..xxxxx..','...xxx...']}
 function hourglass(){return['xxxxxxxx','xxxxxxxx','.xxxxxx.','..xxxx..','..xxxx..','.xxxxxx.','xxxxxxxx','xxxxxxxx']}
 // ---------- helpers ----------
+function stairs8(){return['xxxxx...','xxxxxx..','xxxxxxx.','xxxxxxxx','xxxxxxxx','.xxxxxxx','..xxxxxx','...xxxxx','...xxxxx']}
+function temple8(){return['...xx...','..xxxx..','.xxxxxx.','xxxxxxxx','xxxxxxxx','xxxxxxxx','xxxxxxxx','xxx..xxx','xxx..xxx']}
+function diya8(){return['...xx...','..xxxx..','...xx...','xxxxxxxx','xxxxxxxx','xxxxxxxx','.xxxxxx.','..xxxx..','...xx...']}
+function star8(){return['...xx...','...xx...','xxxxxxxx','.xxxxxx.','..xxxx..','.xxxxxx.','xxxxxxxx','...xx...','...xx...']}
+function split8(){return['xxx..xxx','xxx..xxx','xxx..xxx','xxx..xxx','xxx..xxx','xxx..xxx','xxxxxxxx','xxxxxxxx','xxxxxxxx']}
 function rows(rs,cs){var o=[];rs.forEach(function(r){cs.forEach(function(c){o.push([r,c])})});return o}
 function B(t,r,c){return{t:t,r:r,c:c,w:2,h:2,n:CAP[t]}}
 function WALL(r,c,w){return{t:'wall',r:r,c:c||0,w:w||8,h:1,n:3}}
 function WOOD(r,c){return{t:'wood',r:r,c:c,w:2,h:2,n:4}}
+function RACK(t,r,c){return{t:t,r:r,c:c,w:3,h:3,n:9}}
 function ok(sh,r,c){return r>=0&&r<sh.length&&c>=0&&c<sh[0].length&&sh[r][c]=='x'}
 function L(o){var sh=o.shape,g=o.goal||{},used={};
  (o.big||[]).forEach(function(b){for(var r=b.r;r<b.r+b.h;r++)for(var c=b.c;c<b.c+b.w;c++){if(!ok(sh,r,c))throw new Error(o.name+': shelf on a hole');used[r+','+c]=1}if(b.t=='wall')g.diya=(g.diya||0)+2;else g[b.t]=(g[b.t]||0)+b.n});
- var ob={};for(var k in o.ob||{}){ob[k]=o.ob[k].filter(function(p){var key=p[0]+','+p[1];if(!ok(sh,p[0],p[1])||used[key])return false;used[key]=1;return true});if(ob[k].length)g[k]=ob[k].length}o.ob=ob;
+ var ob={};for(var k in o.ob||{}){ob[k]=o.ob[k].filter(function(p){var key=p[0]+','+p[1];if(!ok(sh,p[0],p[1])||used[key])return false;used[key]=1;return true});if(ob[k].length&&k!='gbox')g[k]=ob[k].length}o.ob=ob;
  if(o.diya){o.diya=o.diya.filter(function(p){return ok(sh,p[0],p[1])});g.diya=o.diya.length}o.goal=g;return o}
 var EDGE9=rows([2,6],[0,1,7,8]),RING9=[[1,1],[1,7],[7,1],[7,7],[1,4],[7,4],[4,1],[4,7]];
 window.LEVELS=[
@@ -39,60 +45,60 @@ L({name:'First Rocket',moves:16,colors:[1,0,2,5],goal:{1:18},teach:'rocket',intr
 L({name:'Colour Matchbox',moves:16,colors:[2,0,1,5],goal:{2:24},preSp:1,preK:[14],intro:['matchbox'],shape:plus(8,9)}),
 L({name:'Crate Wall',moves:18,colors:[5,0,1,2],goal:{5:14},big:[WALL(8)],intro:['wall'],shape:sq(8,9),preSp:0}),
 L({name:'Ground Chakra',moves:20,colors:C4,goal:{0:12},teach:'square',intro:['chakra','wood'],big:[WOOD(7,0),WOOD(7,6)],shape:sq(8,9),preSp:0,reward:{k:'hammer',n:3}}),
-L({name:'Rangoli Yard',moves:22,colors:[1,0,2,5],big:[WALL(7),WALL(8)],ob:{rang:[[3,3],[3,4],[4,2],[4,3],[4,4],[4,5],[5,3],[5,4]]},intro:['rang'],shape:sq(8,9)}),
+L({name:'Golden Yard',moves:22,colors:[1,0,2,5],big:[WALL(7),WALL(8)],ob:{gold:rows([3,4,5],[2,3,4,5])},intro:['gold'],shape:sq(8,9)}),
 L({name:'Ice Lane',moves:24,colors:[2,0,1,5],goal:{1:14},ob:{ice:[[8,1],[8,2],[8,3],[8,4],[8,5],[8,6]]},intro:['ice'],shape:sq(8,9)}),
 L({name:'First Bomb',moves:24,colors:[5,0,1,2],goal:{2:14},teach:'lshape',intro:['atom'],big:[WOOD(4,0),WOOD(4,3),WOOD(4,6)],shape:sq(8,9),preSp:0}),
 L({name:'Chain Gate',moves:24,colors:C4,big:[WALL(4)],ob:{chain:[[8,2],[8,3],[8,4],[8,5]],ice:[[8,0],[8,1],[8,6],[8,7]]},intro:['chain'],shape:sq(8,9)}),
-L({name:'Diwali Gate',moves:26,colors:[1,0,2,5],big:[WOOD(0,0),WOOD(0,6),WALL(8)],ob:{rang:[[3,3],[3,4],[4,2],[4,3],[4,4],[4,5],[5,3],[5,4]]},shape:sq(8,9),reward:{k:'sparkler',n:3}}),
-// ===== Chapter 2: Flower Hills (fruit, rangoli, combos, 5 colours) =====
-L({name:'Fruit Market',moves:19,colors:C5,big:[B('fruit',3,3)],intro:['fruit'],shape:sq(8)}),
-L({name:'Sky Lane',moves:20,colors:C5,goal:{1:24,5:24},intro:['skyshot'],shape:sq(7,9)}),
-L({name:'Basket Row',moves:22,colors:C5,big:[B('fruit',3,1)],ob:{thread:rows([1],[5,6,7]).concat(rows([6],[5,6,7]))},shape:split(9)}),
-L({name:'Rangoli Square',moves:20,colors:C5,goal:{2:16},ob:{rang:RING9.concat([[0,4],[8,4],[4,0],[4,8],[2,2],[2,6],[6,2],[6,6]])},intro:['rang'],shape:sq(9)}),
-L({name:'Kolam Street',moves:22,colors:C5,big:[B('cups',3,3)],ob:{rang:EDGE9.concat([[1,1],[1,7],[7,1],[7,7]])},shape:plus(9),reward:{k:'seven',n:3}}),
-L({name:'Hidden Godown',moves:23,colors:C5,goal:{0:20},ob:{steel:rows([3],[0,1,2,3,4,5,6,7]),crate:rows([4],[0,1,2,3,4,5,6,7])},intro:['steel'],shape:sq(8,9)}),
-L({name:'Combo Corner',moves:20,colors:C5,goal:{2:26,3:26},preSp:3,shape:diamond(9)}),
-L({name:'Market Day',moves:24,colors:C5,big:[B('cups',2,1),B('fruit',2,6)],ob:{rang:rows([7],[1,2,3,5,6,7])},shape:cut(9)}),
-L({name:'Festival Road',moves:22,colors:C5,goal:{5:18},ob:{rang:rows([1],[1,2,6,7]).concat(rows([3],[0,1,7,8])),thread:rows([5],[2,3,5,6])},shape:heart()}),
-L({name:'Grand Bazaar',moves:26,colors:C5,big:[B('fruit',4,3)],ob:{rang:[[1,1],[1,7],[7,1],[7,7],[0,4],[8,4]],gift:rows([2],[0,1,7,8]).concat(rows([6],[0,1,7,8]))},shape:cut2(9)}),
-// ===== Chapter 3: Sweet Street (sweets, ice, bottles, spreading wet) =====
-L({name:'Sweet Shop',moves:19,colors:C5,big:[B('sweets',3,3)],intro:['sweets'],shape:circle(8)}),
-L({name:'Frosty Lane',moves:21,colors:C5,goal:{1:16},ob:{ice:rows([2,6],[1,2,3,5,6,7]).concat([[4,1],[4,7]])},intro:['ice'],shape:holes4(9)}),
-L({name:'Mithai Gali',moves:22,colors:C5,big:[B('sweets',3,3)],ob:{ice:rows([1,7],[2,4,6]).concat([[3,1],[5,1],[3,7],[5,7]])},shape:circle(9)}),
-L({name:'Bottle Bazaar',moves:20,colors:C5,big:[B('bottles',4,2)],intro:['bottles'],shape:sq(7,9)}),
-L({name:'Soda Street',moves:22,colors:C5,goal:{5:22},big:[B('bottles',3,0)],shape:split(9),reward:{k:'snake',n:3}}),
-L({name:'Laddoo Lane',moves:22,colors:C5,big:[B('sweets',3,3)],ob:{rang:rows([1],[3,4,5]).concat(rows([7],[3,4,5])).concat(rows([4],[0,1,7,8]))},shape:plus(9)}),
-L({name:'Rain Alley',moves:22,colors:C5,goal:{0:18},ob:{wet:[[4,4],[3,3],[5,5]]},intro:['wet'],shape:hourglass()}),
-L({name:'Twin Shops',moves:24,colors:C5,big:[B('bottles',2,0),B('sweets',2,7)],shape:split(9)}),
-L({name:'Cool Corner',moves:24,colors:C5,big:[B('cups',4,3)],ob:{ice:rows([2],[2,3,4,5,6]),crate:rows([1],[0,1,7,8])},shape:diamond(9)}),
-L({name:'Mithai Mela',moves:27,colors:C5,big:[B('sweets',1,1),B('bottles',1,6)],ob:{ice:rows([5],[0,1,2,6,7,8]).concat([[7,4],[6,4]])},shape:cut(9)}),
-// ===== Chapter 4: Diya Lane (diyas, chains, mud) =====
-L({name:'Diya Street',moves:19,colors:C5,big:[B('diyas',3,3)],intro:['diyas'],shape:diyaB()}),
-L({name:'Lamp Lane',moves:23,colors:C5,diya:[[0,3]],intro:['diya'],shape:sq(7,8)}),
-L({name:'Chain Market',moves:21,colors:C5,goal:{2:14},ob:{chain:rows([3,5],[1,2,6,7]).concat([[1,4],[7,4]])},intro:['chain'],shape:holes4(9)}),
-L({name:'Light Road',moves:23,colors:C5,big:[B('diyas',3,3)],ob:{pot:[[1,1],[1,7],[5,2],[5,6],[2,4]]},intro:['pot'],shape:heart()}),
-L({name:'Mud Path',moves:22,colors:C5,goal:{3:16},ob:{mud:rows([7,8],[1,2,3,5,6,7])},intro:['mud'],shape:circle(9),reward:{k:'rail',n:3}}),
-L({name:'Lantern Gate',moves:24,colors:C5,big:[B('diyas',4,1),B('fruit',4,6)],shape:diyaB()}),
-L({name:'Rain Road',moves:25,colors:C5,diya:[[0,2]],ob:{mud:rows([8],[0,1,2,3,5,6,7,8])},shape:split(9)}),
-L({name:'Temple Steps',moves:24,colors:C5,big:[B('bottles',3,3)],ob:{chain:[[0,1],[1,2],[2,3],[6,5],[7,6],[8,7]],stone:[[4,0],[4,8]]},intro:['stone'],shape:stairs()}),
-L({name:'Deepam Square',moves:25,colors:C5,big:[B('diyas',2,1),B('sweets',2,6)],ob:{chain:rows([6],[1,2,3,5,6,7])},shape:plus(9)}),
-L({name:'Festival of Lights',moves:28,colors:C5,diya:[[0,4]],big:[B('diyas',5,1),B('cups',5,6)],ob:{chain:rows([3],[0,1,7,8]),pot:[[2,3],[2,5]]},shape:diyaB()}),
-// ===== Chapter 5: Festival Square (gifts, glass, launchers, the finale) =====
-L({name:'Gift Lane',moves:21,colors:C5,big:[B('gifts',3,3)],intro:['gifts'],shape:cut(8,9)}),
-L({name:'Monsoon Market',moves:22,colors:C5,goal:{1:18},ob:{wet:[[4,4],[3,4],[5,4],[4,3],[4,5],[2,4]]},shape:circle(9)}),
-L({name:'Glass House',moves:22,colors:C5,goal:{5:16},ob:{glass:rows([2,6],[2,6]).concat([[4,0],[4,8],[0,4],[8,4]])},intro:['glass'],preSp:3,shape:diamond(9)}),
-L({name:'Parcel Point',moves:25,colors:C5,big:[B('gifts',5,3)],ob:{steel:rows([3],[0,1,2,3,4,5,6,7,8]),wet:[[1,1],[1,7]]},shape:sq(9)}),
-L({name:'Launch Pad',moves:24,colors:C5,goal:{1:26},ob:{launcher:[[7,1],[7,7],[1,4]]},intro:['launcher'],shape:sq(9),reward:{k:'skyshot',n:3}}),
-L({name:'Wrapping Room',moves:25,colors:C5,big:[B('gifts',3,3)],ob:{gift:rows([1],[1,2,6,7]).concat(rows([7],[1,2,6,7])),stone:[[4,0],[4,8]]},shape:plus(9)}),
-L({name:'Storm Street',moves:26,colors:C5,goal:{0:16},ob:{wet:[[3,2],[3,6]],mud:rows([8],[0,1,2,6,7,8]),ice:rows([5],[1,3,5,7])},shape:split(9)}),
-L({name:'Night Bazaar',moves:27,colors:C5,big:[B('cups',2,1),B('diyas',2,6)],ob:{launcher:[[6,4],[0,4]]},shape:heart()}),
-L({name:'Big Gift Day',moves:27,colors:C5,big:[B('gifts',2,1),B('sweets',2,6)],ob:{rang:rows([6],[0,1,2,3,5,6,7,8]).concat(rows([7],[2,3,5,6]))},shape:diamond(9)}),
-L({name:'Grand Finale',moves:32,colors:C5,big:[B('gifts',2,2),B('fruit',5,5)],ob:{glass:[[2,0],[2,8],[6,0],[6,8]],wet:[[4,4]],crate:[[1,3],[1,4],[1,5],[7,3],[7,4],[7,5]]},shape:star()})
+L({name:'Diwali Gate',moves:26,colors:[1,0,2,5],big:[WOOD(0,0),WOOD(0,6),WALL(8)],ob:{gold:rows([3,4,5],[2,3,4,5])},shape:sq(8,9),reward:{k:'sparkler',n:3}}),
+// ===== Chapter 2: Market =====
+L({name:"Pot Lane",moves:24,colors:C4,ob:{dpot:[[7, 0], [7, 1], [7, 2], [7, 5], [7, 6], [7, 7], [8, 0], [8, 1], [8, 2], [8, 5], [8, 6], [8, 7]]},intro:['dpot'],shape:sq(8,9)}),
+L({name:"Pot Square",moves:26,colors:C4,big:[WOOD(3,3)],ob:{dpot:[[2, 2], [2, 3], [2, 4], [2, 5], [3, 2], [3, 5], [4, 2], [4, 5], [5, 2], [5, 3], [5, 4], [5, 5], [7, 2], [7, 3], [7, 4], [7, 5], [8, 2], [8, 3], [8, 4], [8, 5]]},shape:sq(8,9)}),
+L({name:"Twin Walls",moves:24,colors:C4,big:[WALL(7),WALL(8)],ob:{dpot:[[3, 0], [3, 1], [3, 2], [3, 5], [3, 6], [3, 7], [4, 0], [4, 1], [4, 2], [4, 5], [4, 6], [4, 7]]},shape:sq(8,9)}),
+L({name:"Gold Floor",moves:24,colors:C4,ob:{gold:[[5, 0], [5, 1], [5, 2], [5, 3], [5, 4], [5, 5], [5, 6], [5, 7], [6, 0], [6, 1], [6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7], [7, 0], [7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6], [7, 7], [8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 6], [8, 7]]},intro:['gold'],shape:sq(8,9)}),
+L({name:"Market Gate",moves:28,colors:C4,big:[WOOD(0,0),WOOD(0,6),WOOD(3,3)],ob:{gold:[[5, 0], [5, 1], [5, 2], [5, 3], [5, 4], [5, 5], [5, 6], [5, 7], [6, 0], [6, 1], [6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7], [7, 0], [7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6], [7, 7]],ice:[[8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 6], [8, 7]]},shape:sq(8,9)}),
+L({name:"Bijli Bazaar",moves:22,colors:C4,goal:{0: 40},ob:{dpot:[[0, 0], [0, 1], [0, 6], [0, 7], [1, 0], [1, 1], [1, 6], [1, 7]]},shape:sq(8,9)}),
+L({name:"Gift Box",moves:22,colors:C4,goal:{1: 100},ob:{gbox:[[4, 1], [4, 4], [6, 6]]},intro:['gbox'],boxK:1,shape:sq(8,9)}),
+L({name:"Gift and Pots",moves:25,colors:C4,goal:{2: 80},ob:{gbox:[[3, 2], [3, 5]],dpot:[[7, 0], [7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6], [7, 7], [8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 6], [8, 7]]},boxK:2,shape:sq(8,9)}),
+L({name:"Gold and Chains",moves:27,colors:C4,ob:{gold:[[4, 0], [4, 1], [4, 2], [4, 3], [4, 4], [4, 5], [4, 6], [4, 7], [5, 0], [5, 1], [5, 2], [5, 3], [5, 4], [5, 5], [5, 6], [5, 7], [6, 0], [6, 1], [6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7]],chain:[[8, 2], [8, 3], [8, 4], [8, 5]],ice:[[8, 0], [8, 1], [8, 6], [8, 7]]},shape:sq(8,9)}),
+L({name:"Diwali Market",moves:28,colors:C4,goal:{0: 90},big:[WALL(7),WALL(8)],ob:{gbox:[[2, 1], [2, 6]],dpot:[[5, 0], [5, 1], [5, 2], [5, 5], [5, 6], [5, 7], [6, 0], [6, 1], [6, 2], [6, 5], [6, 6], [6, 7]],gold:[[3, 2], [3, 3], [3, 4], [3, 5], [4, 2], [4, 3], [4, 4], [4, 5]]},boxK:0,shape:sq(8,9)}),
+// ===== Chapter 3: Sweet Shop =====
+L({name:"Cup Rack",moves:25,colors:C4,big:[RACK('rackc',2,2)],ob:{dpot:[[7, 0], [7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6], [7, 7], [8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 6], [8, 7]]},intro:['rackc'],shape:sq(8,9)}),
+L({name:"Rack and Gold",moves:24,colors:C4,big:[RACK('rackc',0,0)],ob:{gold:[[6, 0], [6, 1], [6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7], [7, 0], [7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6], [7, 7], [8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 6], [8, 7]]},shape:sq(8,9)}),
+L({name:"Five Crackers",moves:25,colors:C5,goal:{3: 30},big:[WOOD(7,1),WOOD(7,5)],shape:sq(8,9)}),
+L({name:"Sweet Rack",moves:26,colors:C5,big:[RACK('racks',3,0),RACK('rackc',3,5)],intro:['racks'],shape:sq(8,9)}),
+L({name:"Sweet Counter",moves:31,colors:C5,big:[RACK('racks',1,0),RACK('rackg',1,5),WALL(7)],intro:['rackg'],shape:sq(8,9)}),
+L({name:"Laddu Lane",moves:20,colors:C5,goal:{0: 80},ob:{gbox:[[3, 2], [5, 5]]},boxK:0,shape:sq(8,9)}),
+L({name:"Gift Rack",moves:26,colors:C5,big:[RACK('rackg',2,3)],ob:{dpot:[[2, 0], [2, 1], [3, 0], [3, 1], [4, 0], [4, 1], [5, 0], [5, 1], [6, 0], [6, 1], [6, 6], [6, 7], [7, 6], [7, 7], [8, 6], [8, 7]]},shape:sq(8,9)}),
+L({name:"Rack Trio",moves:26,colors:C5,big:[RACK('rackc',0,0),RACK('racks',0,5),RACK('rackg',5,2)],shape:sq(8,9)}),
+L({name:"Gold Shop",moves:26,colors:C5,big:[WOOD(0,0),WOOD(0,6)],ob:{gold:[[3, 0], [3, 1], [3, 2], [3, 3], [3, 4], [3, 5], [3, 6], [3, 7], [4, 0], [4, 1], [4, 2], [4, 3], [4, 4], [4, 5], [4, 6], [4, 7], [5, 0], [5, 1], [5, 2], [5, 3], [5, 4], [5, 5], [5, 6], [5, 7], [6, 0], [6, 1], [6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7], [7, 0], [7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6], [7, 7]]},shape:sq(8,9)}),
+L({name:"Grand Sweets",moves:31,colors:C5,big:[RACK('racks',0,0),RACK('rackg',0,5)],ob:{gold:[[4, 0], [4, 1], [4, 2], [4, 3], [4, 4], [4, 5], [4, 6], [4, 7], [5, 0], [5, 1], [5, 2], [5, 3], [5, 4], [5, 5], [5, 6], [5, 7], [6, 0], [6, 1], [6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7]],chain:[[8, 2], [8, 3], [8, 4], [8, 5]],ice:[[8, 0], [8, 1], [8, 6], [8, 7]]},shape:sq(8,9)}),
+// ===== Chapter 4: Temple Road =====
+L({name:"Sky Lanterns",moves:24,colors:C5,ob:{lantern:[[6, 1], [6, 3], [6, 5], [7, 2], [7, 4], [7, 6]]},intro:['lantern'],shape:sq(8,9)}),
+L({name:"Lanterns and Pots",moves:24,colors:C5,ob:{lantern:[[6, 1], [6, 3], [6, 5], [7, 2], [7, 4], [7, 6]],dpot:[[2, 0], [2, 1], [2, 2], [2, 3], [2, 4], [2, 5], [2, 6], [2, 7], [3, 0], [3, 1], [3, 2], [3, 3], [3, 4], [3, 5], [3, 6], [3, 7]]},shape:sq(8,9)}),
+L({name:"Lantern Walls",moves:26,colors:C5,big:[WALL(7),WALL(8)],ob:{lantern:[[6, 1], [6, 3], [6, 4], [6, 6]]},shape:sq(8,9)}),
+L({name:"Firecracker Box",moves:24,colors:C5,goal:{1: 30},ob:{fbox:[[3, 1], [3, 6], [6, 3]]},intro:['fbox'],shape:sq(8,9)}),
+L({name:"Temple Steps",moves:30,colors:C5,ob:{dpot:[[4, 0], [4, 1], [4, 2], [4, 3], [4, 4], [4, 5], [4, 6], [4, 7], [5, 0], [5, 1], [5, 2], [5, 3], [5, 4], [5, 5], [5, 6], [5, 7], [6, 0], [6, 1], [6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7]],fbox:[[2, 1], [2, 4]],ice:[[8, 3], [8, 4], [8, 5], [8, 6], [8, 7]]},shape:stairs8()}),
+L({name:"Bell Street",moves:22,colors:C5,goal:{2: 100},ob:{gbox:[[3, 1], [3, 6], [6, 3]]},boxK:2,shape:sq(8,9)}),
+L({name:"Lantern Garden",moves:26,colors:C5,ob:{gold:[[3, 0], [3, 1], [3, 2], [3, 3], [3, 4], [3, 5], [3, 6], [3, 7], [4, 0], [4, 1], [4, 2], [4, 3], [4, 4], [4, 5], [4, 6], [4, 7], [5, 0], [5, 1], [5, 2], [5, 3], [5, 4], [5, 5], [5, 6], [5, 7], [6, 0], [6, 1], [6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7]],lantern:[[7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6]]},shape:sq(8,9)}),
+L({name:"Box and Rack",moves:29,colors:C5,big:[RACK('rackc',1,2),WOOD(7,0),WOOD(7,6)],ob:{fbox:[[6, 1], [6, 6]]},shape:sq(8,9)}),
+L({name:"Chain Temple",moves:31,colors:C5,big:[WALL(5),WALL(6),WALL(7)],ob:{chain:[[8, 2], [8, 3], [8, 4], [8, 5]],ice:[[8, 0], [8, 1], [8, 6], [8, 7]]},shape:sq(8,9)}),
+L({name:"Temple Gate",moves:31,colors:C5,big:[RACK('racks',4,0),RACK('rackg',4,5)],ob:{lantern:[[3, 1], [3, 2], [3, 3], [3, 4], [3, 5], [3, 6]],gold:[[7, 0], [7, 1], [7, 2], [7, 5], [7, 6], [7, 7], [8, 0], [8, 1], [8, 2], [8, 5], [8, 6], [8, 7], [2, 1], [2, 2], [2, 3], [2, 4], [2, 5], [2, 6], [1, 3], [1, 4]]},shape:temple8()}),
+// ===== Chapter 5: Grand Festival =====
+L({name:"Diya Board",moves:25,colors:C5,goal:{0: 80},ob:{gbox:[[3, 1], [3, 6]],dpot:[[5, 0], [5, 1], [5, 2], [5, 3], [5, 4], [5, 5], [5, 6], [5, 7], [6, 0], [6, 1], [6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7], [7, 0], [7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6], [7, 7], [8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 6], [8, 7], [4, 0], [4, 7]]},boxK:0,shape:diya8()}),
+L({name:"Star Board",moves:26,colors:C5,ob:{gold:[[2, 0], [2, 1], [2, 2], [2, 3], [2, 4], [2, 5], [2, 6], [2, 7], [3, 0], [3, 1], [3, 2], [3, 3], [3, 4], [3, 5], [3, 6], [3, 7], [4, 0], [4, 1], [4, 2], [4, 3], [4, 4], [4, 5], [4, 6], [4, 7], [5, 0], [5, 1], [5, 2], [5, 3], [5, 4], [5, 5], [5, 6], [5, 7], [6, 0], [6, 1], [6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7]]},shape:star8()}),
+L({name:"Split Board",moves:28,colors:C5,goal:{1: 30},big:[WALL(5,0,3),WALL(5,5,3)],shape:split8()}),
+L({name:"Lantern Sky",moves:28,colors:C5,big:[WOOD(2,0),WOOD(2,6),WOOD(7,2),WOOD(7,4)],ob:{lantern:[[5, 1], [5, 2], [5, 5], [5, 6], [6, 1], [6, 2], [6, 5], [6, 6]]},shape:sq(8,9)}),
+L({name:"Festival Square",moves:30,colors:C5,big:[RACK('rackc',0,0),RACK('racks',0,5),RACK('rackg',3,2)],ob:{gold:[[7, 0], [7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6], [7, 7], [8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 6], [8, 7]]},shape:sq(8,9)}),
+L({name:"Sparkle Street",moves:22,colors:C5,goal:{3: 110},ob:{gbox:[[3, 1], [3, 6], [6, 3]]},boxK:3,shape:sq(8,9)}),
+L({name:"Dig Through",moves:30,colors:C4,big:[WOOD(3,2),WOOD(3,4)],ob:{dpot:[[6, 0], [6, 1], [6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7], [7, 0], [7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6], [7, 7], [8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 6], [8, 7]]},shape:sq(8,9)}),
+L({name:"Firecracker Fair",moves:31,colors:C5,ob:{fbox:[[2, 1], [2, 6], [4, 3], [4, 4]],dpot:[[6, 0], [6, 1], [6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7], [7, 0], [7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6], [7, 7], [4, 0], [4, 7]],ice:[[8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 6]]},shape:sq(8,9)}),
+L({name:"Golden Night",moves:30,colors:C5,ob:{gold:[[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [0, 7], [1, 0], [1, 1], [1, 2], [1, 3], [1, 4], [1, 5], [1, 6], [1, 7], [2, 0], [2, 1], [2, 2], [2, 3], [2, 4], [2, 5], [2, 6], [2, 7], [3, 0], [3, 1], [3, 2], [3, 3], [3, 4], [3, 5], [3, 6], [3, 7], [4, 0], [4, 1], [4, 2], [4, 3], [4, 4], [4, 5], [4, 6], [4, 7], [5, 0], [5, 1], [5, 2], [5, 3], [5, 4], [5, 5], [5, 6], [5, 7], [6, 0], [6, 1], [6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7], [7, 0], [7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6], [7, 7]],chain:[[8, 2], [8, 3], [8, 4], [8, 5]]},shape:sq(8,9)}),
+L({name:"Grand Finale",moves:32,colors:C5,goal:{0: 60},big:[WALL(8),RACK('rackc',0,0),RACK('rackg',0,5)],ob:{lantern:[[4, 1], [4, 3], [4, 4], [4, 6]],gbox:[[6, 1], [6, 6]],gold:[[5, 2], [5, 3], [5, 4], [5, 5], [6, 2], [6, 3], [6, 4], [6, 5], [7, 2], [7, 3], [7, 4], [7, 5]]},boxK:0,shape:sq(8,9)})
 ];
 })();
 
 // Tuning from bot play (9 Nov 2026): moves per level, and collect goals sized so each level lasts a while.
-(function(){var MV=[15, 16, 16, 18, 23, 22, 24, 26, 26, 28, 18, 18, 18, 18, 19, 19, 19, 19, 20, 21, 19, 20, 19, 19, 20, 20, 24, 20, 21, 22, 19, 24, 19, 19, 20, 20, 24, 20, 21, 25, 20, 24, 20, 22, 21, 21, 22, 21, 22, 23],GL={"0": {}, "1": {}, "2": {}, "3": {}, "4": {}, "5": {}, "6": {}, "7": {}, "8": {}, "9": {}, "10": {"0": 17}, "11": {"1": 27, "5": 27}, "12": {"1": 15}, "13": {"2": 33}, "14": {"2": 18}, "15": {"0": 23}, "16": {"2": 28, "3": 28}, "17": {"1": 15}, "18": {"5": 28}, "19": {"2": 15}, "20": {"0": 23}, "21": {"1": 26}, "22": {"1": 13}, "23": {"5": 14}, "24": {"5": 44}, "25": {"0": 27}, "26": {"0": 23}, "27": {"1": 14}, "28": {"5": 23}, "29": {"2": 23}, "30": {"0": 32}, "31": {"2": 14}, "32": {"2": 28}, "33": {"5": 23}, "34": {"3": 27}, "35": {"0": 17}, "36": {"1": 20}, "37": {}, "38": {"5": 13}, "39": {}, "40": {"0": 24}, "41": {"1": 46}, "42": {"5": 38}, "43": {}, "44": {"1": 48}, "45": {"0": 10}, "46": {}, "47": {"1": 25}, "48": {"5": 29}, "49": {"2": 17}};
+(function(){var MV=[15, 16, 16, 18, 23, 22, 24, 26, 26, 28, 26, 29, 24, 27, 30, 26, 22, 29, 27, 25, 30, 27, 29, 30, 30, 20, 30, 26, 26, 31, 24, 24, 28, 26, 31, 22, 31, 31, 37, 37, 28, 28, 28, 32, 31, 22, 36, 36, 32, 32],GL={};
 window.LEVELS.forEach(function(l,i){l.moves=MV[i];var g=GL[i]||{};for(var k in g)l.goal[k]=g[k]})})();
 
 // booster unlock rewards (10 Nov): 3 free when each unlocks

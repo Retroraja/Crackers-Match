@@ -164,3 +164,30 @@
 .slots .slot{flex:0 0 calc((100% - 24px)/5);touch-action:pan-x}
 /* agree screen */
 .agbox{text-align:center}.agdiya{width:64px;height:64px;object-fit:contain;margin-bottom:6px}.agl{font-size:12px;opacity:.85}.agl a{color:#FFD24A;font-weight:700}
+
+/* in-game settings (11 Nov) */
+.slots{right:76px!important}
+.gear2{position:absolute;right:12px;bottom:22px;width:56px;height:56px;border-radius:50%;border:0;background:radial-gradient(circle at 35% 30%,#FFB36B,#E8742A 60%,#B4461A);box-shadow:0 4px 0 #7A2A0C,0 6px 12px #0006;z-index:7;padding:9px;cursor:pointer}
+.gear2 svg{width:100%;height:100%}
+.gsdim{position:absolute;inset:0;background:#0a0418b0;z-index:20;display:none}
+.gset{position:absolute;right:14px;bottom:20px;display:none;flex-direction:column;gap:10px;z-index:21}
+.gsdim.on,.gset.on{display:flex}
+.gs{display:flex;align-items:center;gap:10px;flex-direction:row-reverse;border:0;background:none;padding:0;cursor:pointer;font:700 14px Sora,sans-serif;color:#FFF4D6;text-shadow:0 2px 0 #0008}
+.gs svg,.gs b{width:58px;height:58px;border-radius:16px;padding:12px;box-sizing:border-box;background:linear-gradient(#5BD15B,#2E9E3A);box-shadow:0 4px 0 #1C6B25,inset 0 2px 0 #9CF59C;display:flex;align-items:center;justify-content:center;font:400 22px 'Titan One',sans-serif;color:#fff}
+.gs.red svg{background:linear-gradient(#FF6A5A,#D9302B);box-shadow:0 4px 0 #8C1612,inset 0 2px 0 #FFB0A6}
+.gs.blue svg{background:linear-gradient(#4FA8FF,#1F6FE0);box-shadow:0 4px 0 #0E4596,inset 0 2px 0 #A9D4FF}
+.gs.off svg{filter:grayscale(1) brightness(.7)}
+.gs span{background:#2A0B4Acc;border-radius:10px;padding:4px 8px}
+/* level card + bar locks: clear highlight */
+.bo.lock,.slot.lock{background:#1a0a2c!important;border-color:#55406e!important}
+.slot .lk,.bo .lk{background:#2A0B4A;border:2px solid #FFD24A;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px #FFD24A88}
+.slot .lk svg,.bo .lk svg{width:20px;height:20px}
+.slot.lock .pr,.bo.lock em{background:#D92B3A!important;color:#fff!important;border-radius:8px;padding:1px 6px;font-weight:700}
+/* agree centred */
+#agree{align-items:center!important}
+/* coin smaller */
+.gcoin img,.htop .pill img,.coinsA img{width:24px!important;height:24px!important}
+/* cracker meter at the top */
+.meter{top:132px!important;bottom:auto!important;left:50%!important;right:auto!important;transform:translateX(-50%);width:250px!important;z-index:7!important}
+.meter .mlab{position:static!important;font-size:10px!important;white-space:nowrap}
+.meter .mbar{height:16px!important}
