@@ -284,13 +284,13 @@ G.isSp=function(m){return m&&(m.h>=4||m.v>=4||(m.h>=3&&m.v>=3)||m.sq)};
 G.spMoves=function(){var out=[];for(var r=0;r<R;r++)for(var c=0;c<C;c++)for(var d=0;d<2;d++){var r2=r+d,c2=c+1-d,e=this.at2(r,c),f=this.at2(r2,c2);if(!e||!f||e.k<0||f.k<0||e.k>=6||f.k>=6||this.stuck(e)||this.stuck(f)||e.k==f.k)continue;var t=e.k;e.k=f.k;f.k=t;if(this.isSp(this.runAt(r,c))||this.isSp(this.runAt(r2,c2)))out.push({r:r,c:c,dr:d,dc:1-d});f.k=e.k;e.k=t}return out};
 G.calmLv=function(){var i=this.lv.idx||0;return i<10?.8:i<30?.7:.6};
 G.makes=function(r,c){var k=this.kind(r,c);if(k<0)return false;var h=1,v=1,i;for(i=1;this.kind(r,c+i)==k;i++)h++;for(i=1;this.kind(r,c-i)==k;i++)h++;for(i=1;this.kind(r+i,c)==k;i++)v++;for(i=1;this.kind(r-i,c)==k;i++)v++;if(h>=3||v>=3)return true;var s=this;return [[0,0],[0,-1],[-1,0],[-1,-1]].some(function(d){var a=r+d[0],b=c+d[1];return s.kind(a,b)==k&&s.kind(a,b+1)==k&&s.kind(a+1,b)==k&&s.kind(a+1,b+1)==k})};
-G.helpLv=function(){var i=this.lv.idx||0;return i<10?.35:i<20?.7:i<35?.55:.45};
+G.helpLv=function(){var i=this.lv.idx||0;return i<10?.6:i<20?.7:i<35?.55:.45};
 G.nudge=function(cells,keepClean){for(var t=0;t<70;t++){var p=cells[Math.random()*cells.length|0],e=this.at2(p[0],p[1]);if(!e||e.ob||e.k<0||e.k>=6)continue;var old=e.k;e.k=this.rk();if(keepClean&&this.find().length){e.k=old;continue}if(this.spMoves().length)return true}return false};
 G.refill0=G.refill;G.refill=function(){var before=[];for(var r=0;r<R;r++)for(var c=0;c<C;c++)before.push(this.b[r][c]);G.refill0.call(this);var nw=[];for(r=0;r<R;r++)for(c=0;c<C;c++){var e=this.b[r][c];if(e&&before.indexOf(e)<0)nw.push([r,c])}
  if(nw.length&&!this.ended){var calm=this.calmLv();for(var q=nw.length-1;q>=0;q--){var p=nw[q],e2=this.b[p[0]][p[1]];if(!e2||e2.k<0||e2.k>=6||Math.random()>calm)continue;for(var t2=0;t2<6&&this.makes(p[0],p[1]);t2++)e2.k=this.rk()}}
  if(nw.length&&!this.ended&&Math.random()<this.helpLv()&&!this.spMoves().length)this.nudge(nw,false)};
 G.fresh0=G.fresh;G.fresh=function(){G.fresh0.call(this);var all=[];for(var r=0;r<R;r++)for(var c=0;c<C;c++)if(this.at2(r,c))all.push([r,c]);if(!this.spMoves().length)this.nudge(all,true);
- var i=this.lv.idx||0,n=this.lv.preSp!=null?this.lv.preSp:i<3?0:1;for(var q=0;q<n;q++){for(var t=0;t<40;t++){var p=all[Math.random()*all.length|0],e=this.at2(p[0],p[1]);if(e&&!e.ob&&e.k>=0&&e.k<6&&p[0]>0&&p[0]<R-1){e.k=[6,15,7][Math.random()*3|0];break}}}};
+ var i=this.lv.idx||0,n=this.lv.preSp!=null?this.lv.preSp:i<3?0:1;for(var q=0;q<n;q++){for(var t=0;t<40;t++){var p=all[Math.random()*all.length|0],e=this.at2(p[0],p[1]);if(e&&!e.ob&&e.k>=0&&e.k<6&&p[0]>0&&p[0]<R-1){e.k=this.lv.preK?this.lv.preK[q%this.lv.preK.length]:[6,15,7][Math.random()*3|0];break}}}};
 
 // ---- big obstacles: a shelf, crate or basket over several cells, holding many items
 var BIG={cups:'Cups',bottles:'Bottles',fruit:'Fruit',sweets:'Sweets',diyas:'Diyas',gifts:'Gifts'};window.BIGT=BIG;

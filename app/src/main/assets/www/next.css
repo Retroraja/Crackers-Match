@@ -143,3 +143,7 @@
 .bin img{filter:drop-shadow(0 8px 10px #0008)}
 
 .spdb{display:flex;gap:6px;flex:none!important}.spdb .sbtn{min-width:46px;padding:0 10px}
+/* locked boosters (10 Nov) */
+.slot.lock img,.bo.lock img{filter:grayscale(1) brightness(.55);opacity:.8}
+.slot.lock,.bo.lock{position:relative}
+.slot .lk,.bo .lk{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);filter:drop-shadow(0 2px 2px #0008);pointer-events:none}
