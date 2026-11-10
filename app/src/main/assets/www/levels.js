@@ -35,21 +35,21 @@ var EDGE9=rows([2,6],[0,1,7,8]),RING9=[[1,1],[1,7],[7,1],[7,7],[1,4],[7,4],[4,1]
 window.LEVELS=[
 // ===== Chapter 1: Green Village (learn the basics, 4 colours) =====
 L({name:'Bijli Street',moves:15,colors:C4,goal:{0:16},shape:sq(8,8),preSp:0}),
-L({name:'Kuruvi Corner',moves:22,colors:[1,0,2,5],goal:{1:16,2:12},shape:cut(8,9)}),
-L({name:'Hydrogen Hill',moves:18,colors:[2,0,1,5],goal:{2:16,5:16},shape:plus(8,9)}),
-L({name:'First Rocket',moves:18,colors:[5,0,1,2],goal:{5:20},preSp:1,preK:[6,15],teach:'rocket',intro:['rocket'],shape:hole(8,9)}),
-L({name:'Crate Wall',moves:18,colors:C4,goal:{0:16},big:[WALL(8)],intro:['wall'],shape:sq(8,9),reward:{k:'sparkler',n:3}}),
-L({name:'Triple Wall',moves:20,colors:[1,0,2,5],goal:{1:14},big:[WALL(6),WALL(7),WALL(8)],shape:sq(8,9)}),
-L({name:'Wall in the Middle',moves:22,colors:[2,0,1,5],goal:{1:20},big:[WALL(4)],shape:cut(8,9)}),
-L({name:'Flowerpot Fair',moves:20,colors:C4,goal:{0:20,1:20},teach:'square',intro:['flowerpot'],shape:diamond(8,9)}),
-L({name:'Crate Corners',moves:22,colors:[1,0,2,5],big:[WOOD(0,0),WOOD(0,6),WOOD(7,0),WOOD(7,6)],intro:['wood'],shape:sq(8,9)}),
-L({name:'Crate Row',moves:22,colors:[5,0,1,2],goal:{2:20},big:[WOOD(4,0),WOOD(4,3),WOOD(4,6)],shape:sq(8,9)}),
+L({name:'First Rocket',moves:16,colors:[1,0,2,5],goal:{1:18},teach:'rocket',intro:['rocket'],shape:cut(8,9),preSp:0}),
+L({name:'Colour Matchbox',moves:16,colors:[2,0,1,5],goal:{2:24},preSp:1,preK:[14],intro:['matchbox'],shape:plus(8,9)}),
+L({name:'Crate Wall',moves:18,colors:[5,0,1,2],goal:{5:14},big:[WALL(8)],intro:['wall'],shape:sq(8,9),preSp:0}),
+L({name:'Ground Chakra',moves:20,colors:C4,goal:{0:12},teach:'square',intro:['chakra','wood'],big:[WOOD(7,0),WOOD(7,6)],shape:sq(8,9),preSp:0,reward:{k:'hammer',n:3}}),
+L({name:'Rangoli Yard',moves:22,colors:[1,0,2,5],big:[WALL(7),WALL(8)],ob:{rang:[[3,3],[3,4],[4,2],[4,3],[4,4],[4,5],[5,3],[5,4]]},intro:['rang'],shape:sq(8,9)}),
+L({name:'Ice Lane',moves:24,colors:[2,0,1,5],goal:{1:14},ob:{ice:[[8,1],[8,2],[8,3],[8,4],[8,5],[8,6]]},intro:['ice'],shape:sq(8,9)}),
+L({name:'First Bomb',moves:24,colors:[5,0,1,2],goal:{2:14},teach:'lshape',intro:['atom'],big:[WOOD(4,0),WOOD(4,3),WOOD(4,6)],shape:sq(8,9),preSp:0}),
+L({name:'Chain Gate',moves:24,colors:C4,big:[WALL(4)],ob:{chain:[[8,2],[8,3],[8,4],[8,5]],ice:[[8,0],[8,1],[8,6],[8,7]]},intro:['chain'],shape:sq(8,9)}),
+L({name:'Diwali Gate',moves:26,colors:[1,0,2,5],big:[WOOD(0,0),WOOD(0,6),WALL(8)],ob:{rang:[[3,3],[3,4],[4,2],[4,3],[4,4],[4,5],[5,3],[5,4]]},shape:sq(8,9),reward:{k:'sparkler',n:3}}),
 // ===== Chapter 2: Flower Hills (fruit, rangoli, combos, 5 colours) =====
 L({name:'Fruit Market',moves:19,colors:C5,big:[B('fruit',3,3)],intro:['fruit'],shape:sq(8)}),
 L({name:'Sky Lane',moves:20,colors:C5,goal:{1:24,5:24},intro:['skyshot'],shape:sq(7,9)}),
 L({name:'Basket Row',moves:22,colors:C5,big:[B('fruit',3,1)],ob:{thread:rows([1],[5,6,7]).concat(rows([6],[5,6,7]))},shape:split(9)}),
 L({name:'Rangoli Square',moves:20,colors:C5,goal:{2:16},ob:{rang:RING9.concat([[0,4],[8,4],[4,0],[4,8],[2,2],[2,6],[6,2],[6,6]])},intro:['rang'],shape:sq(9)}),
-L({name:'Kolam Street',moves:22,colors:C5,big:[B('cups',3,3)],ob:{rang:EDGE9.concat([[1,1],[1,7],[7,1],[7,7]])},shape:plus(9),reward:{k:'rail',n:3}}),
+L({name:'Kolam Street',moves:22,colors:C5,big:[B('cups',3,3)],ob:{rang:EDGE9.concat([[1,1],[1,7],[7,1],[7,7]])},shape:plus(9),reward:{k:'seven',n:3}}),
 L({name:'Hidden Godown',moves:23,colors:C5,goal:{0:20},ob:{steel:rows([3],[0,1,2,3,4,5,6,7]),crate:rows([4],[0,1,2,3,4,5,6,7])},intro:['steel'],shape:sq(8,9)}),
 L({name:'Combo Corner',moves:20,colors:C5,goal:{2:26,3:26},preSp:3,shape:diamond(9)}),
 L({name:'Market Day',moves:24,colors:C5,big:[B('cups',2,1),B('fruit',2,6)],ob:{rang:rows([7],[1,2,3,5,6,7])},shape:cut(9)}),
@@ -60,7 +60,7 @@ L({name:'Sweet Shop',moves:19,colors:C5,big:[B('sweets',3,3)],intro:['sweets'],s
 L({name:'Frosty Lane',moves:21,colors:C5,goal:{1:16},ob:{ice:rows([2,6],[1,2,3,5,6,7]).concat([[4,1],[4,7]])},intro:['ice'],shape:holes4(9)}),
 L({name:'Mithai Gali',moves:22,colors:C5,big:[B('sweets',3,3)],ob:{ice:rows([1,7],[2,4,6]).concat([[3,1],[5,1],[3,7],[5,7]])},shape:circle(9)}),
 L({name:'Bottle Bazaar',moves:20,colors:C5,big:[B('bottles',4,2)],intro:['bottles'],shape:sq(7,9)}),
-L({name:'Soda Street',moves:22,colors:C5,goal:{5:22},big:[B('bottles',3,0)],shape:split(9),reward:{k:'wala',n:3}}),
+L({name:'Soda Street',moves:22,colors:C5,goal:{5:22},big:[B('bottles',3,0)],shape:split(9),reward:{k:'snake',n:3}}),
 L({name:'Laddoo Lane',moves:22,colors:C5,big:[B('sweets',3,3)],ob:{rang:rows([1],[3,4,5]).concat(rows([7],[3,4,5])).concat(rows([4],[0,1,7,8]))},shape:plus(9)}),
 L({name:'Rain Alley',moves:22,colors:C5,goal:{0:18},ob:{wet:[[4,4],[3,3],[5,5]]},intro:['wet'],shape:hourglass()}),
 L({name:'Twin Shops',moves:24,colors:C5,big:[B('bottles',2,0),B('sweets',2,7)],shape:split(9)}),
@@ -71,7 +71,7 @@ L({name:'Diya Street',moves:19,colors:C5,big:[B('diyas',3,3)],intro:['diyas'],sh
 L({name:'Lamp Lane',moves:23,colors:C5,diya:[[0,3]],intro:['diya'],shape:sq(7,8)}),
 L({name:'Chain Market',moves:21,colors:C5,goal:{2:14},ob:{chain:rows([3,5],[1,2,6,7]).concat([[1,4],[7,4]])},intro:['chain'],shape:holes4(9)}),
 L({name:'Light Road',moves:23,colors:C5,big:[B('diyas',3,3)],ob:{pot:[[1,1],[1,7],[5,2],[5,6],[2,4]]},intro:['pot'],shape:heart()}),
-L({name:'Mud Path',moves:22,colors:C5,goal:{3:16},ob:{mud:rows([7,8],[1,2,3,5,6,7])},intro:['mud'],shape:circle(9),reward:{k:'atom',n:3}}),
+L({name:'Mud Path',moves:22,colors:C5,goal:{3:16},ob:{mud:rows([7,8],[1,2,3,5,6,7])},intro:['mud'],shape:circle(9),reward:{k:'rail',n:3}}),
 L({name:'Lantern Gate',moves:24,colors:C5,big:[B('diyas',4,1),B('fruit',4,6)],shape:diyaB()}),
 L({name:'Rain Road',moves:25,colors:C5,diya:[[0,2]],ob:{mud:rows([8],[0,1,2,3,5,6,7,8])},shape:split(9)}),
 L({name:'Temple Steps',moves:24,colors:C5,big:[B('bottles',3,3)],ob:{chain:[[0,1],[1,2],[2,3],[6,5],[7,6],[8,7]],stone:[[4,0],[4,8]]},intro:['stone'],shape:stairs()}),
@@ -82,7 +82,7 @@ L({name:'Gift Lane',moves:21,colors:C5,big:[B('gifts',3,3)],intro:['gifts'],shap
 L({name:'Monsoon Market',moves:22,colors:C5,goal:{1:18},ob:{wet:[[4,4],[3,4],[5,4],[4,3],[4,5],[2,4]]},shape:circle(9)}),
 L({name:'Glass House',moves:22,colors:C5,goal:{5:16},ob:{glass:rows([2,6],[2,6]).concat([[4,0],[4,8],[0,4],[8,4]])},intro:['glass'],preSp:3,shape:diamond(9)}),
 L({name:'Parcel Point',moves:25,colors:C5,big:[B('gifts',5,3)],ob:{steel:rows([3],[0,1,2,3,4,5,6,7,8]),wet:[[1,1],[1,7]]},shape:sq(9)}),
-L({name:'Launch Pad',moves:24,colors:C5,goal:{1:26},ob:{launcher:[[7,1],[7,7],[1,4]]},intro:['launcher'],shape:sq(9),reward:{k:'matchbox',n:3}}),
+L({name:'Launch Pad',moves:24,colors:C5,goal:{1:26},ob:{launcher:[[7,1],[7,7],[1,4]]},intro:['launcher'],shape:sq(9),reward:{k:'skyshot',n:3}}),
 L({name:'Wrapping Room',moves:25,colors:C5,big:[B('gifts',3,3)],ob:{gift:rows([1],[1,2,6,7]).concat(rows([7],[1,2,6,7])),stone:[[4,0],[4,8]]},shape:plus(9)}),
 L({name:'Storm Street',moves:26,colors:C5,goal:{0:16},ob:{wet:[[3,2],[3,6]],mud:rows([8],[0,1,2,6,7,8]),ice:rows([5],[1,3,5,7])},shape:split(9)}),
 L({name:'Night Bazaar',moves:27,colors:C5,big:[B('cups',2,1),B('diyas',2,6)],ob:{launcher:[[6,4],[0,4]]},shape:heart()}),
@@ -92,5 +92,8 @@ L({name:'Grand Finale',moves:32,colors:C5,big:[B('gifts',2,2),B('fruit',5,5)],ob
 })();
 
 // Tuning from bot play (9 Nov 2026): moves per level, and collect goals sized so each level lasts a while.
-(function(){var MV=[15, 16, 16, 16, 18, 20, 20, 20, 22, 24, 18, 18, 18, 18, 19, 19, 19, 19, 20, 21, 19, 20, 19, 19, 20, 20, 24, 20, 21, 22, 19, 24, 19, 19, 20, 20, 24, 20, 21, 25, 20, 24, 20, 22, 21, 21, 22, 21, 22, 23],GL={"0": {}, "1": {}, "2": {}, "3": {}, "4": {}, "5": {}, "6": {}, "7": {}, "8": {}, "9": {}, "10": {"0": 17}, "11": {"1": 27, "5": 27}, "12": {"1": 15}, "13": {"2": 33}, "14": {"2": 18}, "15": {"0": 23}, "16": {"2": 28, "3": 28}, "17": {"1": 15}, "18": {"5": 28}, "19": {"2": 15}, "20": {"0": 23}, "21": {"1": 26}, "22": {"1": 13}, "23": {"5": 14}, "24": {"5": 44}, "25": {"0": 27}, "26": {"0": 23}, "27": {"1": 14}, "28": {"5": 23}, "29": {"2": 23}, "30": {"0": 32}, "31": {"2": 14}, "32": {"2": 28}, "33": {"5": 23}, "34": {"3": 27}, "35": {"0": 17}, "36": {"1": 20}, "37": {}, "38": {"5": 13}, "39": {}, "40": {"0": 24}, "41": {"1": 46}, "42": {"5": 38}, "43": {}, "44": {"1": 48}, "45": {"0": 10}, "46": {}, "47": {"1": 25}, "48": {"5": 29}, "49": {"2": 17}};
+(function(){var MV=[15, 16, 16, 18, 23, 22, 24, 26, 26, 28, 18, 18, 18, 18, 19, 19, 19, 19, 20, 21, 19, 20, 19, 19, 20, 20, 24, 20, 21, 22, 19, 24, 19, 19, 20, 20, 24, 20, 21, 25, 20, 24, 20, 22, 21, 21, 22, 21, 22, 23],GL={"0": {}, "1": {}, "2": {}, "3": {}, "4": {}, "5": {}, "6": {}, "7": {}, "8": {}, "9": {}, "10": {"0": 17}, "11": {"1": 27, "5": 27}, "12": {"1": 15}, "13": {"2": 33}, "14": {"2": 18}, "15": {"0": 23}, "16": {"2": 28, "3": 28}, "17": {"1": 15}, "18": {"5": 28}, "19": {"2": 15}, "20": {"0": 23}, "21": {"1": 26}, "22": {"1": 13}, "23": {"5": 14}, "24": {"5": 44}, "25": {"0": 27}, "26": {"0": 23}, "27": {"1": 14}, "28": {"5": 23}, "29": {"2": 23}, "30": {"0": 32}, "31": {"2": 14}, "32": {"2": 28}, "33": {"5": 23}, "34": {"3": 27}, "35": {"0": 17}, "36": {"1": 20}, "37": {}, "38": {"5": 13}, "39": {}, "40": {"0": 24}, "41": {"1": 46}, "42": {"5": 38}, "43": {}, "44": {"1": 48}, "45": {"0": 10}, "46": {}, "47": {"1": 25}, "48": {"5": 29}, "49": {"2": 17}};
 window.LEVELS.forEach(function(l,i){l.moves=MV[i];var g=GL[i]||{};for(var k in g)l.goal[k]=g[k]})})();
+
+// booster unlock rewards (10 Nov): 3 free when each unlocks
+(function(L){[[4,"hammer"],[9,"sparkler"],[14,"seven"],[19,"flowerpot"],[24,"snake"],[29,"wala"],[34,"rail"],[39,"skyshot"]].forEach(function(p){if(L[p[0]])L[p[0]].reward={k:p[1],n:3}});if(L[44])delete L[44].reward})(window.LEVELS);

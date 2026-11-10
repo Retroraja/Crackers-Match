@@ -147,3 +147,20 @@
 .slot.lock img,.bo.lock img{filter:grayscale(1) brightness(.55);opacity:.8}
 .slot.lock,.bo.lock{position:relative}
 .slot .lk,.bo .lk{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);filter:drop-shadow(0 2px 2px #0008);pointer-events:none}
+
+/* cracker meter (10 Nov) */
+.meter{position:absolute;right:14px;bottom:96px;height:40px;width:214px;display:flex;align-items:center;gap:6px;z-index:5}
+.meter .mlab{position:absolute;left:4px;top:-13px;font:700 9px Sora,sans-serif;letter-spacing:.8px;text-transform:uppercase;color:#FFE9B0;text-shadow:0 1px 0 #0008}
+.mbar{flex:1;height:14px;border-radius:8px;background:#2A0B4A;border:2px solid #F2B533;overflow:hidden;box-shadow:0 2px 4px #0006}
+.mbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#FFB43A,#FFE58A);transition:width .25s}
+.mrew{width:44px;height:44px;border-radius:50%;background:radial-gradient(#5B2A8C,#2A0B4A);border:2px solid #F2B533;display:flex;align-items:center;justify-content:center;touch-action:none}
+.mrew img{width:34px;height:34px;object-fit:contain;opacity:.25;filter:grayscale(1)}
+.mrew.on{animation:mglow 1s ease-in-out infinite;border-color:#FFE58A}
+.mrew.on img{opacity:1;filter:none}
+@keyframes mglow{50%{box-shadow:0 0 0 5px #FFD24A66,0 0 18px #FFD24A}}
+/* 8 boosters: 5 visible, swipe for more */
+.slots{display:flex!important;overflow-x:auto;overflow-y:hidden;gap:6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.slots::-webkit-scrollbar{display:none}
+.slots .slot{flex:0 0 calc((100% - 24px)/5);touch-action:pan-x}
+/* agree screen */
+.agbox{text-align:center}.agdiya{width:64px;height:64px;object-fit:contain;margin-bottom:6px}.agl{font-size:12px;opacity:.85}.agl a{color:#FFD24A;font-weight:700}

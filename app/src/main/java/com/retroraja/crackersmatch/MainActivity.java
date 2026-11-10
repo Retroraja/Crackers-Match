@@ -1,6 +1,8 @@
 package com.retroraja.crackersmatch;
 
 import android.app.Activity;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.view.View;
@@ -24,6 +26,7 @@ public class MainActivity extends Activity {
     private static final String REWARDED_UNIT = "ca-app-pub-3940256099942544/5224354917";
     /** While on Google test ads, closing the ad still gives the reward so testing can continue. */
     private static final boolean TEST_ADS = true;
+    private static final int NOTIFY_REQ = 7;
     private WebView web;
     private RewardedAd rewarded;
     private boolean earned;
@@ -61,6 +64,15 @@ public class MainActivity extends Activity {
         });
     }
 
+    private void notifyResult(boolean ok) {
+        web.evaluateJavascript("window.notifyDone&&window.notifyDone(" + ok + ")", null);
+    }
+
+    @Override public void onRequestPermissionsResult(int code, String[] perms, int[] res) {
+        super.onRequestPermissionsResult(code, perms, res);
+        if (code == NOTIFY_REQ) notifyResult(res.length > 0 && res[0] == PackageManager.PERMISSION_GRANTED);
+    }
+
     private void adResult(boolean ok) {
         web.evaluateJavascript("window.adDone&&window.adDone(" + ok + ")", null);
     }
@@ -68,6 +80,13 @@ public class MainActivity extends Activity {
     private class Bridge {
         @JavascriptInterface public void say(String w) {
             if (ttsReady) tts.speak(w, TextToSpeech.QUEUE_FLUSH, null, "word");
+        }
+        @JavascriptInterface public void askNotify() {
+            runOnUiThread(() -> {
+                if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission("android.permission.POST_NOTIFICATIONS") != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, NOTIFY_REQ);
+                } else notifyResult(true);
+            });
         }
         @JavascriptInterface public void showAd() {
             runOnUiThread(() -> {
