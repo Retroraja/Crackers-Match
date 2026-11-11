@@ -191,3 +191,11 @@
 .meter{top:132px!important;bottom:auto!important;left:50%!important;right:auto!important;transform:translateX(-50%);width:250px!important;z-index:7!important}
 .meter .mlab{position:static!important;font-size:10px!important;white-space:nowrap}
 .meter .mbar{height:16px!important}
+#gGoals .gi.bump{animation:gbump .32s ease-out}@keyframes gbump{0%{transform:scale(1)}40%{transform:scale(1.22)}100%{transform:scale(1)}}
+/* coins: smaller everywhere (build 26) */
+img[src$="ui-coin.webp"]:not(.fly2){transform:scale(.8)}
+.fly2[src$="ui-coin.webp"]{width:36px;height:36px;margin:8px 0 0 8px}
+/* bottom bar: 4 booster slots + the settings gear in one row, each with its own space; swipe for more (build 26) */
+.slots{left:12px!important;right:80px!important;scroll-snap-type:x mandatory}
+.slots .slot{flex:0 0 calc((100% - 18px)/4)!important;scroll-snap-align:start}
+.gear2{right:12px!important;bottom:22px!important;width:56px!important;height:56px!important}
