@@ -74,3 +74,20 @@ Object.keys(M).forEach(function(k){var i=+k,m=M[k],base=LV[i],cols=i>=22?C5:C4;
 var IN={7:['atom'],8:['chain'],10:['dpot'],13:['gold'],16:['gbox'],20:['rackc'],21:['racks'],23:['rackg'],30:['lantern'],33:['fbox']};
 LV.forEach(function(l,i){if(i<7)return;if(IN[i])l.intro=IN[i];else delete l.intro});
 })();
+
+// ===== Build 27 (11 Nov): human-style moves, trimmed heavy boards, bigger cracker goals, lucky refills
+(function(){var LV=window.LEVELS;
+ var MV={8:24,9:23,10:20,11:26,12:24,13:23,14:25,15:22,16:18,17:25,18:23,19:22,20:19,21:26,22:24,23:24,24:22,25:21,26:17,27:24,28:22,29:22,30:18,31:26,32:24,33:23,34:24,35:21,36:17,37:23,38:22,39:21,40:18,41:25,42:23,43:22,44:22,45:20,46:16,47:22,48:21,49:20,50:17};
+ var TRIM={20:1,26:1,36:3,46:1,50:1,24:2,25:1,28:2,30:1,33:2,34:2,39:2,40:1,47:2,15:1,21:1,29:1,31:1,35:1,38:1,48:1,49:1};
+ var RELIEF={16:1,26:1,36:1,46:1};
+ function type(n){return n%10==0?'sh':n%5==0?'h':RELIEF[n]?'r':'n'}
+ var LUCK={r:.5,n:1/3,h:.2,sh:.125};
+ var DIG={dpot:1,pot:1,crate:1,steel:1,stone:1};
+ LV.forEach(function(l,i){var n=i+1;l.luck=LUCK[type(n)];l.ltype=type(n);if(i<7)return;
+  if(MV[n])l.moves=MV[n];
+  // trim: clear the lowest rows of the dig block (pots, crates, stone); racks, gift boxes, lanterns, boxes, ice, chain and gold stay
+  var t=TRIM[n];if(t&&l.ob){var rows={};Object.keys(DIG).forEach(function(k){(l.ob[k]||[]).forEach(function(p){rows[p[0]]=1})});
+   var rs=Object.keys(rows).map(Number).sort(function(a,b){return b-a}).slice(0,t),cut={};rs.forEach(function(r){cut[r]=1});
+   Object.keys(DIG).forEach(function(k){if(!l.ob[k])return;l.ob[k]=l.ob[k].filter(function(p){return !cut[p[0]]});if(l.goal[k]!=null)l.goal[k]=l.ob[k].length;if(!l.ob[k].length){delete l.ob[k];delete l.goal[k]}})}
+  // cracker goals up about 20% (lucky refills give more specials)
+  Object.keys(l.goal).forEach(function(k){if(!/^\d+$/.test(k))return;var g=l.ltype=='r'?l.goal[k]:Math.round(l.goal[k]*1.2),cap=l.moves*(l.ltype=='r'?3:l.boxK!=null?4.5:3);l.goal[k]=Math.min(g,Math.round(cap))})})})();

@@ -199,3 +199,54 @@ img[src$="ui-coin.webp"]:not(.fly2){transform:scale(.8)}
 .slots{left:12px!important;right:80px!important;scroll-snap-type:x mandatory}
 .slots .slot{flex:0 0 calc((100% - 18px)/4)!important;scroll-snap-align:start}
 .gear2{right:12px!important;bottom:22px!important;width:56px!important;height:56px!important}
+/* ===== Build 27 ===== */
+/* bottom bar: two rows, all 8 boosters visible; gear moves to the top next to the back button */
+.slots{display:grid!important;grid-template-columns:repeat(4,1fr)!important;grid-auto-rows:62px;gap:6px!important;left:12px!important;right:12px!important;bottom:12px!important;overflow:visible!important;scroll-snap-type:none!important}
+.slots .slot{flex:none!important;height:62px!important}
+.slots .slot img{width:50px!important;height:50px!important}
+.gcoin{bottom:150px!important}
+.gear2{top:6px!important;left:42px!important;right:auto!important;bottom:auto!important;width:30px!important;height:30px!important;padding:5px!important;box-shadow:0 2px 0 #7A2A0C!important}
+/* level card: goals in one row */
+#lc .lgoals{flex-wrap:nowrap!important;gap:6px!important}
+#lc .lgoals .gi{width:62px!important;height:62px!important}
+#lc .lgoals .gi img{width:56px!important;height:56px!important}
+#lBoost .bo.pick::before{background:radial-gradient(70% 70% at 50% 35%,#7CF08A55,#22B94A33 70%),var(--np3)}
+#lBoost .bo.pick{box-shadow:0 0 0 3px #4ADE80,0 5px 0 #00000059}
+#lBoost .bo .ok{position:absolute;left:-4px;top:-4px;width:22px;height:22px;border-radius:50%;background:#22C55E;color:#fff;font:700 13px/22px Sora,sans-serif;font-style:normal;border:2px solid #fff;text-align:center}
+#lBoost .bo em img{width:12px;height:12px;vertical-align:-2px;margin-right:2px}
+.lad{margin:0 6px 0 auto;height:26px;padding:0 10px 0 3px;font-size:12px!important;border:0;border-radius:15px;background:linear-gradient(#7CF08A,#22B94A);box-shadow:0 3px 0 #0E6B26;color:#fff;font:400 14px Titan,sans-serif;display:flex;align-items:center;gap:6px;cursor:pointer}
+.adb{display:inline-grid;place-items:center;height:22px;padding:0 6px;border-radius:11px;background:#FFD24A;color:#7A3A00;font:700 11px Sora,sans-serif;margin-right:6px;box-shadow:0 2px 0 #B07A12}
+/* goal icon pulses when 1-2 are left */
+#gGoals .gi.last{animation:glast .9s ease-in-out infinite}
+@keyframes glast{0%,100%{transform:scale(1);filter:none}50%{transform:scale(1.18);filter:drop-shadow(0 0 6px #FFD24A)}}
+/* out of moves + level failed */
+#lose .box h1{margin-bottom:4px}
+#lose .near .ni{display:flex;justify-content:center;gap:14px;margin:6px 0}
+#lose .near .ni span{position:relative}
+#lose .near .ni img{width:64px;height:64px;object-fit:contain}
+#lose .near .ni b{position:absolute;right:-6px;bottom:-4px;min-width:26px;height:26px;border-radius:13px;background:#E11D48;color:#fff;font:400 16px/26px Titan,sans-serif;text-align:center;border:2px solid #fff}
+#lose .near p{font:400 24px Titan,sans-serif;color:#E11D48;margin:4px 0 10px}
+#lose .play img{width:22px;height:22px;vertical-align:-4px;margin:0 4px}
+#lose #bGive{font-size:14px;opacity:.8}
+#lose .failp{display:none}
+#lose .box.failed>*{display:none}
+#lose .box.failed .failp{display:block}
+#lose .box.failed .failp>*{display:block;margin-left:auto;margin-right:auto}
+/* buy window */
+#buy .play img{width:22px;height:22px;vertical-align:-4px;margin:0 4px}
+#buy .play.adp{background:#2563EB!important;box-shadow:0 5px 0 #1E3A8A!important;margin-top:8px}
+/* win: Next + AD Reward x2 */
+#bNext{left:22px!important;margin-left:0!important;width:160px!important}
+#bNext i{font-size:26px!important}
+.x2b{left:auto!important;right:22px;margin-left:0!important;width:180px!important}
+.x2b i{font-size:22px!important;background:radial-gradient(110% 90% at 50% 15%,#FFE27A,#F59E0B 60%,#B45309)!important;display:flex!important;justify-content:center;align-items:center}
+.x2b em{position:absolute;right:-6px;top:-12px;width:42px;height:42px;border-radius:50%;background:#E11D48;border:3px solid #FFD24A;font:400 17px/36px Titan,sans-serif;font-style:normal;color:#fff;text-align:center;transform:rotate(12deg)}
+.x2b{overflow:visible}
+.x2b i{overflow:visible!important}
+/* home: free booster for an ad */
+.had{position:absolute;left:12px;top:112px;z-index:4;height:34px;padding:0 14px 0 6px;border:0;border-radius:17px;background:linear-gradient(#7CF08A,#22B94A);box-shadow:0 3px 0 #0E6B26;color:#fff;font:400 15px Titan,sans-serif;display:flex;align-items:center;cursor:pointer}
+/* test ad */
+.fakead{position:absolute;inset:0;z-index:99;background:#000d;display:grid;place-items:center;color:#fff;font:400 18px Titan,sans-serif;text-align:center}
+.fakead b{display:block;font-size:48px}
+.sh3{margin:12px 0 4px;font:400 16px Titan,sans-serif}
+.sbtn img{width:16px;height:16px;vertical-align:-3px;margin-right:3px}

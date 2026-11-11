@@ -5,18 +5,20 @@
 // - matches are checked as soon as tiles land; the end-of-turn checks run when the whole board is at rest
 (function(){
 var G=CrackersGame.prototype,P=window.CrackersFX2.prototype,tick0=P.tick,kind0=G.kind;
-var GRAV=3800,SWAP=.13;
+var GRAV=2000,SWAP=.13,WAIT=.1,STEP=.035;// build 27: slower fall, short pause after a blast, nearest tiles move first
 function back(t){var c1=1.4,c3=c1+1;return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2)}
 
 // a tile can be swapped or matched only when it is resting
 G.rest=function(e){return !!e&&!e.dead&&!e.firing&&!e.swp&&!e.top&&!(e.fy>0)};
 G.kind=function(r,c){var k=kind0.call(this,r,c);if(k===false||k==null||k<0)return k;var e=this.b[r][c];return this.rest(e)?k:-1};
+// crackers dropped by a gift box wait for the player's next swipe before they can match
+G.clearHold=function(){var R=this.rows(),C=this.cols(),any=0;for(var r=0;r<R;r++)for(var c=0;c<C;c++){var e=this.b[r][c];if(e&&e.hold){e.hold=0;any=1}}if(any)this.dirty=true};
 // a tile can fall when it is not fixed, not busy and not mid-swap
 G.mov=function(e){return !e.dead&&!e.firing&&!e.swp&&!e.top&&!this.fixed(e)};
 
 // ---- gravity: compact every column segment, spawn new tiles at the top of open segments
-G.gravity=function(){var R=this.rows(),C=this.cols(),U=this.uu(),moved=false;
- for(var c=0;c<C;c++){var r=R-1,spawn=0;
+G.gravity=function(){var R=this.rows(),C=this.cols(),U=this.uu(),moved=false,born=[];
+ for(var c=0;c<C;c++){var r=R-1,spawn=0,nth=0;
   while(r>=0){
    if(this.hole(r,c)){r--;continue}
    var e=this.b[r][c];
@@ -25,20 +27,39 @@ G.gravity=function(){var R=this.rows(),C=this.cols(),U=this.uu(),moved=false;
    var q=r-1,src=-1,top=true;
    var bar=-1;// row of a fixed blocker above (new tiles appear from under it)
    while(q>=0){if(this.hole(q,c)){q--;continue}var f=this.b[q][c];if(f){if(this.mov(f))src=q;else if(this.fixed(f))bar=q;else top=false;break}q--}
-   if(src>=0){var f2=this.b[src][c];this.b[r][c]=f2;this.b[src][c]=null;f2.fy=(f2.fy||0)+(r-src)*U;f2.bo=0;moved=true;r--;continue}
+   if(src>=0){var f2=this.b[src][c];this.b[r][c]=f2;this.b[src][c]=null;if(!(f2.fy>0))f2.wt=WAIT+nth*STEP;nth++;f2.fy=(f2.fy||0)+(r-src)*U;f2.bo=0;moved=true;r--;continue}
    if(top){// nothing above that can fall: a new tile drops in from the top, or from under a fixed blocker
-    var n=this.tile(this.rk());n.fy=(bar>=0?(r-bar)*U*.6:(r+1)*U+U*.15)+spawn*U;n.v=0;n.fresh=1;this.b[r][c]=n;spawn++;moved=true;r--;continue}
+    var n=this.tile(this.rk());n.fy=(bar>=0?(r-bar)*U*.6:(r+1)*U+U*.15)+spawn*U;n.v=0;n.fresh=1;n.wt=WAIT+nth*STEP;nth++;this.b[r][c]=n;born.push([r,c]);spawn++;moved=true;r--;continue}
    r--}}
+ if(born.length)this.luck(born);
  return moved};
+
+// ---- lucky refills (build 27): some refills pick a colour so the new crackers complete a special shape
+// how often comes from the level: relief 1 in 2, normal 1 in 3, hard 1 in 5, super hard 1 in 8
+G.rawK=function(r,c){if(r<0||c<0||r>=this.rows()||c>=this.cols())return -1;var e=this.b[r][c];return e&&!e.dead&&!e.ob&&!e.diya&&e.k>=0&&e.k<6?e.k:-1};
+G.shape=function(r,c){var k=this.rawK(r,c),i;if(k<0)return{sc:0};var h=[[r,c]],v=[[r,c]],sq=[];
+ for(i=c-1;this.rawK(r,i)==k;i--)h.push([r,i]);for(i=c+1;this.rawK(r,i)==k;i++)h.push([r,i]);
+ for(i=r-1;this.rawK(i,c)==k;i--)v.push([i,c]);for(i=r+1;this.rawK(i,c)==k;i++)v.push([i,c]);
+ for(var a=-1;a<=0;a++)for(var b=-1;b<=0;b++)if(this.rawK(r+a,c+b)==k&&this.rawK(r+a+1,c+b)==k&&this.rawK(r+a,c+b+1)==k&&this.rawK(r+a+1,c+b+1)==k)sq=[[r+a,c+b],[r+a+1,c+b],[r+a,c+b+1],[r+a+1,c+b+1]];
+ var sc=(h.length>=5||v.length>=5)?4:(h.length>=3&&v.length>=3)?3:(h.length==4||v.length==4)?2:sq.length?2:0;
+ return{sc:sc,cells:h.concat(v,sq)}};
+G.luck=function(born){var p=this.lv&&this.lv.luck||0;if(!p||this.ended||this.over||Math.random()>p)return;
+ var s=this,R=this.rows(),C=this.cols(),sp=[],best=null,bs=0,near=Math.random()<.5;
+ for(var r=0;r<R;r++)for(var c=0;c<C;c++){var e=this.b[r][c];if(e&&!e.dead&&!e.ob&&e.k>=6)sp.push([r,c])}
+ born.forEach(function(q){var n=s.b[q[0]][q[1]];if(!n||n.k>=6)return;var k0=n.k;
+  (s.lv.colors||[]).forEach(function(k){n.k=k;var sh=s.shape(q[0],q[1]);if(sh.sc>0){var sc=sh.sc+Math.random();
+   if(near&&sp.length){var d=99;sh.cells.forEach(function(a){sp.forEach(function(z){d=Math.min(d,Math.abs(a[0]-z[0])+Math.abs(a[1]-z[1]))})});if(d<=1)sc+=10}
+   if(sc>bs){bs=sc;best=[q,k]}}});n.k=k0});
+ if(best){var n=this.b[best[0][0]][best[0][1]];n.k=best[1];n.lucky=1;this.lucky=(this.lucky||0)+1}};
 
 // ---- falling and landing
 G.fall=function(dt){var R=this.rows(),C=this.cols(),landed=false,any=false;
  for(var r=0;r<R;r++)for(var c=0;c<C;c++){var e=this.b[r][c];if(!e)continue;
-  if(e.fy>0){any=true;e.v=(e.v||0)+GRAV*dt;e.fy-=e.v*dt;if(e.fy<=0){e.fy=0;e.v=0;e.bo=.1;landed=true;if(e.fresh){e.fresh=0;this.calm(r,c,e)}}}
+  if(e.fy>0){any=true;if(e.wt>0){e.wt-=dt;continue}e.v=(e.v||0)+GRAV*dt;e.fy-=e.v*dt;if(e.fy<=0){e.fy=0;e.v=0;e.bo=.1;landed=true;if(e.fresh){e.fresh=0;this.calm(r,c,e)}}}
   else if(e.bo>0){e.bo-=dt;if(e.bo<0)e.bo=0}}
  return{landed:landed,any:any}};
 // new tiles try not to land straight into a match on easy levels (same as the old refill)
-G.calm=function(r,c,e){if(this.ended||e.k<0||e.k>=6||!this.calmLv||Math.random()>this.calmLv())return;var kk=e.k;for(var t=0;t<6&&this.makes&&this.makes(r,c);t++)e.k=this.rk();if(this.makes&&this.makes(r,c))e.k=kk};
+G.calm=function(r,c,e){if(e.lucky){e.lucky=0;return}if(this.ended||e.k<0||e.k>=6||!this.calmLv||Math.random()>this.calmLv())return;var kk=e.k;for(var t=0;t<6&&this.makes&&this.makes(r,c);t++)e.k=this.rk();if(this.makes&&this.makes(r,c))e.k=kk};
 
 // ---- the board is at rest when nothing is moving, firing, pending or empty
 G.settled=function(){if(this.ev.length)return false;for(var i=0;i<this.fx.length;i++)if(this.fx[i].k=='obj')return false;
@@ -51,7 +72,7 @@ G.swap=function(r,c,tr,tc,done){var s=this,a=this.b[r][c],n=this.b[tr][tc],dx=tc
   if(f>=1){a.sx=a.sy=0;a.top=false;a.lift=0;a.swp=false;if(n){n.sx=n.sy=0;n.swp=false}done(s.b[tr][tc]===a,n&&s.b[r][c]===n);return false}return true},SWAP+.05)};
 
 // ---- one swipe
-G.act=function(r,c,dr,dc,retry){if(this.over||this.moves<=0||this.stopped||this.paused)return;
+G.act=function(r,c,dr,dc,retry){if(this.over||this.moves<=0||this.stopped||this.paused)return;this.clearHold();
  var e=this.at2(r,c),t=this.at2(r+dr,c+dc);if(!e)return;
  if(this.stuck(e)){if(window.SFX)SFX.nope();return}
  if(!this.rest(e)){if(!retry)this.later(r,c,dr,dc);return}
@@ -94,8 +115,8 @@ G.tick=function(n){if(!this.b){return tick0.call(this,n)}this.wrapFly();
  this.dropping=false;
  this.gravity();var f=this.fall(dt);
  if(!this.over&&!this.paused){
-  if(f.landed||this.dirty){this.dirty=false;var g=this.find();if(g.length){this.casc=(this.casc||0)+1;if(this.cb.cheer)this.cb.cheer(this.casc);this.blast(g,null)}}
-  var q=this.pq;if(q){if(this.clock-q.t>.6)this.pq=null;else{var e=this.at2(q.r,q.c);if(e&&this.rest(e)){this.pq=null;if(q.tap)this.tapSp(q.r,q.c);else this.act(q.r,q.c,q.dr,q.dc,true)}}}}
+  if(f.landed||this.dirty){this.dirty=false;var s0=this,g=this.find().filter(function(q){return !q.cells.some(function(p){var e=s0.b[p[0]][p[1]];return e&&e.hold})});if(g.length){this.casc=(this.casc||0)+1;if(this.cb.cheer)this.cb.cheer(this.casc>=4?this.casc-1:Math.min(this.casc,2));this.blast(g,null)}}
+  var q=this.pq;if(q){if(this.clock-q.t>1.2)this.pq=null;else{var e=this.at2(q.r,q.c);if(e&&this.rest(e)){this.pq=null;if(q.tap)this.tapSp(q.r,q.c);else this.act(q.r,q.c,q.dr,q.dc,true)}}}}
  tick0.call(this,n);
  // rest check and end-of-turn
  var st=this.settled();

@@ -213,7 +213,7 @@ function fxLoop(n){if(!fxOn)return;var dt=Math.min((n-lastT)/1000||0,.04);lastT=
  c.globalCompositeOperation='lighter';PA=PA.filter(function(p){p.l-=dt;if(p.l<=0)return false;var ox=p.x,oy=p.y;p.vy+=260*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;c.strokeStyle=p.c;c.globalAlpha=Math.min(1,p.l/p.m*1.6);c.lineWidth=2.4;c.beginPath();c.moveTo(ox-p.vx*.02,oy-p.vy*.02);c.lineTo(p.x,p.y);c.stroke();return true});c.globalAlpha=1;c.globalCompositeOperation='source-over';
  requestAnimationFrame(fxLoop)}
 var show0=show;show=function(id){if(id!='win'){fxOn=false;if(wguy){wguy.dead=true;wguy=null}}if(id!='game'&&id!='home'&&$('ban').classList.contains('on')){$('ban').classList.remove('on');banCb=null}show0(id)};
-won=function(mv){ending=false;endT.forEach(clearTimeout);endT=[];REW=null;var L=LV(),d=starsOf(),old=S.best[cur]||0,c=30+mv*5,first=cur>=S.lv,prev=cur,rw=first&&L.reward;if(d>old){S.diyas+=d-old;S.best[cur]=d}S.coins+=c;if(rw)S.inv[L.reward.k]=(S.inv[L.reward.k]||0)+L.reward.n;if(first)S.lv=cur+1;save();game.stopped=true;endOff();
+won=function(mv){ending=false;endT.forEach(clearTimeout);endT=[];REW=null;var L=LV(),d=starsOf(),old=S.best[cur]||0,c=Math.min(100,50+mv*5),first=cur>=S.lv,prev=cur,rw=first&&L.reward;if(d>old){S.diyas+=d-old;S.best[cur]=d}S.coins+=c;if(rw)S.inv[L.reward.k]=(S.inv[L.reward.k]||0)+L.reward.n;if(first)S.lv=cur+1;save();game.stopped=true;endOff();
  $('wLv').textContent='Level '+(cur+1)+' · '+(L.name||'');$('wCoins').textContent='0';$('wRew').style.display='none';
  var ds=[].slice.call(document.querySelectorAll('#wStars img'));ds.forEach(function(e){e.classList.remove('lit')});
  show('win');SFX.duck(.18);winBursts();
@@ -226,7 +226,7 @@ won=function(mv){ending=false;endT.forEach(clearTimeout);endT=[];REW=null;var L=
 function winBursts(){var L=[['skyshot',{v:.16,off:.3,rate:.95}],['finale',{v:.14,rate:.95}],['wala',{v:.12,off:.1}],['lakshmi',{v:.14,rate:.9}]],i=0;(function nx(){if(!$('win').classList.contains('on'))return;var q=L[i++%L.length];SFX.play(q[0],q[1]);setTimeout(nx,2200+Math.random()*1400)})()}
 
 // test hook
-window.__cm={S:S,openCard:function(i){openCard(i)},levelDone:function(m){levelDone(m)},game:function(){return game},start:function(i){start(i)}};
+window.__cm={S:S,lost:function(){lost()},openCard:function(i){openCard(i)},levelDone:function(m){levelDone(m)},game:function(){return game},start:function(i){start(i)}};
 
 // ===== cracker meter (10 Nov): every match fills it; when full, drag the reward onto the board (free)
 var MMAX=30,MK=['bijli','kuruvi','lakshmi'],MNAME={bijli:'Bijli Pop',kuruvi:'Kuruvi Pop',lakshmi:'Lakshmi Pop'},mRew=null,mDrag=false;
@@ -251,5 +251,96 @@ $('gSet').onclick=function(e){var b=e.target.closest('.gs');if(!b)return;var a=b
  else if(a=='spd'){var v=spd()%3+1;try{localStorage.setItem('cm_speed',v)}catch(e3){}window.GSPEED=SPD[v];gsUI()}};
 // ===== notification permission: after the level 1 win, on the Home screen
 var home1=home;home=function(prev){home1(prev);if(S.lv>=1&&!S.notif){S.notif=1;save();setTimeout(function(){try{if(window.AndroidVoice&&AndroidVoice.askNotify)AndroidVoice.askNotify()}catch(e){}},1200)}};
+// ===== Build 27 (11 Nov): level card start boosters, 2-row bar, prices, coins, rewarded test ads, praise limit, last-goal pulse
+(function(){
+var SB=['rocket','chakra','atom','matchbox'],SBU={rocket:2,matchbox:3,chakra:5,atom:8},PACK={rocket:900,chakra:1200,atom:1500,matchbox:1900};
+var SBD={rocket:'Start the level with a Rocket on the board!',chakra:'Start the level with a Ground Chakra on the board!',atom:'Start the level with a Bomb on the board!',matchbox:'Start the level with a Colour Matchbox on the board!'};
+var P1={hammer:500,sparkler:700,flowerpot:900,snake:1100,wala:1300,rail:1400,skyshot:1600,seven:1800};for(var k in P1)PRICE[k]=P1[k];
+var MOVEP=[950,1900,2900],FREEAD={hammer:1,sparkler:1};
+S.ads=S.ads||{};S.sbGift=S.sbGift||{};
+function sbLocked(k){return(S.lv||0)<SBU[k]}
+function giftSB(){var ch=0;SB.forEach(function(k){if(!sbLocked(k)&&!S.sbGift[k]){S.sbGift[k]=1;S.inv[k]=(S.inv[k]||0)+2;ch=1}});if(ch)save()}
+
+// ---------- rewarded video ads (Google test ads in the app; a short fake ad in a browser)
+var adCb=null;
+function showAd(cb){adCb=cb;if(window.AndroidVoice&&AndroidVoice.showAd)AndroidVoice.showAd();else fakeAd()}
+window.adDone=function(ok){var f=adCb;adCb=null;if(f)f(!!ok)};
+function fakeAd(){var d=document.createElement('div');d.className='fakead';d.innerHTML='<div><small>Test ad</small><b>3</b></div>';$('stage').appendChild(d);var n=3,t=setInterval(function(){n--;d.querySelector('b').textContent=n;if(n<=0){clearInterval(t);d.remove();window.adDone(true)}},700)}
+function adLbl(t){return'<span class="adb">AD</span>'+t}
+
+// ---------- praise words only for big moves, at most once every 3 moves
+var word0=word,wordMv=null;
+word=function(i){if(game&&wordMv!=null&&wordMv-game.moves<3)return;var before=lastW;word0(i);if(lastW!==before&&game)wordMv=game.moves};
+var start27=start;start=function(i){wordMv=null;midAd=false;start27(i)};
+
+// ---------- goal icon pulses when only 1-2 are left
+var drawHud27=drawHud;drawHud=function(){drawHud27();if(cur==='b')return;Object.keys(realG||{}).forEach(function(k){var v=realG[k]-(inflight[k]||0),el=q('#gGoals .gi[data-k="'+k+'"]');if(el)el.classList.toggle('last',v>0&&v<=2)})};
+var icon27=icon;icon=function(k){if(k=='chain'&&window.CHAIN_ICON)return CHAIN_ICON;return icon27(k)};
+
+// ---------- level card: the 4 match specials as start boosters (packs of 3, 1 used per level)
+var lb=$('lBoost'),nb=lb.cloneNode(false);lb.parentNode.replaceChild(nb,lb);
+var LKS='<i class="lk"><svg viewBox="0 0 24 24" width="20" height="20"><rect x="4" y="10" width="16" height="12" rx="3" fill="#FFD24A" stroke="#7A3A00" stroke-width="1.6"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="#FFD24A" stroke-width="2.6"/><circle cx="12" cy="16" r="2" fill="#7A3A00"/></svg></i>';
+boosters=function(){giftSB();$('lCoins').textContent=S.coins;$('lBoost').innerHTML=SB.map(function(k){var n=S.inv[k]||0;
+  if(sbLocked(k))return'<button class="bo lock" data-k="'+k+'" aria-label="'+LBL[k]+' unlocks at level '+SBU[k]+'"><img src="'+CRK.b[IDX[k]]+'" alt="">'+LKS+'<em>Lv '+SBU[k]+'</em></button>';
+  return'<button class="bo'+(pick[k]?' pick':'')+'" data-k="'+k+'" aria-label="'+LBL[k]+(n?', you have '+n:', buy 3')+'"><img src="'+CRK.b[IDX[k]]+'" alt="">'+(n?'<b>'+n+'</b>':'<em><img src="art/ui-coin.webp" alt="">'+PACK[k]+'</em>')+(pick[k]?'<i class="ok">&#10003;</i>':'')+'</button>'}).join('');
+ var a=$('lAd'),can=!sbLocked('rocket')&&S.ads.card!=today();a.style.display=can?'':'none'};
+var ad1=document.createElement('button');ad1.id='lAd';ad1.className='lad';ad1.innerHTML=adLbl('Free Rocket');var bt=q('#lc .bt2');bt.insertBefore(ad1,bt.querySelector('.have'));
+ad1.onclick=function(){SFX.unlock();showAd(function(ok){if(!ok){htoast('No video right now. Try again soon.');return}S.ads.card=today();S.inv.rocket=(S.inv.rocket||0)+1;pick.rocket=true;save();boosters();SFX.play('fanfare',{v:.4})})};
+$('lBoost').addEventListener('click',function(e){var b=e.target.closest('.bo');if(!b)return;var k=b.dataset.k;if(b.classList.contains('lock')){SFX.nope();return}
+ if((S.inv[k]||0)>0){pick[k]=!pick[k];SFX.play('tick',{v:.5});boosters();return}
+ showBuy({img:CRK.b[IDX[k]],title:LBL[k]+' ×3',text:SBD[k],price:PACK[k],buy:function(){S.coins-=PACK[k];S.inv[k]=(S.inv[k]||0)+3;pick[k]=true;save();boosters()}})});
+$('lPlay').onclick=function(){SFX.unlock();$('lc').classList.remove('on');var L=LEVELS[card_i],Q=(L.intro||[]).filter(function(k){return !S.seen['b_'+k]}),use=SB.filter(function(k){return pick[k]&&(S.inv[k]||0)>0});
+ runBanners(Q,function(){start(card_i);use.forEach(function(k,i){S.inv[k]--;setTimeout(function(){if(game&&!game.over)drop(k)},500+i*250)});save();pick={}})};
+
+// ---------- one buy window for everything (Royal Match style)
+var by=$('buy').querySelector('.box'),bA=document.createElement('button');bA.id='buyA';bA.className='play adp';by.insertBefore(bA,$('buyN'));
+var bCb=null;
+function showBuy(o){bCb=o;$('buyI').src=o.img;$('buyT').textContent=o.title;var ok=S.coins>=o.price;
+ $('buyP').innerHTML=o.text+'<br><small>You have '+S.coins+' coins</small>';$('buyY').innerHTML=ok?'Buy <img src="art/ui-coin.webp" alt="">'+o.price:'Get coins';$('buyY').disabled=false;$('buyY').classList.remove('dis');
+ bA.style.display=o.ad?'':'none';bA.innerHTML=adLbl('Watch ad: 1 free');$('buy').classList.add('on');SFX.play('swoosh',{v:.5})}
+$('buyY').onclick=function(){var o=bCb;if(!o)return;$('buy').classList.remove('on');if(S.coins<o.price){openShop();return}o.buy();SFX.play('fanfare',{v:.4});$('lCoins').textContent=S.coins;$('gCoins').textContent=S.coins;$('hCoins').textContent=S.coins};
+bA.onclick=function(){var o=bCb;if(!o||!o.ad)return;$('buy').classList.remove('on');if(game)game.paused=true;showAd(function(ok){if(game)game.paused=false;if(ok)o.ad()})};
+function openShop(){sheet('Shop',shopH())}
+
+// ---------- in-level bar: buy 1 at a time; Hammer and Sparkler can be free for an ad, once per level
+var midAd=false;
+askBuy=function(k){var ad=FREEAD[k]&&!midAd;showBuy({img:CRK.b[IDX[k]],title:LBL[k],text:DESC2[k]||'',price:PRICE[k],
+ buy:function(){S.coins-=PRICE[k];S.inv[k]=(S.inv[k]||0)+1;save();slots()},
+ ad:ad?function(){midAd=true;S.inv[k]=(S.inv[k]||0)+1;save();slots();SFX.play('fanfare',{v:.4})}:null})};
+var DESC2={hammer:'Drop it on any tile: clears it and the 4 around it.',sparkler:'A fork of sparks.',flowerpot:'Fountain, then 7 fireballs.',snake:'The ash snake eats 10 tiles.',wala:'A chain of 15 pops.',rail:'Runs a row, then back along the next.',skyshot:'12 stars, 4 on goal tiles.',seven:'7 comets, 3 on goals, each clears a plus.'};
+
+// ---------- shop: start booster packs and coin packs
+SHOPK=SB.concat(SL);
+var CP=[{n:'Starter pack',c:1000,p:'₹49',st:1},{n:'1,000 coins',c:1000,p:'₹89'},{n:'2,800 coins',c:2800,p:'₹199'},{n:'6,500 coins',c:6500,p:'₹449'},{n:'15,000 coins',c:15000,p:'₹899'}];
+shopH=function(){return'<p class="sp">You have <b>'+S.coins+'</b> coins.</p><h3 class="sh3">Start boosters (3 each)</h3>'+SB.map(function(k){return'<div class="srow"><img src="'+CRK.b[IDX[k]]+'" alt=""><div><b>'+LBL[k]+' ×3</b><small>'+SBD[k]+'</small></div><button class="sbtn" data-pack="'+k+'"><img src="art/ui-coin.webp" alt="">'+PACK[k]+'</button></div>'}).join('')+
+ '<h3 class="sh3">Coins</h3>'+CP.map(function(p,i){if(p.st&&S.starter)return'';return'<div class="srow"><img src="art/ui-coin.webp" alt=""><div><b>'+p.n+'</b><small>'+(p.st?'1,000 coins + 2 of each start booster. One time only.':p.c.toLocaleString()+' coins')+'</small></div><button class="sbtn buyc" data-cp="'+i+'">'+p.p+'</button></div>'}).join('')+'<p class="sp"><small>Test build: coin packs are free.</small></p>'};
+$('sBody').addEventListener('click',function(e){var t=e.target.closest('button');if(!t)return;
+ if(t.dataset.pack){var k=t.dataset.pack;if(S.coins<PACK[k]){SFX.nope();return}S.coins-=PACK[k];S.inv[k]=(S.inv[k]||0)+3;save();$('sBody').innerHTML=shopH();$('hCoins').textContent=S.coins;SFX.play('fanfare',{v:.4})}
+ if(t.dataset.cp!=null){var p=CP[+t.dataset.cp];S.coins+=p.c;if(p.st){S.starter=1;SB.forEach(function(k){S.inv[k]=(S.inv[k]||0)+2})}save();$('sBody').innerHTML=shopH();$('hCoins').textContent=S.coins;SFX.play('fanfare',{v:.5})}});
+
+// ---------- out of moves: near-miss message, AD +3 moves (once per level), +5 moves for coins (950 / 1,900 / 2,900), give up -> level failed
+$('lose').querySelector('.box').innerHTML='<h1>Out of moves!</h1><div class="near" id="lNear"></div><button class="play" id="bAd"></button><button class="play alt" id="bCoin"></button><p class="lmsg" id="lMsg"></p><button class="ghost" id="bGive">Give up</button>'+
+ '<div class="failp"><h1>Level failed</h1><p>Try again: you were close!</p><button class="play" id="bRetry">Try again</button><button class="ghost" id="bHome">Back to map</button></div>';
+function nearH(){var ks=Object.keys(realG||{}).filter(function(k){return realG[k]>0}).sort(function(a,b){return realG[a]-realG[b]}).slice(0,3),tot=0;ks.forEach(function(k){tot+=realG[k]});
+ var one=ks.length==1;return'<div class="ni">'+ks.map(function(k){return'<span><img src="'+icon(k)+'" alt=""><b>'+realG[k]+'</b></span>'}).join('')+'</div><p>'+(one?'Only '+realG[ks[0]]+' '+goalName(ks[0]).toLowerCase()+' left!':'Only '+tot+' left!')+'</p>'}
+lostUI=function(){var bx=$('lose').querySelector('.box');bx.classList.remove('failed');$('lNear').innerHTML=nearH();
+ $('bAd').innerHTML=adLbl('+3 moves');$('bAd').style.display=tries.ad>=1?'none':'';
+ var p=MOVEP[tries.coin];$('bCoin').style.display=p?'':'none';if(p)$('bCoin').innerHTML='+5 moves <img src="art/ui-coin.webp" alt="">'+p;$('lMsg').textContent=p&&S.coins<p?'You have '+S.coins+' coins':''};
+$('bAd').onclick=function(){$('lMsg').textContent='Loading video...';showAd(function(ok){if(ok){tries.ad++;$('lMsg').textContent='';resume(3)}else $('lMsg').textContent='No video right now. Try again soon.'})};
+$('bCoin').onclick=function(){var p=MOVEP[tries.coin];if(!p)return;if(S.coins<p){$('lMsg').textContent='Not enough coins. You have '+S.coins+'.';SFX.nope();return}S.coins-=p;save();tries.coin++;resume(5)};
+$('bGive').onclick=function(){$('lose').querySelector('.box').classList.add('failed');SFX.play('swoosh',{v:.4})};
+$('bRetry').onclick=function(){if(game)game.stopped=true;openCard(cur)};$('bHome').onclick=function(){if(game)game.stopped=true;home()};
+
+// ---------- win: Next + AD Reward x2
+var bx2=document.createElement('button');bx2.id='bX2';bx2.className='cont2 x2b';bx2.innerHTML='<i>'+adLbl('Reward')+'<em>×2</em></i>';$('win').appendChild(bx2);$('bNext').querySelector('i').textContent='Next';
+var wonC=0,won27=won;won=function(mv){var c0=S.coins;won27(mv);wonC=S.coins-c0;bx2.style.display=wonC>0?'':'none'};
+bx2.onclick=function(){if(!wonC)return;var c=wonC;showAd(function(ok){if(!ok){bx2.style.display='none';return}wonC=0;S.coins+=c;save();bx2.style.display='none';var t0=performance.now();(function cnt(){var k=Math.min(1,(performance.now()-t0)/700);$('wCoins').textContent=Math.round(c+c*k);if(k<1)requestAnimationFrame(cnt)})();SFX.play('fanfare',{v:.5})})};
+
+// ---------- home: one free booster a day for an ad
+var ha=document.createElement('button');ha.id='hAd';ha.className='had';ha.innerHTML=adLbl('Free booster');$('home').appendChild(ha);
+function hadUI(){ha.style.display=(S.lv>=2&&S.ads.home!=today())?'':'none'}
+ha.onclick=function(){SFX.unlock();showAd(function(ok){if(!ok){htoast('No video right now. Try again soon.');return}var L=SB.filter(function(k){return !sbLocked(k)}).concat(['hammer']),k=L[Math.random()*L.length|0];S.inv[k]=(S.inv[k]||0)+1;S.ads.home=today();save();hadUI();htoast(LBL[k]+' added!');SFX.play('fanfare',{v:.5})})};
+var home27=home;home=function(prev){home27(prev);hadUI()};
+})();
 DEB.init($('deb'));endOff();home();window.runIntro(function(){firstOpen()});
 })();
