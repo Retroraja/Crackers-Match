@@ -5,7 +5,7 @@
 // - matches are checked as soon as tiles land; the end-of-turn checks run when the whole board is at rest
 (function(){
 var G=CrackersGame.prototype,P=window.CrackersFX2.prototype,tick0=P.tick,kind0=G.kind;
-var GRAV=2000,SWAP=.13,WAIT=.1,STEP=.035;// build 27: slower fall, short pause after a blast, nearest tiles move first
+var GRAV=3300,SWAP=.13,WAIT=0,STEP=0;// build 28: back to the Build 26 feel, about 15% slower fall, no pause, no one-by-one order
 function back(t){var c1=1.4,c3=c1+1;return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2)}
 
 // a tile can be swapped or matched only when it is resting

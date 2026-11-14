@@ -1,0 +1,44 @@
+/* Build 28 */
+@font-face{font-family:Titan;src:url(art/LilitaOne.ttf)}
+@font-face{font-family:Lilita;src:url(art/LilitaOne.ttf)}
+#intro{display:none!important}
+#street iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#0b1430}
+#street{z-index:1}
+/* lose card */
+#lose .box .rib{display:inline-block;margin:-46px auto 10px;padding:10px 34px;font:28px Titan,sans-serif;color:#fff;background:linear-gradient(#ff6a3d,#d8321e);border:3px solid #7a1608;border-radius:14px;box-shadow:0 5px 0 #7a1608;text-shadow:0 2px 0 #7a1608}
+#lose .lsub{margin:4px 0 8px;font:600 16px Sora,sans-serif}
+#lose .failp .rib{background:linear-gradient(#8a7bd8,#5a49b8);border-color:#2c2070;box-shadow:0 5px 0 #2c2070;text-shadow:0 2px 0 #2c2070}
+/* hard card */
+#lc.hard .arch2 i{background:radial-gradient(90% 80% at 50% 25%,#FF8A4A,#E0381E 55%,#8C1408)}
+#lc.shard .arch2 i{background:repeating-linear-gradient(115deg,#0000 0 26px,#ffffff14 26px 30px),radial-gradient(90% 80% at 50% 25%,#B46CFF,#6A1FC8 55%,#2E0870)}
+#lc.hard #lName,#lc.shard #lName{color:#FFD24A}
+#lSkull{position:absolute;left:30px;top:58px;width:44px;height:44px;z-index:4;filter:drop-shadow(0 3px 2px #0008)}
+#lc.hard #lSkull{filter:drop-shadow(0 3px 2px #0008) sepia(1) saturate(5) hue-rotate(-30deg) brightness(.95)}
+#lc.shard #lSkull{filter:drop-shadow(0 0 8px #C47AFF) sepia(1) saturate(4) hue-rotate(220deg)}
+#lTag{position:absolute;right:14px;top:12px;display:flex;align-items:center;gap:3px;padding:4px 10px;border-radius:20px;background:#1f1b3a;color:#ffd24a;font:18px Titan,sans-serif;border:2px solid #ffd24a;z-index:3}
+#lTag img{width:20px;height:20px}
+/* golden matchbox (locked to level 100) */
+#lBoost .bo.gold img{filter:sepia(1) saturate(4) hue-rotate(-12deg) brightness(1.12) grayscale(.25)}
+#lBoost .bo.gold{opacity:.8}
+/* popups */
+.got28{z-index:40;align-items:center}
+.got28.on{display:flex}
+.got28 .gbox{width:300px;padding:22px 18px 16px;border-radius:22px;background:linear-gradient(#24305e,#141c3d);border:3px solid #d9b24a;text-align:center;color:#fff;box-shadow:0 10px 30px #0008;animation:g28 .35s ease-out}
+.got28 h2{margin:0 0 12px;font:26px Titan,sans-serif;color:#ffd24a;text-shadow:0 2px 0 #7a4a00}
+.got28 .gr{display:flex;align-items:center;gap:12px;padding:8px 10px;margin:6px 0;border-radius:14px;background:#ffffff12;text-align:left}
+.got28 .gr img{width:52px;height:52px;object-fit:contain}
+.got28 .gr b{display:block;font:20px Titan,sans-serif}
+.got28 .gr span{display:block;font:600 13px Sora,sans-serif;opacity:.8}
+.got28 .gr div{display:flex;flex-direction:column}
+.got28 small{display:block;margin-top:10px;font:600 12px Sora,sans-serif;opacity:.6}
+@keyframes g28{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+/* cracker meter: slim raised gold box, shiny bar, small reward cup with our special */
+.meter{padding:4px 6px 4px 10px;height:36px!important;border-radius:14px;background:linear-gradient(#FFF0A8,#F2B533 45%,#B5700E);box-shadow:0 3px 0 #7A4206,0 6px 10px #0006,inset 0 1px 0 #FFFBE0}
+.meter::before{content:"";position:absolute;inset:3px;border-radius:11px;background:radial-gradient(120% 140% at 50% 0,#4A1A7A,#1E0638);box-shadow:inset 0 2px 6px #000a;z-index:-1}
+.meter .mlab{color:#FFE58A!important;font:12px Titan,sans-serif!important;letter-spacing:.3px!important;text-transform:none!important}
+.meter .mbar{position:relative;height:12px!important;border:1.5px solid #E3A52A!important;background:#14042a!important;box-shadow:inset 0 2px 3px #000a!important}
+.meter .mbar i{position:relative;background:linear-gradient(#FFF6C0,#FFD24A 40%,#E39A16)!important;transition:width .3s cubic-bezier(.3,1.4,.5,1)!important}
+.meter .mbar i::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,#0000 30%,#ffffffb0 50%,#0000 70%) 0 0/60px 100% no-repeat;animation:msw 2.2s linear infinite}
+@keyframes msw{from{background-position:-60px 0}to{background-position:260px 0}}
+.meter .mrew{width:34px!important;height:34px!important;margin-right:-2px;background:radial-gradient(#5B2A8C,#2A0B4A)!important;border:3px solid #FFD24A!important;box-shadow:0 2px 0 #7A4206,0 0 0 1px #B5700E}
+.meter .mrew img{width:26px!important;height:26px!important}

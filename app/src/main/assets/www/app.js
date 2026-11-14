@@ -1,6 +1,6 @@
 (function(){
 var $=function(i){return document.getElementById(i)},q=function(s){return document.querySelector(s)};
-var NAMES=['Bijli','Kuruvi','Hydrogen Bomb','Twinkling Star','Snake Tablet','Bullet Bomb'],IDX={matchbox:14,rocket:6,flowerpot:7,chakra:8,skyshot:9,sparkler:11,rail:13,wala:12,atom:10,hammer:17,seven:18,snake:19},SL=['hammer','sparkler','seven','flowerpot','snake','wala','rail','skyshot'],LBL={matchbox:'Colour Matchbox',rocket:'Rocket',flowerpot:'Flowerpot',chakra:'Ground Chakra',skyshot:'Sky Shot',sparkler:'Sparkler',rail:'Rail Cracker',wala:'1000-Wala',atom:'Bomb',hammer:'Lakshmi Vedi Hammer',seven:'Seven Shot',snake:'Snake Tablet'},ONB={rocket:1,chakra:1,atom:1,matchbox:1},PRICE={matchbox:600,rocket:100,flowerpot:250,sparkler:150,chakra:200,rail:400,skyshot:500,wala:350,atom:300,hammer:80,seven:200,snake:300};
+var NAMES=['Bijli','Kuruvi','Hydrogen Bomb','Twinkling Star','Snake Tablet','Bullet Bomb'],IDX={matchbox:14,rocket:6,flowerpot:7,chakra:8,skyshot:9,sparkler:11,rail:13,wala:12,atom:10,hammer:17,seven:18,snake:19},SL=['hammer','sparkler','flowerpot','skyshot','snake','rail','wala','seven'],LBL={matchbox:'Colour Matchbox',rocket:'Rocket',flowerpot:'Flowerpot',chakra:'Ground Chakra',skyshot:'Sky Shot',sparkler:'Sparkler',rail:'Rail Cracker',wala:'1000-Wala',atom:'Bomb',hammer:'Lakshmi Vedi Hammer',seven:'Seven Shot',snake:'Snake Tablet'},ONB={rocket:1,chakra:1,atom:1,matchbox:1},PRICE={matchbox:600,rocket:100,flowerpot:250,sparkler:150,chakra:200,rail:400,skyshot:500,wala:350,atom:300,hammer:80,seven:200,snake:300};
 var SPD={1:1.2,2:1.65,3:2.2};function spd(){var v=1;try{v=+localStorage.getItem('cm_speed')||1}catch(e){}return SPD[v]?v:1}window.GSPEED=SPD[spd()];
 var S={lv:0,coins:0,diyas:0,best:{},inv:{},seen:{},pend:{}};function load(){try{var j=localStorage.getItem('cm_save');if(j)S=JSON.parse(j);S.seen=S.seen||{};S.pend=S.pend||{}}catch(e){}}function save(){try{localStorage.setItem('cm_save',JSON.stringify(S))}catch(e){}}load();
 function fit(){var k=Math.min(innerWidth/390,innerHeight/844);$('stage').style.transform='scale('+k+')'}addEventListener('resize',fit);fit();
@@ -70,7 +70,7 @@ function runBanners(Q,done){if(!Q.length)return done();banner(Q[0],function(){ru
 // GAME
 var BL=null;function LV(){return cur==='b'?BL:LEVELS[cur]}
 var game=null,cur=0,inflight={},realG={},doneG={};
-var UNL={hammer:5,sparkler:10,seven:15,flowerpot:20,snake:25,wala:30,rail:35,skyshot:40};function locked(k){return UNL[k]&&(S.lv||0)<UNL[k]}
+var UNL={hammer:5,sparkler:10,flowerpot:15,skyshot:20,snake:25,rail:30,wala:35,seven:40};function locked(k){return UNL[k]&&Math.max(S.lv||0,typeof cur=='number'?cur:0)+1<UNL[k]}
 function slots(){$('slots').innerHTML=SL.map(function(k){var n=S.inv[k]||0;if(locked(k))return'<div class="slot lock" data-k="'+k+'" aria-label="'+LBL[k]+' unlocks at level '+UNL[k]+'"><img src="'+CRK.b[IDX[k]]+'" alt=""><i class="lk"><svg viewBox="0 0 24 24" width="20" height="20"><rect x="4" y="10" width="16" height="12" rx="3" fill="#FFD24A" stroke="#7A3A00" stroke-width="1.6"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="#FFD24A" stroke-width="2.6"/><circle cx="12" cy="16" r="2" fill="#7A3A00"/></svg></i><b class="pr">Lv '+UNL[k]+'</b></div>';return'<div class="slot'+(n?'':' none')+'" data-k="'+k+'" aria-label="'+LBL[k]+'"><img src="'+CRK.b[IDX[k]]+'" alt="">'+(n?'<b>'+n+'</b>':'<b class="pr">'+PRICE[k]+'</b>')+'</div>'}).join('');$('gCoins').textContent=S.coins}
 function drawHud(){if(cur==='b'){var got=(BL.goal.coin-Math.max(0,realG.coin))-(inflight.coin||0);$('gGoals').innerHTML='<div class="gi" data-k="coin"><img src="art/ui-coin.webp" alt="Coins"><b>'+got*BL.val+'</b></div>';return}var h='';Object.keys(LV().goal).forEach(function(k){var v=Math.max(0,realG[k])+(inflight[k]||0);h+='<div class="gi" data-k="'+k+'"><img src="'+icon(k)+'" alt="'+goalName(k)+'">'+(v?'<b>'+v+'</b>':'<b class="ok">&#10003;</b>')+'</div>'});$('gGoals').innerHTML=h}
 function hud(g){realG=g;var L=LV();drawHud();Object.keys(L.goal).forEach(function(k){if(g[k]<=0&&!(inflight[k]>0)&&!doneG[k]){doneG[k]=1;SFX.chime(2);if(face)face.mood('cheer',1.5)}})}
@@ -91,7 +91,7 @@ var hand=$('hand'),hAnim=null,lastAct=0;function hideHand(){hand.style.display='
 function showHand(h){if(!h||!game)return;var x=game.cx(h.c)-22,y=game.cy(h.r)+120-6;hand.style.display='block';hand.style.left=x+'px';hand.style.top=y+'px';var U=game.cx(1)-game.cx(0),k=h.tap?[{transform:'scale(1)'},{transform:'scale(.82)'},{transform:'scale(1)'}]:[{transform:'translate(0,0)',opacity:1},{transform:'translate('+((h.dc||0)*U)+'px,'+((h.dr||0)*U)+'px)',opacity:1,offset:.7},{transform:'translate('+((h.dc||0)*U)+'px,'+((h.dr||0)*U)+'px)',opacity:0}];hAnim=hand.animate(k,{duration:h.tap?700:1200,iterations:Infinity})}
 var GRP={15:6,16:6},SPK={6:'rocket',7:'flowerpot',8:'chakra',9:'skyshot',10:'atom',11:'sparkler',12:'wala',13:'rail',14:'matchbox',17:'hammer',18:'seven',19:'snake'};
 function newSp(){if(ending)return false;var L=game.specials();for(var i=0;i<L.length;i++){var id=GRP[L[i].k]||L[i].k,k=SPK[id];if(k&&!S.seen['b_'+k]){banner(k,function(){});return true}}return false}
-setInterval(function(){if(!game||!game.b||game.stopped||game.busy||game.over||!$('game').classList.contains('on')||$('ban').classList.contains('on'))return;if(newSp()){hideHand();return}var idle=performance.now()-lastAct;if(hand.style.display!='block'&&cur==0&&LEVELS[0].moves-game.moves<3&&idle>900)showHand(game.hintMove());else if(idle>10000)game.showHint()},300);
+setInterval(function(){if(!game||!game.b||game.stopped||game.busy||game.over||!$('game').classList.contains('on')||$('ban').classList.contains('on'))return;if(newSp()){hideHand();return}var idle=performance.now()-lastAct;if(hand.style.display!='block'&&typeof cur=='number'&&(cur==0?LEVELS[0].moves-game.moves<3:((LV().teach||LV().combo||LV().preSp)&&LV().moves-game.moves<1))&&idle>900)showHand(game.hintMove());else if(idle>10000)game.showHint()},300);
 addEventListener('pointerdown',function(){lastAct=performance.now();hideHand();if(game)game.hl=null},true);
 var stuck=0;setInterval(function(){if(!game||game.stopped||game.over||!game.busy||game.dropping||game.ev.length||game.fx.some(function(f){return f.k=='obj'})){stuck=0;return}stuck+=500;if(stuck>=2000){stuck=0;game.refill()}},500);
 // END OF LEVEL: goal tick, BLASTU with 1000-Wala pops, board blast, win
@@ -115,7 +115,7 @@ function won(mv){ending=false;endT.forEach(clearTimeout);endT=[];var L=LV(),d=st
 
 // COIN BLAST bonus level: coins everywhere, a strip of crackers down the middle, no losing
 function bonusLevel(n){var BM=10;var W=8,H=9,sh=[],coins=[],k=n%3;for(var r=0;r<H;r++){sh.push('xxxxxxxx');for(var c=0;c<W;c++){var strip=k==0?(c==3||c==4):k==1?(c==2||c==5):(r==4||c==3||c==4);if(!strip)coins.push([r,c])}}
- return{name:'Coin Blast',bonus:n,after:n*5,moves:BM,colors:[0,1,2,5],goal:{coin:coins.length},val:5,shape:sh,ob:{coin:coins},preSp:2}}
+ return{name:'Coin Blast',bonus:n,after:n*5,moves:BM,colors:[0,1,2,5],goal:{coin:coins.length},val:5,shape:sh,ob:{coin:coins},preSp:2,preK:n==1?[6,8]:[6,10]}}
 window.startBonus=function(n){SFX.unlock();BL=bonusLevel(n);var c=$('ban');$('bImg').src='art/ui-coin.webp';$('bTitle').textContent='Coin Blast';$('bLine').textContent='Bonus level! Break as many coins as you can in 10 moves. You keep them all.';banCb=function(){start('b')};c.classList.add('on');var i=c.querySelector('.bin');i.classList.remove('go');void i.offsetWidth;i.classList.add('go');SFX.play('fanfare',{v:.5})};
 function bonusEnd(){if($('bonusEnd').classList.contains('on'))return;var got=(BL.goal.coin-Math.max(0,game.goal.coin))*BL.val;S.coins+=got;S.bdone=S.bdone||{};S.bdone[BL.bonus]=1;save();game.stopped=true;endOff();
  $('bonusEnd').insertBefore($('wfx'),$('bonusEnd').children[1]);$('beBg').style.backgroundImage='url('+SCENE_SRC(chOf(BL.after-1))+')';$('beN').textContent='0';show('bonusEnd');SFX.duck(.12);SFX.play('fanfare',{v:.7});winFx(true);
@@ -161,7 +161,7 @@ var start0=start;
 start=function(i){start0(i);if(!game)return;var cb=game.cb,mv0=cb.moves,ch0=cb.cheer;
  cb.big=function(){if(face)face.mood('wow',1.3);pop()};
  cb.cheer=function(c){ch0(c);if(c>=2)pop()};
- game.mN=0;mRew=null;meterUI(0);cb.meter=function(n){if(mRew||ending)return;meterUI(n);if(n>=MMAX){game.mN=0;mRew=MK[Math.random()*3|0];meterUI(MMAX);SFX.play('swoosh',{v:.4,rate:1.6});if(!S.seen.b_meter){S.seen.b_meter=1;save();setTimeout(function(){banner('meter',function(){})},700)}}};
+ game.mN=0;mRew=null;meterUI(0);cb.meter=function(n){if(mRew||ending)return;meterUI(n);if(n>=MMAX){game.mN=0;mRew=window.MK28?MK28():MK[Math.random()*3|0];meterUI(MMAX);SFX.play('swoosh',{v:.4,rate:1.6});if(!S.seen.b_meter){S.seen.b_meter=1;save();setTimeout(function(){banner('meter',function(){})},700)}}};
  cb.moves=function(m){mv0(m);$('gMoves').classList.toggle('low',m<=5&&m>0);if(m<=5&&m>0&&face)face.mood('worried',2)};
  $('gMoves').classList.remove('low');REW=null};
 var hud0=hud;hud=function(g){var before=JSON.stringify(doneG);hud0(g);if(JSON.stringify(doneG)!=before)pop()};
@@ -259,7 +259,7 @@ var P1={hammer:500,sparkler:700,flowerpot:900,snake:1100,wala:1300,rail:1400,sky
 var MOVEP=[950,1900,2900],FREEAD={hammer:1,sparkler:1};
 S.ads=S.ads||{};S.sbGift=S.sbGift||{};
 function sbLocked(k){return(S.lv||0)<SBU[k]}
-function giftSB(){var ch=0;SB.forEach(function(k){if(!sbLocked(k)&&!S.sbGift[k]){S.sbGift[k]=1;S.inv[k]=(S.inv[k]||0)+2;ch=1}});if(ch)save()}
+function giftSB(){var ch=0;SB.forEach(function(k){if(!sbLocked(k)&&!S.sbGift[k]){S.sbGift[k]=1;S.inv[k]=(S.inv[k]||0)+2;ch=1;var kk=k;setTimeout(function(){window.NEWSB&&NEWSB(kk)},450)}});if(ch)save()}
 
 // ---------- rewarded video ads (Google test ads in the app; a short fake ad in a browser)
 var adCb=null;
@@ -287,7 +287,7 @@ boosters=function(){giftSB();$('lCoins').textContent=S.coins;$('lBoost').innerHT
 var ad1=document.createElement('button');ad1.id='lAd';ad1.className='lad';ad1.innerHTML=adLbl('Free Rocket');var bt=q('#lc .bt2');bt.insertBefore(ad1,bt.querySelector('.have'));
 ad1.onclick=function(){SFX.unlock();showAd(function(ok){if(!ok){htoast('No video right now. Try again soon.');return}S.ads.card=today();S.inv.rocket=(S.inv.rocket||0)+1;pick.rocket=true;save();boosters();SFX.play('fanfare',{v:.4})})};
 $('lBoost').addEventListener('click',function(e){var b=e.target.closest('.bo');if(!b)return;var k=b.dataset.k;if(b.classList.contains('lock')){SFX.nope();return}
- if((S.inv[k]||0)>0){pick[k]=!pick[k];SFX.play('tick',{v:.5});boosters();return}
+ if((S.inv[k]||0)>0){pick[k]=!pick[k];SFX.play('tick',{v:.5});b.classList.toggle('pick',!!pick[k]);var ok=b.querySelector('.ok');if(pick[k]&&!ok){ok=document.createElement('i');ok.className='ok';ok.innerHTML='&#10003;';b.appendChild(ok)}else if(!pick[k]&&ok)ok.remove();return}
  showBuy({img:CRK.b[IDX[k]],title:LBL[k]+' ×3',text:SBD[k],price:PACK[k],buy:function(){S.coins-=PACK[k];S.inv[k]=(S.inv[k]||0)+3;pick[k]=true;save();boosters()}})});
 $('lPlay').onclick=function(){SFX.unlock();$('lc').classList.remove('on');var L=LEVELS[card_i],Q=(L.intro||[]).filter(function(k){return !S.seen['b_'+k]}),use=SB.filter(function(k){return pick[k]&&(S.inv[k]||0)>0});
  runBanners(Q,function(){start(card_i);use.forEach(function(k,i){S.inv[k]--;setTimeout(function(){if(game&&!game.over)drop(k)},500+i*250)});save();pick={}})};
@@ -319,14 +319,14 @@ $('sBody').addEventListener('click',function(e){var t=e.target.closest('button')
  if(t.dataset.cp!=null){var p=CP[+t.dataset.cp];S.coins+=p.c;if(p.st){S.starter=1;SB.forEach(function(k){S.inv[k]=(S.inv[k]||0)+2})}save();$('sBody').innerHTML=shopH();$('hCoins').textContent=S.coins;SFX.play('fanfare',{v:.5})}});
 
 // ---------- out of moves: near-miss message, AD +3 moves (once per level), +5 moves for coins (950 / 1,900 / 2,900), give up -> level failed
-$('lose').querySelector('.box').innerHTML='<h1>Out of moves!</h1><div class="near" id="lNear"></div><button class="play" id="bAd"></button><button class="play alt" id="bCoin"></button><p class="lmsg" id="lMsg"></p><button class="ghost" id="bGive">Give up</button>'+
- '<div class="failp"><h1>Level failed</h1><p>Try again: you were close!</p><button class="play" id="bRetry">Try again</button><button class="ghost" id="bHome">Back to map</button></div>';
+$('lose').querySelector('.box').innerHTML='<div class="rib" id="lRib">Out of Moves</div><p class="lsub">You\'re almost there! Keep going?</p><div class="near" id="lNear"></div><button class="play" id="bAd"></button><button class="play alt" id="bCoin"></button><p class="lmsg" id="lMsg"></p><button class="ghost" id="bGive">Give Up</button>'+
+ '<div class="failp"><div class="rib">Level Failed</div><p>So close! You only needed a little more.</p><button class="play" id="bRetry">Try Again</button><button class="ghost" id="bHome">Back to Street</button></div>';
 function nearH(){var ks=Object.keys(realG||{}).filter(function(k){return realG[k]>0}).sort(function(a,b){return realG[a]-realG[b]}).slice(0,3),tot=0;ks.forEach(function(k){tot+=realG[k]});
  var one=ks.length==1;return'<div class="ni">'+ks.map(function(k){return'<span><img src="'+icon(k)+'" alt=""><b>'+realG[k]+'</b></span>'}).join('')+'</div><p>'+(one?'Only '+realG[ks[0]]+' '+goalName(ks[0]).toLowerCase()+' left!':'Only '+tot+' left!')+'</p>'}
 lostUI=function(){var bx=$('lose').querySelector('.box');bx.classList.remove('failed');$('lNear').innerHTML=nearH();
- $('bAd').innerHTML=adLbl('+3 moves');$('bAd').style.display=tries.ad>=1?'none':'';
- var p=MOVEP[tries.coin];$('bCoin').style.display=p?'':'none';if(p)$('bCoin').innerHTML='+5 moves <img src="art/ui-coin.webp" alt="">'+p;$('lMsg').textContent=p&&S.coins<p?'You have '+S.coins+' coins':''};
-$('bAd').onclick=function(){$('lMsg').textContent='Loading video...';showAd(function(ok){if(ok){tries.ad++;$('lMsg').textContent='';resume(3)}else $('lMsg').textContent='No video right now. Try again soon.'})};
+ $('bAd').innerHTML=adLbl('+5 Moves');$('bAd').style.display=tries.ad>=1?'none':'';
+ var p=MOVEP[tries.coin];$('bCoin').style.display=p?'':'none';if(p)$('bCoin').innerHTML='+5 Moves <img src="art/ui-coin.webp" alt="">'+p;$('lMsg').textContent=p&&S.coins<p?'You have '+S.coins+' coins':''};
+$('bAd').onclick=function(){$('lMsg').textContent='Loading video...';showAd(function(ok){if(ok){tries.ad++;$('lMsg').textContent='';resume(5)}else $('lMsg').textContent='No video right now. Try again soon.'})};
 $('bCoin').onclick=function(){var p=MOVEP[tries.coin];if(!p)return;if(S.coins<p){$('lMsg').textContent='Not enough coins. You have '+S.coins+'.';SFX.nope();return}S.coins-=p;save();tries.coin++;resume(5)};
 $('bGive').onclick=function(){$('lose').querySelector('.box').classList.add('failed');SFX.play('swoosh',{v:.4})};
 $('bRetry').onclick=function(){if(game)game.stopped=true;openCard(cur)};$('bHome').onclick=function(){if(game)game.stopped=true;home()};
@@ -342,5 +342,67 @@ function hadUI(){ha.style.display=(S.lv>=2&&S.ads.home!=today())?'':'none'}
 ha.onclick=function(){SFX.unlock();showAd(function(ok){if(!ok){htoast('No video right now. Try again soon.');return}var L=SB.filter(function(k){return !sbLocked(k)}).concat(['hammer']),k=L[Math.random()*L.length|0];S.inv[k]=(S.inv[k]||0)+1;S.ads.home=today();save();hadUI();htoast(LBL[k]+' added!');SFX.play('fanfare',{v:.5})})};
 var home27=home;home=function(prev){home27(prev);hadUI()};
 })();
-DEB.init($('deb'));endOff();home();window.runIntro(function(){firstOpen()});
+DEB.init($('deb'));endOff();
+// ===== Build 28 (14 Nov 2026): Sivakasi Street home, fixed diyas, unlock gifts, bonus after 5 and 10,
+// hard level card, golden matchbox tease, meter specials, shop receipt
+(function(){
+var stF=$('streetF');$('stage').appendChild($('sheet'));
+S.gift28=S.gift28||{};S.notif=1;// the street asks for notifications after level 2 instead
+function street(){try{return stF.contentWindow.STREET}catch(e){return null}}
+window.CM28={S:function(){return S},save:function(){save()},levels:function(){return LEVELS.length},
+ play:function(first){SFX.unlock();if(first){S.agreed=1;save();var L=LEVELS[0],Q=['howto'].concat((L.intro||[]).filter(function(k){return !S.seen['b_'+k]}));runBanners(Q,function(){start(0)})}else openCard(Math.min(S.lv,LEVELS.length-1))},
+ sheet:function(n){SFX.unlock();snap();if(n=='shop')sheet('Shop',shopH());else if(n=='daily')sheet('Daily reward',dailyH());else if(n=='bag')sheet('My crackers',bagH());else sheet('Settings',setH())},
+ notify:function(){try{if(window.AndroidVoice&&AndroidVoice.askNotify)AndroidVoice.askNotify()}catch(e){}},ready:function(){}};
+var show28=show;show=function(id){show28(id);$('street').classList.toggle('on',id=='street');if(id!='street'){var st=street();if(st)st.pause()}};
+home=function(prev){DEB.clear();hideHand();gh.style.display='none';show('street');var st=street();if(st)st.back()};
+setInterval(function(){if($('street').classList.contains('on')&&!$('sheet').classList.contains('on')){var st=street();if(st)st.refresh()}},1000);
+
+// ---- new banners
+BAN.hole=['Hidden Hole','Break the crates around it. Crackers fall in and fill the hole.','art/crate.webp'];
+BAN.helper=['Helper Bombs','Bombs are hidden among the crates. Tap one: it blasts and sets off the others!',null,10];
+BAN.cab=['Sweet Shop Cabinet','Match next to it. The first hit breaks the glass doors, then every hit blasts one sweet plate.','art/cab-door.webp'];
+BAN.meter=['Cracker Meter full!','Every match fills the meter. Drag the special from the meter onto any tile to fire it.','art/ui-diya.webp'];
+
+// ---- diyas: fixed per level (normal 1, Hard 2, Super Hard 3), only on the first win; no rating
+starsOf=function(){var L=LV();return (L&&L.diyas)||1};
+var won28=won;won=function(mv){var L=LV(),first=typeof cur=='number'&&cur>=S.lv,d=starsOf();won28(mv);if(first&&(L.ltype=='h'||L.ltype=='s')){S.coins+=L.ltype=='s'?150:100;save()}
+ [].forEach.call(document.querySelectorAll('#wStars img'),function(e,i){e.style.display=i<d?'':'none'})};
+// ---- after levels 5 and 10 the coin bonus round starts by itself
+$('bNext').onclick=function(){var prev=+$('win').dataset.prev;winFx(false);var n=(prev+1)/5;if((prev==4||prev==9)&&!(S.bdone||{})[n]){startBonus(n);return}home(prev)};
+$('beNext').onclick=function(){winFx(false);home()};$('beNext').textContent='Continue';$('beMap').style.display='none';
+
+// ---- a booster unlocks at the START of its level: 3 free, a banner, then the hand drags it onto the board
+function dragDemo(k){var sl=q('#slots .slot[data-k="'+k+'"]');if(!sl||!game)return;var a=toStage(sl),bx=195,by=game.cy(4)+120,h=$('hand'),n=0;gh.src=CRK.b[IDX[k]];
+ (function go(){if(n++>=2){gh.style.display='none';h.style.display='none';return}gh.style.display='block';h.style.display='block';var t0=performance.now();
+  (function f(){var p=Math.min((performance.now()-t0)/1100,1),e=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2,x=a.x+(bx-a.x)*e,y=a.y+(by-a.y)*e;gh.style.left=(x-45)+'px';gh.style.top=(y-90)+'px';h.style.left=(x-10)+'px';h.style.top=(y-10)+'px';if(p<1)requestAnimationFrame(f);else setTimeout(go,350)})()})()}
+var st28=start;start=function(i){st28(i);if(i==='b')return;var lvN=i+1;SL.forEach(function(k){if(UNL[k]==lvN&&!S.gift28[k]){S.gift28[k]=1;S.inv[k]=(S.inv[k]||0)+3;save();slots();setTimeout(function(){banner(k,function(){dragDemo(k)})},700)}})};
+
+// ---- victory: one tune, then soft whooshes for the leftover-move rockets
+var ld28=levelDone;levelDone=function(mv){ld28(mv);if(cur!=='b')later(function(){window.ENDSOFT=1},3.5)};
+var eo28=endOff;endOff=function(){eo28();window.ENDSOFT=0};
+
+// ---- Hard / Super Hard level card: red-orange or purple card, 3D skull, coin tag, a shake and a deep "dum"
+var oc28=openCard;openCard=function(i){oc28(i);var L=LEVELS[i],h=L.ltype=='h'||L.ltype=='s',lc=$('lc');lc.classList.toggle('hard',L.ltype=='h');lc.classList.toggle('shard',L.ltype=='s');
+ var sk=$('lSkull'),tg=$('lTag');if(!sk){sk=document.createElement('img');sk.id='lSkull';sk.src='art/skull.png';sk.alt='';$('lNum').parentNode.appendChild(sk);tg=document.createElement('div');tg.id='lTag';q('#lc .hang').appendChild(tg)}
+ sk.style.display=h?'':'none';tg.style.display=h?'':'none';
+ if(h){tg.innerHTML='<img src="art/ui-coin.webp" alt="">+'+(L.ltype=='s'?150:100);$('lName').textContent=L.ltype=='s'?'Super Hard':'Hard';setTimeout(function(){SFX.play('thud',{v:1,rate:.45});var c=q('#lc .hang');c.animate([{transform:'translateX(0)'},{transform:'translateX(-7px)'},{transform:'translateX(7px)'},{transform:'translateX(-4px)'},{transform:'translateX(0)'}],{duration:380})},300)}};
+// ---- 5th start booster: the Golden Matchbox, locked until level 100
+var bo28=boosters;boosters=function(){bo28();var b=document.createElement('button');b.className='bo lock gold';b.setAttribute('aria-label','Golden Matchbox unlocks at level 100');b.innerHTML='<img src="'+CRK.b[14]+'" alt=""><em>Lv 100</em>';$('lBoost').appendChild(b)};
+
+// ---- cracker meter: the reward is one of our specials (only ones already learned); drag it onto a tile and it fires
+window.MK28=function(){var n=(typeof cur=='number'?cur:S.lv)+1,L=['rocket'];if(n>=3)L.push('matchbox');if(n>=5)L.push('chakra');if(n>=8)L.push('atom');return L[Math.random()*L.length|0]};
+meterUI=function(n){var f=mRew?1:Math.min(n/MMAX,1);$('mFill').style.width=(f*100)+'%';var r=$('mRew');r.classList.toggle('on',!!mRew);$('mImg').src=CRK.b[IDX[mRew||'rocket']];r.setAttribute('aria-label',mRew?LBL[mRew]+' ready. Drag it onto the board.':'Cracker meter')};
+CrackersGame.prototype.meterPop=function(k,r,c){var e=this.at2(r,c);if(!e||e.ob||e.dead||e.diya||!IDX[k])return false;e.k=IDX[k];e.safe=0;var s=this;setTimeout(function(){if(s.at2(r,c)===e)s.use(r,c,0,0)},60);return true};
+
+// ---- popups: "New! 2 free Rockets" and what you bought in the shop
+var got=document.createElement('div');got.className='modal got28';got.innerHTML='<div class="gbox"><h2 id="gotT"></h2><div id="gotL"></div><small>Tap to continue</small></div>';$('stage').appendChild(got);got.onclick=function(){got.classList.remove('on')};new MutationObserver(function(){if(!$('lc').classList.contains('on')&&$('gotT').textContent.indexOf('Start Booster')>0)got.classList.remove('on')}).observe($('lc'),{attributes:true,attributeFilter:['class']});
+function popup(t,rows){$('gotT').textContent=t;$('gotL').innerHTML=rows.map(function(r){return'<div class="gr"><img src="'+r[0]+'" alt=""><div><b>'+r[1]+'</b><span>'+r[2]+'</span></div></div>'}).join('');got.classList.add('on');SFX.play('fanfare',{v:.4})}
+var nsQ=[],nsT=0;window.NEWSB=function(k){nsQ.push([CRK.b[IDX[k]],'+2 '+LBL[k],'Free! Pick it on the level card.']);clearTimeout(nsT);nsT=setTimeout(function(){if(!$('lc').classList.contains('on')){nsQ=[];return}popup(nsQ.length>1?'New Start Boosters!':'New Start Booster!',nsQ);nsQ=[]},250)};
+var snapInv=null,snapC=0;function snap(){snapInv=JSON.parse(JSON.stringify(S.inv||{}));snapC=S.coins}
+new MutationObserver(function(){if($('sheet').classList.contains('on')||!snapInv)return;var rows=[];Object.keys(S.inv||{}).forEach(function(k){var d=(S.inv[k]||0)-(snapInv[k]||0);if(d>0&&IDX[k])rows.push([CRK.b[IDX[k]],'+'+d+' '+LBL[k],'You have '+S.inv[k]])});
+ if(S.coins>snapC+0&&rows.length==0)rows.push(['art/ui-coin.webp','+'+(S.coins-snapC)+' coins','You have '+S.coins]);snapInv=null;if(rows.length)popup('You got',rows)}).observe($('sheet'),{attributes:true,attributeFilter:['class']});
+})();
+// first screen: the street page (intro, title, then level 1 or the street)
+$('intro').style.display='none';show('street');$('streetF').src='street/index.html';
+
 })();

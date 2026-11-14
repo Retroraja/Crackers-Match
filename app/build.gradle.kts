@@ -25,4 +25,4 @@ android {
     }
 }
 
-dependencies { implementation("com.google.android.gms:play-services-ads:23.6.0"); implementation("androidx.annotation:annotation:1.8.0") }
+dependencies { implementation("com.google.android.gms:play-services-ads:24.9.0"); implementation("androidx.webkit:webkit:1.12.1"); implementation("androidx.annotation:annotation:1.8.0") }

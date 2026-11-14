@@ -10,6 +10,10 @@ import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import android.webkit.WebViewClient;
+import androidx.webkit.WebViewAssetLoader;
 import androidx.annotation.NonNull;
 import com.google.android.gms.ads.AdError;
 import com.google.android.gms.ads.AdRequest;
@@ -43,7 +47,15 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(false);
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
         web.addJavascriptInterface(new Bridge(), "AndroidVoice");
-        web.loadUrl("file:///android_asset/www/index.html");
+        // Build 28: serve the game from https://appassets.androidplatform.net so the 3D street can load its model files
+        final WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
+            .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this)).build();
+        web.setWebViewClient(new WebViewClient() {
+            @Override public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest r) {
+                return loader.shouldInterceptRequest(r.getUrl());
+            }
+        });
+        web.loadUrl("https://appassets.androidplatform.net/assets/www/index.html");
         setContentView(web);
         hideBars();
         tts = new TextToSpeech(this, status -> {
