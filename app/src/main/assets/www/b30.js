@@ -21,11 +21,11 @@ if(P){var draw0=P.draw;P.draw=function(dt){var c=this.x;if(c&&!c.__nsb){c.__nsb=
   if(fr.n>=150){if(fr.t/fr.n>24){window.LITE30=1;try{localStorage.setItem('cm_lite','1')}catch(e){}}fr.n=0;fr.t=0}}
  return draw0.apply(this,arguments)}}
 // ---- pieces on screen: about 250 at most, fewer per blast when busy or on a slow phone
-function cut(s,n){var L=s.fx?s.fx.length:0;if(L>320)return Math.max(1,Math.ceil(n*.15));if(L>220||window.LITE30)return Math.max(1,Math.ceil(n*.5));return n}
+function cut(s,n){var L=s.fx?s.fx.length:0;if(L>160)return Math.max(1,Math.ceil(n*.12));if(L>120||window.LITE30)return Math.max(1,Math.ceil(n*.3));return Math.max(1,Math.ceil(n*.5))}
 if(P){var sp0=P.spark;if(sp0)P.spark=function(x,y,n){var a=[].slice.call(arguments);a[2]=cut(this,n);return sp0.apply(this,a)};
  var bu0=P.burst;if(bu0)P.burst=function(x,y,cols,n){var a=[].slice.call(arguments);a[3]=cut(this,n);return bu0.apply(this,a)}}
-if(window.DEB){var add0=DEB.add;DEB.add=function(o){if(this.P.length>(window.LITE30?130:220))this.P.shift();return add0.call(this,o)};
- var bits0=DEB.bits;DEB.bits=function(x,y,n){var a=[].slice.call(arguments);if(window.LITE30||this.P.length>150)a[2]=Math.ceil(n*.5);return bits0.apply(this,a)}}
+if(window.DEB){var add0=DEB.add;DEB.add=function(o){if(this.P.length>(window.LITE30?90:120))this.P.shift();return add0.call(this,o)};
+ var bits0=DEB.bits;DEB.bits=function(x,y,n){var a=[].slice.call(arguments);a[2]=Math.max(1,Math.ceil(n*(window.LITE30||this.P.length>80?.3:.5)));return bits0.apply(this,a)}}
 
 // ================= synth sounds (own audio context: filters and noise) =================
 var Z30=window.Z30=(function(){var X=null,N=null,M=null;
