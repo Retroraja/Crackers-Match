@@ -71,3 +71,8 @@ if(G.strike){var st0=G.strike;G.strike=function(r,c,cells,t0,step,onHit,hold){va
  var cb=function(p){var t=performance.now();if(t-last>45){last=t;Z30.zap()}if(onHit)return onHit.apply(this,arguments)};
  return st0.call(this,r,c,cells,t0,step,cb,hold)}}
 })();
+// ---- normal match sound = his recorded blast (15 Nov). One sound per match (several at once = one, a bit fuller);
+// match 4/5/L/T (makes a special) plays it fuller and deeper; each cascade step plays it a little higher.
+(function(){if(!window.SFX)return;var last=0,lastAt=-1;
+SFX.cracker=function(k,c,n,at){at=at||0;var now=performance.now()/1000+at;if(Math.abs(now-last)<.045)return .12;last=now;var big=(n||3)>=4,j=1+Math.min(c||0,5)*.04+Math.random()*.02;
+ SFX.play('blastnew',{rate:(big?.88:1)*j,v:big?1:.8,at:at});return .12}})();
