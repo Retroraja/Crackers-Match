@@ -28,6 +28,6 @@ window.LEVELS=[
  mk({name:'Dig Down',moves:26,colors:C3,luck:.5,intro:['wood'],rows:['........','........','..1.....','........','........','xxxxxxxx','xxxxxxxx','xxxxxxxx','XxxXXxxX']}),
  mk({name:'Plus Board',moves:25,colors:C3,luck:.5,teach:'lshape',intro:['atom'],rows:['........','........','........','cccccc2c','c2cccccc','cccccccc','##cccc##','##c2cc##','##cccc##']}),
  mk({name:'First Cabinets',moves:26,colors:C3,luck:.5,intro:['cab'],rows:['........','........','....1...','........','cccccccc','xxKkKkxx','xxkkkkxx','xxxxxxxx','cccccccc']}),
- mk({name:'Opening Blast',moves:30,colors:C4,luck:.34,ltype:'h',combo:{r:1,c:3,dr:0,dc:1},rows:['........','...31...','cccccccc','xKkxxKkx','xkkxxkkx','cccccccc','XxxxxxxX','XxxxxxxX','xxXXXXxx']})
+ mk({name:'Opening Blast',moves:30,colors:C4,luck:.34,ltype:'h',combo:{r:1,c:3,dr:0,dc:1},rows:['........','...31...','........','xKkggKkx','xkkggkkx','cccccccc','........','XxxxxxxX','xxXxxXxx']})
 ];
 })();
