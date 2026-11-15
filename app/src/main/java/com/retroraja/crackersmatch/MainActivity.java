@@ -109,8 +109,8 @@ public class MainActivity extends Activity {
             @Override public void onAdDismissedFullScreenContent() { rewarded = null; fullScreen(true); adResult(earned || TEST_ADS); loadAd(); }
             @Override public void onAdFailedToShowFullScreenContent(@NonNull AdError e) { rewarded = null; lastErr = "show " + e.getCode(); fullScreen(true); adResult(false); loadAd(); }
         });
-        fullScreen(false);
-        rewarded.setImmersiveMode(false);
+        // Build 30: let Google's ad screen run full-screen (immersive) so its close X is not hidden under the status bar
+        rewarded.setImmersiveMode(true);
         rewarded.show(MainActivity.this, item -> earned = true);
     }
 

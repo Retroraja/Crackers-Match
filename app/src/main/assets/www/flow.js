@@ -5,7 +5,7 @@
 // - matches are checked as soon as tiles land; the end-of-turn checks run when the whole board is at rest
 (function(){
 var G=CrackersGame.prototype,P=window.CrackersFX2.prototype,tick0=P.tick,kind0=G.kind;
-var GRAV=2500,SWAP=.13,WAIT=0,STEP=0;// build 28: back to the Build 26 feel, about 15% slower fall, no pause, no one-by-one order
+var GRAV=1500,VMAX=540,SWAP=.13,WAIT=0,STEP=0;// build 28: back to the Build 26 feel, about 15% slower fall, no pause, no one-by-one order
 function back(t){var c1=1.4,c3=c1+1;return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2)}
 
 // a tile can be swapped or matched only when it is resting
@@ -53,9 +53,9 @@ G.luck=function(born){var p=this.lv&&this.lv.luck||0;if(!p||this.ended||this.ove
  if(best){var n=this.b[best[0][0]][best[0][1]];n.k=best[1];n.lucky=1;this.lucky=(this.lucky||0)+1}};
 
 // ---- falling and landing
-G.fall=function(dt){var R=this.rows(),C=this.cols(),landed=false,any=false;
+G.fall=function(dt){var R=this.rows(),C=this.cols(),landed=false,any=false,U=this.uu();
  for(var r=0;r<R;r++)for(var c=0;c<C;c++){var e=this.b[r][c];if(!e)continue;
-  if(e.fy>0){any=true;if(e.wt>0){e.wt-=dt;continue}e.v=(e.v||0)+GRAV*dt;e.fy-=e.v*dt;if(e.fy<=0){e.fy=0;e.v=0;e.bo=.1;landed=true;if(e.fresh){e.fresh=0;this.calm(r,c,e)}}}
+  if(e.fy>0){any=true;if(e.wt>0){e.wt-=dt;continue}e.v=Math.min((e.v||0)+GRAV*dt,VMAX);var st=e.v*dt;if(e.fy<U*.45)st*=Math.max(.35,e.fy/(U*.45));e.fy-=st;if(e.fy<=.6){e.fy=0;e.v=0;e.bo=0;landed=true;if(e.fresh){e.fresh=0;this.calm(r,c,e)}}}
   else if(e.bo>0){e.bo-=dt;if(e.bo<0)e.bo=0}}
  return{landed:landed,any:any}};
 // new tiles try not to land straight into a match on easy levels (same as the old refill)

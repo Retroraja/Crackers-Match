@@ -59,7 +59,7 @@ function erase(x,P){x.save();x.globalCompositeOperation='destination-out';path(x
 var F=window.__F={P:[],E:[],dim:0,cv:null,x:null};
 function fxInit(){if(F.cv)return;var c=F.cv=document.createElement('canvas');c.style.cssText='position:fixed;pointer-events:none;z-index:60';document.body.appendChild(c);F.x=c.getContext('2d');
  var last=0;(function loop(t){var dt=Math.min((t-last)/1000||0,.04);last=t;fxStep(dt);requestAnimationFrame(loop)})(0)}
-function fxStep(dt){var d=document.getElementById('deb'),c=F.cv,x=F.x;if(!d)return;var r=d.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);
+function fxStep(dt){var d=document.getElementById('deb'),c=F.cv,x=F.x;if(!d)return;if(!F.P.length&&!F.E.length&&!(F.dim>0)){if(F.clr){x.clearRect(0,0,c.width,c.height);F.clr=0}return}F.clr=1;var r=d.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);
  if(c.style.width!=r.width+'px'||c.style.left!=r.left+'px'){c.style.left=r.left+'px';c.style.top=r.top+'px';c.style.width=r.width+'px';c.style.height=r.height+'px';c.width=390*dpr;c.height=844*dpr}
  x.setTransform(c.width/390,0,0,c.height/844,0,0);x.clearRect(0,0,390,844);
  if(F.dim>0){F.dim=Math.max(0,F.dim-dt*1.6);x.fillStyle='rgba(10,0,25,'+Math.min(.35,F.dim)+')';x.fillRect(0,0,390,844)}

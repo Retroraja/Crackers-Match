@@ -53,7 +53,7 @@ $('sBody').addEventListener('click',function(e){var t=e.target.closest('button')
  if(t.id=='dClaim'&&dailyCan()){var d=S.daily||{n:0},r=DAYS[d.n%7];if(typeof r=='object')S.inv[r.k]=(S.inv[r.k]||0)+r.n;else S.coins+=r;S.daily={n:d.n+1,last:today()};save();$('sBody').innerHTML=dailyH();$('hCoins').textContent=S.coins;dailyDot();SFX.play('win',{v:.6})}
  if(t.id=='tSnd'){SFX.toggle();$('sBody').innerHTML=setH()}
  if(t.dataset.spd){try{localStorage.setItem('cm_speed',t.dataset.spd)}catch(e){}window.GSPEED=SPD[+t.dataset.spd];SFX.play('tick',{v:.5});$('sBody').innerHTML=setH()}
- if(t.id=='tRst'){if(t.dataset.a){S={lv:0,coins:0,diyas:0,best:{},inv:{},seen:{},pend:{}};save();closeSheet();home()}else{t.dataset.a=1;t.textContent='Sure?'}}});
+ if(t.id=='tRst'){if(t.dataset.a){try{Object.keys(localStorage).forEach(function(k){if(/^cm/i.test(k))localStorage.removeItem(k)})}catch(e){}S={lv:0,coins:0,diyas:0,best:{},inv:{},seen:{},pend:{}};save();try{localStorage.setItem('cm_reset','1')}catch(e){}location.reload()}else{t.dataset.a=1;t.textContent='Sure?'}}});
 // LEVEL CARD
 var pick={},card_i=0;
 function boosters(){$('lCoins').textContent=S.coins;$('lBoost').innerHTML=SL.map(function(k){var n=S.inv[k]||0,can=S.coins>=PRICE[k];if(locked(k))return'<button class="bo lock" data-k="'+k+'" aria-label="'+LBL[k]+' unlocks at level '+UNL[k]+'"><img src="'+CRK.b[IDX[k]]+'" alt=""><i class="lk"><svg viewBox="0 0 24 24" width="20" height="20"><rect x="4" y="10" width="16" height="12" rx="3" fill="#FFD24A" stroke="#7A3A00" stroke-width="1.6"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="#FFD24A" stroke-width="2.6"/><circle cx="12" cy="16" r="2" fill="#7A3A00"/></svg></i><em>Lv '+UNL[k]+'</em></button>';return'<button class="bo'+(can?'':' off')+'" data-k="'+k+'" aria-label="Buy '+LBL[k]+'"><img src="'+CRK.b[IDX[k]]+'" alt="">'+(n?'<b>'+n+'</b>':'')+'<em>'+PRICE[k]+'</em></button>'}).join('')}
@@ -350,9 +350,10 @@ var stF=$('streetF');$('stage').appendChild($('sheet'));
 S.gift28=S.gift28||{};S.notif=1;// the street asks for notifications after level 2 instead
 function street(){try{return stF.contentWindow.STREET}catch(e){return null}}
 window.CM28={S:function(){return S},save:function(){save()},levels:function(){return LEVELS.length},
- play:function(first){SFX.unlock();if(first){S.agreed=1;save();var L=LEVELS[0],Q=['howto'].concat((L.intro||[]).filter(function(k){return !S.seen['b_'+k]}));runBanners(Q,function(){start(0)})}else openCard(Math.min(S.lv,LEVELS.length-1))},
+ play:function(first){SFX.unlock();if(first){S.agreed=1;save();S.seen.b_howto=1;(LEVELS[0].intro||[]).forEach(function(k){S.seen['b_'+k]=1});save();start(0)}else openCard(Math.min(S.lv,LEVELS.length-1))},
  sheet:function(n){SFX.unlock();snap();if(n=='shop')sheet('Shop',shopH());else if(n=='daily')sheet('Daily reward',dailyH());else if(n=='bag')sheet('My crackers',bagH());else sheet('Settings',setH())},
- sfx:function(n){try{var M={brand:function(){SFX.ready().then(function(){SFX.play('brand')})},music:function(){SFX.ready().then(function(){SFX.music();SFX.duck(.15)})},rocket:function(){SFX.play('rocket',{v:.7})},rocketS:function(){SFX.play('rocket',{v:.35,rate:1.15})},blast:function(){SFX.play('blast',{v:.8})},pop:function(){SFX.play('pop',{v:.45})},
+ areaReward:function(){S.coins=(S.coins||0)+500;S.inv.rocket=(S.inv.rocket||0)+3;S.inv.chakra=(S.inv.chakra||0)+3;save();popup('Area Complete!',[['art/ui-coin.webp','+500 coins','You have '+S.coins],[CRK.b[IDX.rocket],'+3 '+LBL.rocket,'You have '+S.inv.rocket],[CRK.b[IDX.chakra],'+3 '+LBL.chakra,'You have '+S.inv.chakra]]);SFX.win()},
+ sfx:function(n){try{if(/^bk:/.test(n)){var q=n.split(':');window.Z30&&Z30.build(q[1],+q[2]);return}var M={brand:function(){SFX.ready().then(function(){SFX.play('brand')})},music:function(){SFX.ready().then(function(){SFX.music();SFX.duck(.15)})},rocket:function(){SFX.play('rocket',{v:.7})},rocketS:function(){SFX.play('rocket',{v:.35,rate:1.15})},blast:function(){SFX.play('blast',{v:.8})},pop:function(){SFX.play('pop',{v:.45})},
   open:function(){SFX.play('swoosh',{v:.35})},start:function(){SFX.duck(.06);SFX.play('sparkler',{v:.3,rate:1.6});SFX.chime(0)},build:function(){SFX.play('swoosh',{v:.45})},
   done:function(){SFX.play('pop',{v:.5});[0,1,2].forEach(function(i){setTimeout(function(){SFX.chime(i)},120+i*110)});setTimeout(function(){SFX.duck(.15)},900)},
   area:function(){SFX.win();setTimeout(function(){SFX.duck(.15)},3000)}};M[n]&&M[n]()}catch(e){}},
@@ -372,7 +373,9 @@ starsOf=function(){var L=LV();return (L&&L.diyas)||1};
 var won28=won;won=function(mv){var L=LV(),first=typeof cur=='number'&&cur>=S.lv,d=starsOf();won28(mv);if(first&&(L.ltype=='h'||L.ltype=='s')){S.coins+=L.ltype=='s'?150:100;save()}
  [].forEach.call(document.querySelectorAll('#wStars img'),function(e,i){e.style.display=i<d?'':'none'})};
 // ---- after levels 5 and 10 the coin bonus round starts by itself
-$('bNext').onclick=function(){var prev=+$('win').dataset.prev;winFx(false);var n=(prev+1)/5;if((prev==4||prev==9)&&!(S.bdone||{})[n]){startBonus(n);return}home(prev)};
+$('bNext').onclick=function(){var prev=+$('win').dataset.prev;winFx(false);var n=(prev+1)/5;if((prev==4||prev==9)&&!(S.bdone||{})[n]){bonusCard(n);return}home(prev)};
+var bc=document.createElement('div');bc.className='modal bc30';bc.innerHTML='<div class="bcard"><div class="brib">Bonus Round</div><h2>Coin Blast!</h2><img src="street/art/ic-coinpile.png" alt=""><p>Blast the coins to earn them!<br>Every coin you hit is yours.</p><div class="bmv"><b>10</b> Moves</div><button class="play" id="bcGo">Play</button></div>';$('stage').appendChild(bc);
+function bonusCard(n){bc.classList.add('on');SFX.play('fanfare',{v:.35});$('bcGo').onclick=function(){bc.classList.remove('on');SFX.unlock();startBonus(n)}}
 $('beNext').onclick=function(){winFx(false);home()};$('beNext').textContent='Continue';$('beMap').style.display='none';
 
 // ---- a booster unlocks at the START of its level: 3 free, a banner, then the hand drags it onto the board

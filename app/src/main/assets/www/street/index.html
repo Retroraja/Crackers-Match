@@ -59,6 +59,10 @@ canvas{display:block;width:100%;height:100%}
 #top,#bot{display:none!important}
 #home{z-index:30}
 /* cards: agree, how to play, level win, notifications, settings */
+#bSkip{position:absolute;right:14px;bottom:110px;z-index:30;display:none;padding:10px 18px;border:2px solid #FFD24A;border-radius:22px;background:#1a1440cc;color:#FFE58A;font:18px 'Lilita One',sans-serif;cursor:pointer}
+#bSkip.on{display:block}
+.bbs{display:flex;flex-direction:column;gap:6px}
+.brow button.all{background:linear-gradient(#FFD86A,#F2A21E 55%,#C97A0C);box-shadow:0 4px 0 #7A4A00;font-size:16px}
 .bp{position:relative;width:90%;max-width:350px;border-radius:24px;padding:16px 14px 18px;background:linear-gradient(#24305e,#141c3d);border:3px solid #d9b24a;box-shadow:0 0 0 2px #7a5410,0 10px 30px #000a;transform:scale(.85);transition:transform .3s cubic-bezier(.3,1.5,.5,1);font-family:'Lilita One',Titan,sans-serif;color:#fff}
 .ov.on .bp{transform:scale(1)}
 .bp h2{margin:0 0 12px;text-align:center;font:400 30px 'Lilita One',sans-serif;color:#FFE58A;text-shadow:0 3px 0 #7a4a00}
@@ -158,7 +162,7 @@ canvas{display:block;width:100%;height:100%}
  <div id="toast"></div>
  <div id="top"><div id="ttl" class="gl">Sunset Village<small>Area 1</small></div><div class="pill gl"><img src="art/ui-diya.webp" alt=""><span id="dn">24</span></div></div>
  <div id="ban">Area Completed!</div>
- <div id="hint">Tap to speed up</div>
+ <div id="hint">Tap to speed up</div><button id="bSkip">Skip &#9654;&#9654;</button>
  <div id="bot"><button id="allb">Build All</button>
   <div id="task"><div class="ic" id="ic">💡</div><div class="tx"><small id="kind">Task 1 of 10</small><div id="nm">…</div></div><button id="go">Build<i><img src="art/ui-diya.webp" alt=""><span id="cost">1</span></i></button></div>
   <div id="prog"><div id="bar"><div id="fill"></div><div id="cnt">0/10</div></div><img src="art/ui-chest.webp" alt=""><button id="rs">Reset</button></div></div>
@@ -335,12 +339,16 @@ function buildViews(){VIEWS=VW.map(v=>({p:v[0],look:v[1]}))}
 function glideTo(v){const id=++CAMID,p0=camP.clone(),l0=camL.clone(),dist=p0.distanceTo(v.p),d=Math.max(.7,Math.min(1.6,dist/18)),lift=p0.y>20?0:Math.min(6,dist*.25);
  tween(d,k=>{if(id!==CAMID)return;const e=sm(k);camP.lerpVectors(p0,v.p,e);camP.y+=Math.sin(e*PI)*lift;camL.lerpVectors(l0,v.look,e)});return d}
 function holdShot(v,d){const id=++CAMID,p0=camP.clone();const p1=p0.clone().lerp(v.look,.05);tween(d,k=>{if(id!==CAMID)return;camP.lerpVectors(p0,p1,sm(k));camL.copy(v.look)})}
-function runNext(){const T=TASKS[step];diyas-=T.c;ui();{const tot=(T.dur||T.shot.d-.6)+.8;SPEED=Math.max(1,(tot+1.2)/(step==0?3:4))}let wait=0;if(CAMMODE=='close'){if(!VIEWS)buildViews();wait=Math.max(0,glideTo(VIEWS[step])-.5)}
+function runNext(){const T=TASKS[step];diyas-=T.c;ui();{const tot=(T.dur||T.shot.d-.6)+.8;SPEED=Math.max(1,(tot+1.2)/(FAST?1.5:(step==0?3:4)))}if(FAST){FN++;$('hint').textContent='Building '+FN+'/'+FT+' · Tap to speed up'}let wait=0;if(CAMMODE=='close'){if(!VIEWS)buildViews();wait=Math.max(0,glideTo(VIEWS[step])-.5)}
  const v=VIEWS&&VIEWS[step];
- const go=()=>spendFx(T,()=>{SX('build');if(CAMMODE=='close')holdShot(v,(T.dur||T.shot.d));T.run();const total=CAMMODE=='close'?(T.dur||T.shot.d-.6)+.8:(T.dur?T.dur-1:3.4)+.5;
-  after(total,()=>{step++;ui();SX(step>=TASKS.length?'area':'done');if(auto&&step<TASKS.length&&diyas>=TASKS[step].c)runNext();else{busy=0;SPEED=1;$('hint').classList.remove('on');ui();if(step>=TASKS.length)win();setTimeout(showHome,step>=TASKS.length?2600:250)}})});
+ const go=()=>spendFx(T,()=>{if(CAMMODE=='close')holdShot(v,(T.dur||T.shot.d));T.run();const total=CAMMODE=='close'?(T.dur||T.shot.d-.6)+.8:(T.dur?T.dur-1:3.4)+.5;SX('bk:'+kindOf(T)+':'+(total/SPEED).toFixed(2));
+  after(total,()=>{step++;ui();SX(step>=TASKS.length?'area':'done');if(auto&&step<TASKS.length&&diyas>=TASKS[step].c)runNext();else{const wasFast=FAST;FAST=0;$('bSkip').classList.remove('on');busy=0;SPEED=1;$('hint').classList.remove('on');$('hint').textContent='Tap to speed up';ui();if(step>=TASKS.length){win();setTimeout(showHome,7000)}else if(wasFast){busy=1;camTo(WIDE().p,WIDE().look,1.4);setTimeout(()=>{busy=0;camHome();showHome()},2600)}else setTimeout(showHome,250)}})});
  after(wait,go)}
-$('c').addEventListener('pointerdown',()=>{if(busy)SPEED=Math.min(6,Math.max(SPEED*1.8,2))});
+$('c').addEventListener('pointerdown',()=>{if(busy)SPEED=Math.min(FAST?12:6,Math.max(SPEED*1.8,2))});
+let FAST=0,FN=0,FT=0;
+function kindOf(T){const n=T.n;return /Path/.test(n)?'stone':/Lamp/.test(n)?'lamp':/Tree/.test(n)?'tree':/Farm/.test(n)?'farm':/Bridge/.test(n)?'bridge':/Coffee|Market/.test(n)?'stall':'house'}
+function WIDE(){return{p:V(0,45,75),look:V(0,0,-5)}}
+function buildAll(){let d=diyas,n=0;for(let i=step;i<TASKS.length;i++){if(d<TASKS[i].c)break;d-=TASKS[i].c;n++}if(n<1)return;FAST=1;FN=0;FT=n;$('bSkip').classList.add('on');doTask(1)}
 let OPT='B';
 function dom(html,cls){const d=document.createElement('div');d.className='fx '+(cls||'');d.innerHTML=html;APP.appendChild(d);return d}
 function trailDot(x,y,col,size,life){const d=dom('','');d.style.cssText+=`left:${x}px;top:${y}px;width:${size}px;height:${size}px;border-radius:50%;background:radial-gradient(circle,#fff 0,${col} 40%,transparent 70%);transition:opacity ${life}s,transform ${life}s`;requestAnimationFrame(()=>{d.style.opacity=0;d.style.transform='translate(-50%,-50%) scale(.2)'});setTimeout(()=>d.remove(),life*1000+50)}
@@ -356,7 +364,9 @@ function spendFx(T,done){const r=$('hBuild').getBoundingClientRect(),a=APP.getBo
   after(1.1,()=>{dust(site,16,1.6);ring(site,0xffffff,.1);tween(.35,k=>{cr.scale.setScalar(1.4*(1+k*.3));cr.traverse(o=>{if(o.material){o.material.transparent=true}});if(k>=1)S.remove(cr)},.15);after(.4,()=>{burst(site);done()})})}
  else{const pil=[];for(let i=0;i<5;i++){const sp=sprite(GLOW,.1,0xffd86a,1);sp.position.set(site.x,.6+i*1.2,site.z);S.add(sp);pil.push(sp)}
   after(.3,()=>{ring(site,0xffe27a,.12);ring(site,0xffffff,.12)});tween(.9,k=>pil.forEach((sp,i)=>{sp.scale.setScalar(Math.sin(k*PI)*(3.2-i*.4));sp.material.opacity=Math.sin(k*PI)}),.3);after(.75,()=>sparkle(site,30,1));after(1.2,()=>{pil.forEach(sp=>S.remove(sp));done()})}}
-function win(){won=1;$('ban').classList.add('on');camTo(V(0,9.5,-24),V(0,6.5,-58),1.6);ui()}
+function win(){won=1;const w=WIDE();camTo(w.p,w.look,2.4);ui();SX('area');
+ setTimeout(()=>{$('ban').classList.add('on');fwRun();const W=FW.W,H=FW.H;for(let i=0;i<7;i++)setTimeout(()=>{const x=W*(.15+Math.random()*.7);SX('rocketS');fwRocket(x,x+(Math.random()-.5)*60,H*(.12+Math.random()*.2),.8,(a,b)=>{SX('blast');fwBurst(a,b,90,200,GOLD);fwBurst(a,b,40,120,['#FF4B6E','#7FD1FF','#FFFFFF'])})},i*450)},1600);
+ setTimeout(()=>{$('ban').classList.remove('on');try{CM.areaReward&&CM.areaReward()}catch(e){}},5600)}
 function ui(){$('dn').textContent=diyas;$('fill').style.width=(step/TASKS.length*100)+'%';$('cnt').textContent=step+'/'+TASKS.length;const T=TASKS[step],n=canDo();
  $('allb').classList.toggle('on',!busy&&n>=2);$('allb').textContent='Build All ('+n+')';
  if(!T){$('ic').textContent='🎉';$('kind').textContent='Area complete';$('nm').textContent='The Village Is Alive!';$('go').style.display='none';return}
@@ -405,7 +415,7 @@ function playScreens(){buildTitle();const st=$('sTitle'),si=$('sIntro');SX('bran
 $('sTitle').addEventListener('pointerdown',()=>{if(busyT||$('sTitle').classList.contains('off'))return;busyT=1;const first=!(GS.lv>0);
  if(!first){SHOW3D=true;syncIn();camHome(true);R.render(S,cam)}
  $('glow').classList.add('on');$('sTitle').classList.add('fade');setTimeout(()=>$('glow').classList.remove('on'),450);
- setTimeout(()=>{$('sTitle').classList.add('off');$('sTitle').classList.remove('fade');TS.forEach(sc=>sc.stop());busyT=0;if(first)CM.play(true);else showHome()},900)});
+ setTimeout(()=>{$('sTitle').classList.add('off');$('sTitle').classList.remove('fade');TS.forEach(sc=>sc.stop());busyT=0;if(!first)showHome()},900);if(first)setTimeout(()=>CM.play(true),380)});
 // ---------- state in and out of the game
 function syncIn(){diyas=GS.diyas||0;const n=Math.min(GS.step||0,TASKS.length);if(n>step)skipTo(n)}
 function syncOut(){GS.diyas=diyas;GS.step=step;save()}
@@ -415,7 +425,7 @@ function homeUI(){const n=Math.min(step,TASKS.length);$('hCnt').textContent=n;$(
  const T=TASKS[step];$('hBuild').disabled=!!busy;
  const lvN=(GS.lv||0)+1,all=CM.levels?CM.levels():10;$('hPlay').querySelector('.f').innerHTML=lvN>all?'Area 2 Soon':'Level <span class="t2">'+lvN+'</span>';$('hPlay').disabled=lvN>all}
 function camHome(instant){if(!VIEWS)buildViews();if(step>=TASKS.length){camTo(V(0,9.5,-24),V(0,6.5,-58),instant?0.01:1.6);return}const v=VIEWS[step];if(instant){CAMID++;camP.copy(v.p);camL.copy(v.look)}else glideTo(v)}
-function showHome(){syncOut();$('home').classList.remove('off');homeUI();if(step==0&&!GS.tut&&diyas>=TASKS[0].c)setTimeout(tutorial,700);else if((GS.lv||0)>=2&&!GS.notif28)setTimeout(()=>ov('oNotif',true),700)}
+function showHome(){syncOut();$('home').classList.remove('off');homeUI();if(step==0&&!GS.tut&&diyas>=TASKS[0].c)setTimeout(tutorial,700);else if((GS.lv||0)>=2&&!GS.notif28)setTimeout(()=>{GS.notif28=1;save();CM.notify()},900)}
 function hideHome(){$('home').classList.add('off')}
 function ov(id,on){$(id).classList.toggle('on',on)}
 // first build: 2 steps on a dimmed screen (diyas, then the Build button)
@@ -435,12 +445,14 @@ document.querySelectorAll('.bn button').forEach(b=>{if(b.classList.contains('on'
 
 // ---------- build panel (like the Royal Match task list): next task + the one after it
 function SX(n){try{CM.sfx&&CM.sfx(n)}catch(e){}}
-function panel(){const n=Math.min(step,TASKS.length);$('bpBar').style.width=(n/TASKS.length*100)+'%';$('bpCnt').textContent=n+'/'+TASKS.length;
+function panel(){const n=Math.min(step,TASKS.length);let nAll=0;{let d=diyas;for(let i=step;i<TASKS.length;i++){if(d<TASKS[i].c)break;d-=TASKS[i].c;nAll++}}$('bpBar').style.width=(n/TASKS.length*100)+'%';$('bpCnt').textContent=n+'/'+TASKS.length;
  const rows=[];for(let i=step;i<Math.min(step+2,TASKS.length);i++){const T=TASKS[i],first=i==step,can=diyas>=T.c;
-  rows.push('<div class="brow'+(first?'':' lk')+'"><img class="ti" src="art/task-'+(i+1)+'.webp" alt=""><span>'+T.n+'</span>'+(first?(can?'<button id="bpDo">Build <img src="art/ui-diya.webp" alt="diya">'+T.c+'</button>':'<button id="bpDo" class="pl">Play</button>'):'<button disabled>Next</button>')+'</div>')}
+  rows.push('<div class="brow'+(first?'':' lk')+'"><img class="ti" src="art/task-'+(i+1)+'.webp" alt=""><span>'+T.n+'</span>'+(first?(can?'<div class="bbs"><button id="bpDo">Build <img src="art/ui-diya.webp" alt="diya">'+T.c+'</button>'+(nAll>=2?'<button id="bpAll" class="all">Build All ×'+nAll+'</button>':'')+'</div>':'<button id="bpDo" class="pl">Play</button>'):'<button disabled>Next</button>')+'</div>')}
  if(step>=TASKS.length)rows.push('<div class="brow done"><img class="ti" src="art/task-10.webp" alt=""><span>Sivakasi Street is complete!</span></div>');
  $('bpRows').innerHTML=rows.join('');const b=$('bpDo');if(b)b.onclick=()=>{const T=TASKS[step];ov('oBuild',false);if(diyas>=T.c){SX('start');endTutorial();hideHome();doTask(0)}else{syncOut();CM.play(false)}}}
 $('bpX').onclick=()=>ov('oBuild',false);
+$('bpRows').addEventListener('click',e=>{if(e.target.closest('#bpAll')){ov('oBuild',false);SX('start');endTutorial();hideHome();buildAll()}});
+$('bSkip').onclick=e=>{e.stopPropagation();SPEED=30};
 // ---------- called by the game
 window.STREET={
  back:function(){wake();SHOW3D=true;syncIn();camHome(true);R.render(S,cam);$('sTitle').classList.add('off');$('sIntro').classList.add('off');showHome()},

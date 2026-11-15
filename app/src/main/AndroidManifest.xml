@@ -13,6 +13,5 @@
             </intent-filter>
         </activity>
         <!-- Build 28: keep Google's ad screen out of Android 15 edge-to-edge so its close button is not under the status bar -->
-        <activity android:name="com.google.android.gms.ads.AdActivity" android:theme="@style/AdTheme" tools:replace="android:theme" />
     </application>
 </manifest>

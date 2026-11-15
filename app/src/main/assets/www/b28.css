@@ -44,3 +44,38 @@
 .meter .mrew img{width:26px!important;height:26px!important}
 #t28{position:absolute;left:50%;top:150px;transform:translate(-50%,-10px);z-index:45;padding:10px 18px;border-radius:16px;background:linear-gradient(#2A3A78,#141C3D);border:2px solid #FFD24A;color:#FFE58A;font:18px Titan,sans-serif;white-space:nowrap;box-shadow:0 6px 16px #0008;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}
 #t28.on{opacity:1;transform:translate(-50%,0)}
+/* ===== Build 30 ===== */
+.adb{text-shadow:none!important;-webkit-text-stroke:0!important;font:800 11px Sora,sans-serif!important;line-height:1!important;filter:none!important}
+.adb *{text-shadow:none!important}
+/* hard level card: big 3D skull half outside the top of the card */
+#lSkull{position:absolute!important;left:50%!important;top:-66px!important;width:112px!important;height:112px!important;margin-left:-56px;z-index:6!important;animation:sk30 .7s .25s cubic-bezier(.3,1.6,.5,1) both,skg30 1.8s 1s ease-in-out infinite}
+#lc.hard #lSkull{filter:drop-shadow(0 0 14px #FF3B1Fcc) drop-shadow(0 6px 4px #0009) sepia(.35) saturate(1.6) hue-rotate(-15deg)!important}
+#lc.shard #lSkull{filter:drop-shadow(0 0 16px #B45CFFdd) drop-shadow(0 6px 4px #0009) sepia(.3) hue-rotate(220deg) saturate(1.5)!important}
+@keyframes sk30{0%{transform:translateY(-120px) scale(.6);opacity:0}60%{opacity:1}100%{transform:none;opacity:1}}
+@keyframes skg30{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+#lc.hard #lName,#lc.shard #lName{display:inline-block;padding:4px 26px;border-radius:12px;background:linear-gradient(#FF6A3D,#C8261C);border:2px solid #FFD24A;color:#fff!important;font:24px Titan,sans-serif!important;letter-spacing:1px;text-shadow:0 2px 0 #6B0F1A!important;box-shadow:0 4px 0 #6B0F1A}
+#lc.shard #lName{background:linear-gradient(#B46CFF,#6A1FC8)!important;box-shadow:0 4px 0 #2E0870}
+/* bonus round start card */
+.bc30{z-index:42;align-items:center;justify-content:center}
+.bc30.on{display:flex}
+.bc30 .bcard{position:relative;width:300px;padding:34px 20px 22px;border-radius:24px;text-align:center;color:#fff;background:linear-gradient(#2A3A78,#141C3D);border:3px solid #FFD24A;box-shadow:0 0 0 2px #7A5410,0 12px 30px #000a;animation:g28 .4s cubic-bezier(.3,1.5,.5,1)}
+.bc30 .brib{position:absolute;left:50%;top:-18px;transform:translateX(-50%);padding:6px 22px;border-radius:12px;background:linear-gradient(#FF6A6A,#D81E3A);border:2px solid #FFD24A;font:18px Titan,sans-serif;white-space:nowrap;box-shadow:0 4px 0 #6B0F1A}
+.bc30 h2{margin:0;font:38px Titan,sans-serif;color:#FFE58A;text-shadow:0 3px 0 #7A4A00}
+.bc30 img{width:120px;height:120px;object-fit:contain;margin:6px auto;display:block;filter:drop-shadow(0 6px 10px #FFB40066);animation:skg30 1.6s ease-in-out infinite}
+.bc30 p{margin:4px 0 10px;font:600 15px/1.4 Sora,sans-serif;opacity:.92}
+.bc30 .bmv{display:inline-block;margin-bottom:14px;padding:5px 16px;border-radius:14px;background:#ffffff18;font:18px Titan,sans-serif}
+.bc30 .bmv b{color:#FFE58A;font-weight:400}
+.bc30 .play{width:200px}
+/* cracker meter: glowing glass bar with space above and below */
+.meter{top:146px!important;height:34px!important;width:268px!important;padding:3px 4px 3px 12px!important;border-radius:18px!important;
+ background:linear-gradient(#3A1670,#1E0638)!important;border:2px solid #FFD24A;box-shadow:0 0 0 2px #7A4206,0 0 16px #FFB40088,0 6px 12px #0008!important;animation:mg30 2.4s ease-in-out infinite}
+.meter::before{display:none!important}
+@keyframes mg30{0%,100%{box-shadow:0 0 0 2px #7A4206,0 0 10px #FFB40066,0 6px 12px #0008}50%{box-shadow:0 0 0 2px #7A4206,0 0 22px #FFC83Fbb,0 6px 12px #0008}}
+.meter .mlab{color:#FFE58A!important;font:13px Titan,sans-serif!important;text-shadow:0 0 8px #FFB400aa,0 1px 0 #0008!important}
+.meter .mbar{height:14px!important;border-radius:8px!important;border:1.5px solid #FFD24A!important;background:#12041f!important;overflow:hidden}
+.meter .mbar i{background:linear-gradient(90deg,#FF8A1F,#FFD24A 70%,#FFF6C0)!important;box-shadow:0 0 10px #FFC83F,inset 0 -3px 0 #E07A0055!important;border-radius:8px}
+.meter .mrew{width:40px!important;height:40px!important;margin:-6px -8px -6px 2px;border:3px solid #FFD24A!important;background:radial-gradient(#6A2BB0,#2A0B4A)!important;box-shadow:0 0 12px #FFC83Faa,0 3px 0 #7A4206!important}
+.meter .mrew.on{animation:mr30 .8s ease-in-out infinite}
+@keyframes mr30{0%,100%{box-shadow:0 0 10px #FFC83F,0 3px 0 #7A4206;transform:scale(1)}50%{box-shadow:0 0 26px #FFE58A,0 3px 0 #7A4206;transform:scale(1.1)}}
+.meter .mrew img{width:30px!important;height:30px!important}
+.bc30 .play{display:block;margin:0 auto;height:56px;border:0;border-radius:30px;background:linear-gradient(#7CF08A,#22B94A 60%,#0E6B26);box-shadow:0 5px 0 #0B4A1A;color:#fff;font:26px Titan,sans-serif;text-shadow:0 2px 0 #0006;cursor:pointer}
