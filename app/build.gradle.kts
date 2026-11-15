@@ -5,7 +5,7 @@ android {
     defaultConfig {
         applicationId = "com.retroraja.crackersmatch"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 100 + (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
         versionName = "0.1.${System.getenv("GITHUB_RUN_NUMBER") ?: "0"}"
     }

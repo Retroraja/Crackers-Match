@@ -34,6 +34,9 @@ public class MainActivity extends Activity {
     private WebView web;
     private RewardedAd rewarded;
     private boolean earned;
+    private boolean pendingShow;
+    private boolean loading;
+    private String lastErr = "";
     private TextToSpeech tts;
     private boolean ttsReady;
 
@@ -70,9 +73,14 @@ public class MainActivity extends Activity {
     }
 
     private void loadAd() {
+        if (loading) return;
+        loading = true;
         RewardedAd.load(this, REWARDED_UNIT, new AdRequest.Builder().build(), new RewardedAdLoadCallback() {
-            @Override public void onAdLoaded(@NonNull RewardedAd ad) { rewarded = ad; }
-            @Override public void onAdFailedToLoad(@NonNull LoadAdError e) { rewarded = null; }
+            @Override public void onAdLoaded(@NonNull RewardedAd ad) { loading = false; rewarded = ad; if (pendingShow) { pendingShow = false; showNow(); } }
+            @Override public void onAdFailedToLoad(@NonNull LoadAdError e) {
+                loading = false; rewarded = null; lastErr = "code " + e.getCode();
+                if (pendingShow) { pendingShow = false; adResult(false); }
+            }
         });
     }
 
@@ -86,7 +94,24 @@ public class MainActivity extends Activity {
     }
 
     private void adResult(boolean ok) {
-        web.evaluateJavascript("window.adDone&&window.adDone(" + ok + ")", null);
+        web.evaluateJavascript("window.adErr='" + (ok ? "" : lastErr) + "';window.adDone&&window.adDone(" + ok + ")", null);
+    }
+
+    /** Build 29: if the video is not ready yet, wait for it (up to 12 s) instead of failing at once. */
+    private void showNow() {
+        if (rewarded == null) {
+            pendingShow = true; loadAd();
+            web.postDelayed(() -> { if (pendingShow) { pendingShow = false; lastErr = "timeout"; adResult(false); } }, 12000);
+            return;
+        }
+        earned = false;
+        rewarded.setFullScreenContentCallback(new FullScreenContentCallback() {
+            @Override public void onAdDismissedFullScreenContent() { rewarded = null; fullScreen(true); adResult(earned || TEST_ADS); loadAd(); }
+            @Override public void onAdFailedToShowFullScreenContent(@NonNull AdError e) { rewarded = null; lastErr = "show " + e.getCode(); fullScreen(true); adResult(false); loadAd(); }
+        });
+        fullScreen(false);
+        rewarded.setImmersiveMode(false);
+        rewarded.show(MainActivity.this, item -> earned = true);
     }
 
     private class Bridge {
@@ -101,17 +126,7 @@ public class MainActivity extends Activity {
             });
         }
         @JavascriptInterface public void showAd() {
-            runOnUiThread(() -> {
-                if (rewarded == null) { adResult(false); loadAd(); return; }
-                earned = false;
-                rewarded.setFullScreenContentCallback(new FullScreenContentCallback() {
-                    @Override public void onAdDismissedFullScreenContent() { rewarded = null; fullScreen(true); adResult(earned || TEST_ADS); loadAd(); }
-                    @Override public void onAdFailedToShowFullScreenContent(@NonNull AdError e) { rewarded = null; fullScreen(true); adResult(false); loadAd(); }
-                });
-                fullScreen(false);
-                rewarded.setImmersiveMode(false);
-                rewarded.show(MainActivity.this, item -> earned = true);
-            });
+            runOnUiThread(() -> showNow());
         }
     }
 

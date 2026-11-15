@@ -59,6 +59,25 @@ canvas{display:block;width:100%;height:100%}
 #top,#bot{display:none!important}
 #home{z-index:30}
 /* cards: agree, how to play, level win, notifications, settings */
+.bp{position:relative;width:90%;max-width:350px;border-radius:24px;padding:16px 14px 18px;background:linear-gradient(#24305e,#141c3d);border:3px solid #d9b24a;box-shadow:0 0 0 2px #7a5410,0 10px 30px #000a;transform:scale(.85);transition:transform .3s cubic-bezier(.3,1.5,.5,1);font-family:'Lilita One',Titan,sans-serif;color:#fff}
+.ov.on .bp{transform:scale(1)}
+.bp h2{margin:0 0 12px;text-align:center;font:400 30px 'Lilita One',sans-serif;color:#FFE58A;text-shadow:0 3px 0 #7a4a00}
+.bp .bx{position:absolute;right:-12px;top:-14px;width:42px;height:42px;border-radius:50%;border:3px solid #fff3b0;background:radial-gradient(circle at 40% 35%,#ff6a5a,#c8102e);color:#fff;font:22px sans-serif;box-shadow:0 3px 0 #6b0f1a;cursor:pointer}
+.bprog{position:relative;padding:10px 64px 12px 12px;border-radius:16px;background:#ffffff12;border:2px solid #ffffff1c;margin-bottom:12px}
+.bprog b{display:block;font-weight:400;font-size:18px;color:#FFE58A;margin-bottom:6px}
+.bbar{position:relative;height:22px;border-radius:12px;background:#0b1230;border:2px solid #d9b24a;overflow:hidden}
+.bbar i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(#9cf07a,#2fb54a);border-radius:10px;transition:width .5s}
+.bbar span{position:relative;display:block;text-align:center;font-size:15px;line-height:19px;text-shadow:0 2px 0 #0008}
+.bprog img{position:absolute;right:6px;top:50%;width:56px;height:56px;margin-top:-28px;object-fit:contain;filter:drop-shadow(0 3px 3px #0008)}
+.brow{display:flex;align-items:center;gap:10px;padding:8px;border-radius:16px;background:linear-gradient(#fffdf2,#ffefc4);margin-top:8px;color:#4a2a10;box-shadow:0 3px 0 #b08a3a}
+.brow img.ti{width:58px;height:58px;border-radius:12px;object-fit:cover;background:#cfe3ff;border:2px solid #fff}
+.brow span{flex:1;font-size:17px;line-height:1.1}
+.brow button{min-width:96px;height:46px;border:0;border-radius:12px;background:linear-gradient(#9cf07a,#2fb54a 55%,#1e8a34);box-shadow:0 4px 0 #145a22;color:#fff;font:19px 'Lilita One',sans-serif;text-shadow:0 2px 0 #0006;display:flex;align-items:center;justify-content:center;gap:3px;cursor:pointer}
+.brow button img{width:22px;height:22px}
+.brow button.pl{background:linear-gradient(#7cc8ff,#2f7fe0 55%,#1d4fb0);box-shadow:0 4px 0 #12306a}
+.brow.lk{opacity:.6;filter:grayscale(.5)}
+.brow.lk button{background:#8a8a9a;box-shadow:0 4px 0 #555;font-size:16px}
+.brow.done span{text-decoration:line-through;opacity:.7}
 .ov{position:absolute;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;background:#1a0a1499;opacity:0;pointer-events:none;transition:opacity .35s}.ov.on{opacity:1;pointer-events:auto}
 .card{width:84%;max-width:340px;border-radius:26px;border:4px solid #6B0F1A;background:linear-gradient(#fffdf2,#ffefc4);box-shadow:0 8px 0 #6B0F1A,0 18px 30px #0007;padding:22px 20px 18px;text-align:center;font-family:Poppins,sans-serif;color:#6B0F1A;transform:scale(.8);transition:transform .35s cubic-bezier(.3,1.5,.5,1)}.ov.on .card{transform:scale(1)}
 .card h2{margin:0 0 8px;font:400 32px/1.05 'Lilita One',Titan,sans-serif;color:#FF3D5E;-webkit-text-stroke:5px #6B0F1A;paint-order:stroke fill;letter-spacing:.5px}
@@ -132,6 +151,9 @@ canvas{display:block;width:100%;height:100%}
  </div>
  <div id="tdim"></div><div id="hand">👆</div><div id="tip"></div>
  <div class="ov" id="oAgree"><div class="card"><h2>Welcome!</h2><p>Before you play, please read our <a href="#" onclick="return false">Privacy Policy</a> and <a href="#" onclick="return false">Terms of Service</a>.</p><button class="cb" id="bAgree">I Agree</button></div></div>
+<div class="ov" id="oBuild"><div class="bp"><button class="bx" id="bpX" aria-label="Close">&#10005;</button><h2>Sivakasi Street</h2>
+ <div class="bprog"><b>Street Progress</b><div class="bbar"><i id="bpBar"></i><span id="bpCnt">0/10</span></div><img src="art/giftbox.webp" alt="Area reward"></div>
+ <div id="bpRows"></div></div></div>
  <div class="ov" id="oNotif"><div class="card"><h2>Never Miss a Gift</h2><p>Get a reminder when your lives are full and your daily gift is ready.</p><button class="cb" id="bAllow">Allow</button><button class="cb g" id="bLater">Later</button></div></div>
  <div id="toast"></div>
  <div id="top"><div id="ttl" class="gl">Sunset Village<small>Area 1</small></div><div class="pill gl"><img src="art/ui-diya.webp" alt=""><span id="dn">24</span></div></div>
@@ -299,7 +321,7 @@ Promise.all([KIT.ready,document.fonts&&document.fonts.load?document.fonts.load('
  TASKS.push({n:'Build the Coffee Stall',c:1,ic:'☕',site:SITE.cof,shot:shots.cof,run(){after(.1,()=>dust(SITE.cof,16,3));COF.X.forEach((o,i)=>dropIn(o,.2+i*.12,3));after(.4+COF.X.length*.12,()=>{sparkle(SITE.cof,40,3.5);ring(SITE.cof);const p=new THREE.Vector3();COF.X[3].getWorldPosition(p);EM.push({k:'steam',p:p.add(V(0,.3,0)),r:2.5,a:0})})}});
  TASKS.push({n:'Plant the Vegetable Farm',c:1,ic:'🎃',site:SITE.farm,shot:shots.farm,run(){after(.1,()=>dust(SITE.farm,14,3.5));FARM.forEach((o,i)=>{if(/Fence|Wagon/.test(o.name))dropIn(o,.2+i*.06,2);else grow(o,.6+i*.06,.5)});after(2.8,()=>{sparkle(SITE.farm,30,2)})}});
  TASKS.push({n:'Build the Bridge',c:1,ic:'🌉',site:V(BX,0,SZ),shot:shots.br,run(){BANK.forEach((o,i)=>grow(o,.2+i*.08,.5));BR.forEach((o,i)=>dropIn(o,1.0+i*.1,2.5));after(1.1,()=>dust(V(BX,0,SZ),10,2));after(3.4,()=>{sparkle(V(BX,0,SZ),30,2);ring(V(BX,0,SZ),0xbfeaff,.4)})}});
- TASKS.push({n:'Open the Crackers Shop',c:2,ic:'🧨',site:SITE.smith,shot:shots.smith,run(){buildHouse(SMITH,'Crackers Shop')}});
+ TASKS.push({n:'Open the Crackers Shop',c:1,ic:'🧨',site:SITE.smith,shot:shots.smith,run(){buildHouse(SMITH,'Crackers Shop')}});
  TASKS.push({n:'Open the Market',c:1,ic:'🍎',site:SITE.mkt,shot:shots.mkt,run(){MKT.forEach((o,i)=>dropIn(o,.2+i*.14,2.5));after(.3,()=>{dust(SITE.mkt,12,3);dust(SITE.cart,6,1.5)});after(2.4,()=>{sparkle(SITE.mkt,30,3)})}});
  TASKS.push({n:'Build the Crackers Factory',c:2,ic:'🏭',dur:7,site:SITE.crk,shot:shots.crk,run(){const t=buildHouse(CRK,'Crackers Factory');after(t,()=>{const p=new THREE.Vector3();CRK.chim.getWorldPosition(p);EM.push({k:'smoke',p:p.add(V(0,1.6,0)),r:3,a:0})});ENDX.forEach((o,i)=>/Border/.test(o.name)?dropIn(o,.2+i*.08,1.5):grow(o,t*.6+i*.1,.5));after(t+.6,()=>SHOW=1)}});
  {const ord=[2,1,0,3,4,5,6,7,8,9];const t=ord.map(k=>TASKS[k]),v=ord.map(k=>VW[k]);TASKS.splice(0,10,...t);VW.splice(0,10,...v)}
@@ -315,8 +337,8 @@ function glideTo(v){const id=++CAMID,p0=camP.clone(),l0=camL.clone(),dist=p0.dis
 function holdShot(v,d){const id=++CAMID,p0=camP.clone();const p1=p0.clone().lerp(v.look,.05);tween(d,k=>{if(id!==CAMID)return;camP.lerpVectors(p0,p1,sm(k));camL.copy(v.look)})}
 function runNext(){const T=TASKS[step];diyas-=T.c;ui();{const tot=(T.dur||T.shot.d-.6)+.8;SPEED=Math.max(1,(tot+1.2)/(step==0?3:4))}let wait=0;if(CAMMODE=='close'){if(!VIEWS)buildViews();wait=Math.max(0,glideTo(VIEWS[step])-.5)}
  const v=VIEWS&&VIEWS[step];
- const go=()=>spendFx(T,()=>{if(CAMMODE=='close')holdShot(v,(T.dur||T.shot.d));T.run();const total=CAMMODE=='close'?(T.dur||T.shot.d-.6)+.8:(T.dur?T.dur-1:3.4)+.5;
-  after(total,()=>{step++;ui();if(auto&&step<TASKS.length&&diyas>=TASKS[step].c)runNext();else{busy=0;SPEED=1;$('hint').classList.remove('on');ui();if(step>=TASKS.length)win();setTimeout(showHome,step>=TASKS.length?2600:250)}})});
+ const go=()=>spendFx(T,()=>{SX('build');if(CAMMODE=='close')holdShot(v,(T.dur||T.shot.d));T.run();const total=CAMMODE=='close'?(T.dur||T.shot.d-.6)+.8:(T.dur?T.dur-1:3.4)+.5;
+  after(total,()=>{step++;ui();SX(step>=TASKS.length?'area':'done');if(auto&&step<TASKS.length&&diyas>=TASKS[step].c)runNext();else{busy=0;SPEED=1;$('hint').classList.remove('on');ui();if(step>=TASKS.length)win();setTimeout(showHome,step>=TASKS.length?2600:250)}})});
  after(wait,go)}
 $('c').addEventListener('pointerdown',()=>{if(busy)SPEED=Math.min(6,Math.max(SPEED*1.8,2))});
 let OPT='B';
@@ -341,7 +363,8 @@ function ui(){$('dn').textContent=diyas;$('fill').style.width=(step/TASKS.length
  $('ic').textContent=T.ic;$('kind').textContent='Task '+(step+1)+' of '+TASKS.length;$('nm').textContent=T.n;$('cost').textContent=T.c;$('go').disabled=busy||diyas<T.c}
 $('go').onclick=()=>doTask(0);$('allb').onclick=()=>doTask(1);$('rs').onclick=()=>location.reload();
 let last=0,fwT=0;
-function loop(now){const dt=Math.min(DTCAP,(now-last)/1000||0)*SPEED;last=now;clock+=dt;
+let PAUSED=0,LOOPOFF=0;function wake(){PAUSED=0;if(LOOPOFF){LOOPOFF=0;last=performance.now();requestAnimationFrame(loop)}}
+function loop(now){if(PAUSED){LOOPOFF=1;return}const dt=Math.min(DTCAP,(now-last)/1000||0)*SPEED;last=now;clock+=dt;
  const cur=TW.splice(0),keep=[];cur.forEach(o=>{o.t+=dt;if(o.t<0){keep.push(o);return}const k=Math.min(1,o.t/o.d);o.fn(k);if(k<1)keep.push(o)});TW.push(...keep);
  cam.position.copy(camP);cam.lookAt(camL);
  if(camP.y>20){sun.target.position.set(0,0,-6);sun.position.set(-40,45,40);sun.shadow.camera.left=-45;sun.shadow.camera.right=45;sun.shadow.camera.top=75;sun.shadow.camera.bottom=-75}else{sun.target.position.copy(camL);sun.position.set(camL.x-26,30,camL.z+20);sun.shadow.camera.left=-24;sun.shadow.camera.right=24;sun.shadow.camera.top=28;sun.shadow.camera.bottom=-28}sun.shadow.camera.updateProjectionMatrix();R.toneMappingExposure=EXPO;
@@ -372,11 +395,12 @@ function toast(t){const d=$('toast');d.textContent=t;d.classList.add('on');clear
 const TS=[];function buildTitle(){const h=$('hTop');h.innerHTML=layer();const root=h.querySelector('.tsc');const sc=new Scene(root,{ch:1});const fr=document.createElement('div');fr.className='fr';root.insertBefore(fr,root.querySelector('.cloud'));sc.start();TS.push(sc)}
 function setLogo(on){document.querySelectorAll('#sTitle .tlogo').forEach(l=>l.classList.toggle('on',on))}
 function showTap(){document.querySelectorAll('#sTitle .ttap').forEach(l=>l.classList.add('on'))}
-function playScreens(){buildTitle();const st=$('sTitle'),si=$('sIntro');
+function sideRk(){setTimeout(()=>{if($('sTitle').classList.contains('off'))return;const l=Math.random()<.5,W=FW.W,H=FW.H;SX('rocketS');fwRocket(l?W*.18:W*.82,l?W*(.12+Math.random()*.12):W*(.76+Math.random()*.12),H*(.12+Math.random()*.1),.8,(x,y)=>{SX('pop');fwBurst(x,y,46,150,GOLD)});sideRk()},2600+Math.random()*1800)}
+function playScreens(){buildTitle();const st=$('sTitle'),si=$('sIntro');SX('brand');
  setTimeout(()=>{st.style.transition='none';st.classList.remove('off');void st.offsetWidth;st.style.transition='';si.classList.add('off');fwRun();
-  const reveal=()=>fwRocket(FW.W/2,FW.W/2,FW.H*.2,.9,(x,y)=>{fwBurst(x,y,140,260,GOLD);fwBurst(x,y,60,140,GOLD);setLogo(true);
+  const reveal=()=>{SX('music');SX('rocket');fwRocket(FW.W/2,FW.W/2,FW.H*.2,.9,(x,y)=>{SX('blast');sideRk();fwBurst(x,y,140,260,GOLD);fwBurst(x,y,60,140,GOLD);setLogo(true);
    setTimeout(()=>{fwBurst(FW.W*.2,FW.H*.17,70,170,GOLD);fwBurst(FW.W*.8,FW.H*.24,70,170,GOLD)},400);
-   const wait=()=>{if(READY){showTap();busyT=0}else setTimeout(wait,200)};setTimeout(wait,900)});
+   const wait=()=>{if(READY){showTap();busyT=0}else setTimeout(wait,200)};setTimeout(wait,900)})};
   if(GS.agreed)reveal();else{ov('oAgree',true);$('bAgree').onclick=()=>{GS.agreed=1;save();ov('oAgree',false);setTimeout(reveal,350)}}},2600)}
 $('sTitle').addEventListener('pointerdown',()=>{if(busyT||$('sTitle').classList.contains('off'))return;busyT=1;const first=!(GS.lv>0);
  if(!first){SHOW3D=true;syncIn();camHome(true);R.render(S,cam)}
@@ -388,7 +412,7 @@ function syncOut(){GS.diyas=diyas;GS.step=step;save()}
 // ---------- home buttons
 function homeUI(){const n=Math.min(step,TASKS.length);$('hCnt').textContent=n;$('hBar').style.width=(n/TASKS.length*100)+'%';$('tDy').textContent=diyas;$('tCoin').textContent=GS.coins||0;
  let c=0,d=diyas;for(let i=step;i<TASKS.length;i++){if(d<TASKS[i].c)break;d-=TASKS[i].c;c++}$('hBadge').textContent=c;$('hBadge').style.display=c?'block':'none';
- const T=TASKS[step];$('hBuild').disabled=busy||!T||diyas<T.c;
+ const T=TASKS[step];$('hBuild').disabled=!!busy;
  const lvN=(GS.lv||0)+1,all=CM.levels?CM.levels():10;$('hPlay').querySelector('.f').innerHTML=lvN>all?'Area 2 Soon':'Level <span class="t2">'+lvN+'</span>';$('hPlay').disabled=lvN>all}
 function camHome(instant){if(!VIEWS)buildViews();if(step>=TASKS.length){camTo(V(0,9.5,-24),V(0,6.5,-58),instant?0.01:1.6);return}const v=VIEWS[step];if(instant){CAMID++;camP.copy(v.p);camL.copy(v.look)}else glideTo(v)}
 function showHome(){syncOut();$('home').classList.remove('off');homeUI();if(step==0&&!GS.tut&&diyas>=TASKS[0].c)setTimeout(tutorial,700);else if((GS.lv||0)>=2&&!GS.notif28)setTimeout(()=>ov('oNotif',true),700)}
@@ -402,16 +426,25 @@ let TUT=0;function tutorial(){const app=$('app').getBoundingClientRect(),pill=$(
  $('tdim').onclick=next;tip.onclick=next}
 function endTutorial(){if(!TUT)return;TUT=0;GS.tut=1;save();$('home').style.zIndex='';$('tdim').classList.remove('on');$('tip').style.display='none';$('hand').style.display='none';$('hBuild').classList.remove('lift','glow');$('tDy').closest('.pl').classList.remove('lift')}
 $('hPlay').onclick=()=>{if(busy||TUT||$('hPlay').disabled)return;syncOut();CM.play(false)};
-$('hBuild').onclick=()=>{if(busy||$('hBuild').disabled||TUT==1)return;endTutorial();hideHome();doTask(0)};
+$('hBuild').onclick=()=>{if(busy||TUT==1)return;if(TUT==2){const T=TASKS[step];endTutorial();SX('start');hideHome();doTask(0);return}panel();ov('oBuild',true);SX('open')};
 $('bAllow').onclick=()=>{GS.notif28=1;save();ov('oNotif',false);CM.notify()};
 $('bLater').onclick=()=>{GS.notif28=1;save();ov('oNotif',false)};
 document.querySelector('#home .gear').onclick=()=>CM.sheet('set');
 $('pCoin').onclick=()=>CM.sheet('shop');$('hShop').onclick=()=>CM.sheet('shop');$('hDaily').onclick=()=>CM.sheet('daily');
 document.querySelectorAll('.bn button').forEach(b=>{if(b.classList.contains('on'))return;const n=b.textContent.trim();b.onclick=()=>{if(n=='Crackers')CM.sheet('bag');else toast(n+' comes soon')}});
+
+// ---------- build panel (like the Royal Match task list): next task + the one after it
+function SX(n){try{CM.sfx&&CM.sfx(n)}catch(e){}}
+function panel(){const n=Math.min(step,TASKS.length);$('bpBar').style.width=(n/TASKS.length*100)+'%';$('bpCnt').textContent=n+'/'+TASKS.length;
+ const rows=[];for(let i=step;i<Math.min(step+2,TASKS.length);i++){const T=TASKS[i],first=i==step,can=diyas>=T.c;
+  rows.push('<div class="brow'+(first?'':' lk')+'"><img class="ti" src="art/task-'+(i+1)+'.webp" alt=""><span>'+T.n+'</span>'+(first?(can?'<button id="bpDo">Build <img src="art/ui-diya.webp" alt="diya">'+T.c+'</button>':'<button id="bpDo" class="pl">Play</button>'):'<button disabled>Next</button>')+'</div>')}
+ if(step>=TASKS.length)rows.push('<div class="brow done"><img class="ti" src="art/task-10.webp" alt=""><span>Sivakasi Street is complete!</span></div>');
+ $('bpRows').innerHTML=rows.join('');const b=$('bpDo');if(b)b.onclick=()=>{const T=TASKS[step];ov('oBuild',false);if(diyas>=T.c){SX('start');endTutorial();hideHome();doTask(0)}else{syncOut();CM.play(false)}}}
+$('bpX').onclick=()=>ov('oBuild',false);
 // ---------- called by the game
 window.STREET={
- back:function(){SHOW3D=true;syncIn();camHome(true);R.render(S,cam);$('sTitle').classList.add('off');$('sIntro').classList.add('off');showHome()},
- pause:function(){SHOW3D=false},
+ back:function(){wake();SHOW3D=true;syncIn();camHome(true);R.render(S,cam);$('sTitle').classList.add('off');$('sIntro').classList.add('off');showHome()},
+ pause:function(){SHOW3D=false;PAUSED=1},
  refresh:function(){if(!$('home').classList.contains('off'))homeUI()}};
 playScreens();
 try{CM.ready&&CM.ready()}catch(e){}

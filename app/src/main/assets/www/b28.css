@@ -42,3 +42,5 @@
 @keyframes msw{from{background-position:-60px 0}to{background-position:260px 0}}
 .meter .mrew{width:34px!important;height:34px!important;margin-right:-2px;background:radial-gradient(#5B2A8C,#2A0B4A)!important;border:3px solid #FFD24A!important;box-shadow:0 2px 0 #7A4206,0 0 0 1px #B5700E}
 .meter .mrew img{width:26px!important;height:26px!important}
+#t28{position:absolute;left:50%;top:150px;transform:translate(-50%,-10px);z-index:45;padding:10px 18px;border-radius:16px;background:linear-gradient(#2A3A78,#141C3D);border:2px solid #FFD24A;color:#FFE58A;font:18px Titan,sans-serif;white-space:nowrap;box-shadow:0 6px 16px #0008;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}
+#t28.on{opacity:1;transform:translate(-50%,0)}
