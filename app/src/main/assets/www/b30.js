@@ -14,7 +14,9 @@ var GL=null;window.GLOW30=function(){if(GL)return GL;GL=document.createElement('
 var TC={};window.TOP30=function(img){if(!img||!img.naturalWidth)return img;var k=img.src;if(TC[k])return TC[k];var c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;var x=c.getContext('2d');x.drawImage(img,0,0);x.clearRect(0,c.height*.52,c.width,c.height);return TC[k]=c};
 
 // ---- board canvas: shadow blur switched off (the slowest thing to draw on phones); measure speed for auto-lite
-var LITE=0;try{LITE=+localStorage.getItem('cm_lite')||0}catch(e){}window.LITE30=LITE;
+var LITE=0;try{LITE=+localStorage.getItem('cm_lite')||0}catch(e){}
+// weak phones (4 GB or less, or 4 cores or fewer) start in light mode straight away
+try{var dm=navigator.deviceMemory,hc=navigator.hardwareConcurrency;if((dm&&dm<=4)||(hc&&hc<=4))LITE=1}catch(e){}window.LITE30=LITE;
 var fr={n:0,t:0,on:false};
 if(P){var draw0=P.draw;P.draw=function(dt){var c=this.x;if(c&&!c.__nsb){c.__nsb=1;try{Object.defineProperty(c,'shadowBlur',{get:function(){return 0},set:function(){},configurable:true})}catch(e){}}
  if(this.isGame&&!window.LITE30){var now=performance.now();if(fr.last){var d=now-fr.last;if(d<200){fr.n++;fr.t+=d}}fr.last=now;
@@ -71,8 +73,12 @@ if(G.strike){var st0=G.strike;G.strike=function(r,c,cells,t0,step,onHit,hold){va
  var cb=function(p){var t=performance.now();if(t-last>45){last=t;Z30.zap()}if(onHit)return onHit.apply(this,arguments)};
  return st0.call(this,r,c,cells,t0,step,cb,hold)}}
 })();
-// ---- normal match sound = his recorded blast (15 Nov). One sound per match (several at once = one, a bit fuller);
-// match 4/5/L/T (makes a special) plays it fuller and deeper; each cascade step plays it a little higher.
-(function(){if(!window.SFX)return;var last=0,lastAt=-1;
-SFX.cracker=function(k,c,n,at){at=at||0;var now=performance.now()/1000+at;if(Math.abs(now-last)<.045)return .12;last=now;var big=(n||3)>=4,j=1+Math.min(c||0,5)*.04+Math.random()*.02;
- SFX.play('blastnew',{rate:(big?.88:1)*j,v:big?1:.8,at:at});return .12}})();
+// ---- normal match sound = his recorded blast, option 5 "Mixed" (chosen 15 Nov 14:06):
+// each match plays the next of 4 short variations of his pop with a tiny random pitch/volume change,
+// each cascade step is one semitone higher, from the 5th step a sparkle finish; several matches at the same moment = one sound + a soft low layer.
+(function(){if(!window.SFX)return;var last=-9,extra=-9,rr=0,V=[[.28,1],[.24,1.06],[.32,.95],[.26,1.03]];
+SFX.cracker=function(k,c,n,at){at=at||0;c=c||0;var now=performance.now()/1000+at;
+ if(Math.abs(now-last)<.045){if(Math.abs(now-extra)>.045){extra=now;SFX.play('blastnew',{rate:.8,v:.25,at:at+.01,cut:.25})}return .12}last=now;
+ var big=(n||3)>=4,v=V[rr++%4],st=Math.pow(2,Math.min(c,8)/12);
+ SFX.play('blastnew',{rate:v[1]*st*(big?.9:1)*(1+(Math.random()-.5)*.03),v:(big?.85:.65)*(.92+Math.random()*.16),at:at,cut:v[0]+(big?.08:0)});
+ if(c>=4&&SFX.chime)[0,1,2].forEach(function(i){setTimeout(function(){SFX.chime(i)},at*1000+80+i*55)});return .12}})();

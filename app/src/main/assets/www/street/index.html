@@ -173,7 +173,7 @@ canvas{display:block;width:100%;height:100%}
 const FIXED=false;const CAMMODE='close';
 const $=id=>document.getElementById(id),APP=$('app'),rnd=(a,b)=>a+Math.random()*(b-a),V=(x,y,z)=>new THREE.Vector3(x,y,z),PI=Math.PI,LC=h=>new THREE.Color(h).convertSRGBToLinear();
 let seed=7;const rr=(a,b)=>{seed=(seed*16807)%2147483647;return a+(seed/2147483647)*(b-a)};// fixed layout every load
-const R=new THREE.WebGLRenderer({canvas:$('c'),antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,1.5));R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;R.outputEncoding=THREE.sRGBEncoding;R.toneMapping=THREE.ACESFilmicToneMapping;
+const LITE_S=(function(){try{return !!(parent&&parent.LITE30)}catch(e){return false}})();const R=new THREE.WebGLRenderer({canvas:$('c'),antialias:!LITE_S});R.setPixelRatio(Math.min(devicePixelRatio,LITE_S?1:1.5));R.shadowMap.enabled=!LITE_S;R.shadowMap.type=LITE_S?THREE.BasicShadowMap:THREE.PCFSoftShadowMap;R.outputEncoding=THREE.sRGBEncoding;R.toneMapping=THREE.ACESFilmicToneMapping;
 let EXPO=1.0;
 const S=new THREE.Scene();
 function ctex(w,h,fn,rep){const c=document.createElement('canvas');c.width=w;c.height=h;fn(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=8;if(rep){t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rep[0],rep[1])}return t}
@@ -412,7 +412,7 @@ function playScreens(){buildTitle();const st=$('sTitle'),si=$('sIntro');SX('bran
    setTimeout(()=>{fwBurst(FW.W*.2,FW.H*.17,70,170,GOLD);fwBurst(FW.W*.8,FW.H*.24,70,170,GOLD)},400);
    const wait=()=>{if(READY){showTap();busyT=0}else setTimeout(wait,200)};setTimeout(wait,900)})};
   if(GS.agreed)reveal();else{ov('oAgree',true);$('bAgree').onclick=()=>{GS.agreed=1;save();ov('oAgree',false);setTimeout(reveal,350)}}},2600)}
-$('sTitle').addEventListener('pointerdown',()=>{if(busyT||$('sTitle').classList.contains('off'))return;busyT=1;const first=!(GS.lv>0);
+$('sTitle').addEventListener('pointerdown',()=>{if(busyT||$('sTitle').classList.contains('off'))return;busyT=1;const first=!(GS.lv>0);if(first){busyT=0;CM.play(true);return}
  if(!first){SHOW3D=true;syncIn();camHome(true);R.render(S,cam)}
  $('glow').classList.add('on');$('sTitle').classList.add('fade');setTimeout(()=>$('glow').classList.remove('on'),450);
  setTimeout(()=>{$('sTitle').classList.add('off');$('sTitle').classList.remove('fade');TS.forEach(sc=>sc.stop());busyT=0;if(!first)showHome()},900);if(first)setTimeout(()=>CM.play(true),380)});
@@ -458,6 +458,6 @@ window.STREET={
  back:function(){wake();SHOW3D=true;syncIn();camHome(true);R.render(S,cam);$('sTitle').classList.add('off');$('sIntro').classList.add('off');showHome()},
  pause:function(){SHOW3D=false;PAUSED=1},
  refresh:function(){if(!$('home').classList.contains('off'))homeUI()}};
-playScreens();
+if(/home=1/.test(location.search)){$('sTitle').classList.add('off');$('sIntro').classList.add('off');(function w(){if(READY)window.STREET.back();else setTimeout(w,100)})()}else playScreens();
 try{CM.ready&&CM.ready()}catch(e){}
 </script></body></html>

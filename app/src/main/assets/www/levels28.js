@@ -19,7 +19,7 @@ function mk(o){var rows=o.rows,shape=rows.map(function(r){return r.replace(/[^#]
  for(k in (o.goal||{}))lv.goal[k]=o.goal[k];
  return lv}
 window.LEVELS=[
- mk({name:'Crate Start',moves:18,colors:C3,luck:.5,rows:['##....##','#......#','........','........','........','........','cccccccc','cccccccc','#cccccc#']}),
+ mk({name:'Crate Start',moves:18,colors:C3,luck:.5,rows:['##....##','#......#','........','........','........','........','........','.cccccc.','..cccc..']}),
  mk({name:'Rocket Lesson',moves:18,colors:C3,luck:.5,teach:'rocket',intro:['rocket'],rows:['........','........','........','........','........','cccccccc','cccccccc','cccccccc','########']}),
  mk({name:'Hidden Hole',moves:20,colors:C3,luck:.5,teach:'line5',intro:['hole'],rows:['........','........','........','cccccccc','ccoooocc','ccoooocc','ccoooocc','cccccccc','########']}),
  mk({name:'Gold Floor',moves:20,colors:C3,luck:.5,intro:['gold'],rows:['........','........','..1.....','gggggggg','gggggggg','gggggggg','#gggggg#','##gggg##','###gg###']}),

@@ -5,7 +5,7 @@ android {
     defaultConfig {
         applicationId = "com.retroraja.crackersmatch"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 100 + (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
         versionName = "0.1.${System.getenv("GITHUB_RUN_NUMBER") ?: "0"}"
     }
@@ -25,4 +25,4 @@ android {
     }
 }
 
-dependencies { implementation("com.google.android.gms:play-services-ads:24.9.0"); implementation("androidx.webkit:webkit:1.12.1"); implementation("androidx.annotation:annotation:1.8.0") }
+dependencies { implementation("com.google.android.gms:play-services-ads:23.6.0"); implementation("androidx.webkit:webkit:1.12.1"); implementation("androidx.annotation:annotation:1.8.0") }
