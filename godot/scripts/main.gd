@@ -34,6 +34,7 @@ func _ready() -> void:
 	var dim := ColorRect.new()
 	dim.color = Color(0.12, 0.03, 0.22, 0.35)
 	dim.size = Vector2(390, 900)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(dim)
 	sfx = Sfx.new()
 	add_child(sfx)
@@ -134,6 +135,7 @@ func _build_ui() -> void:
 	fps.size = Vector2(130, 24)
 	fps.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	ui.add_child(fps)
+	_ignore_all(top)
 	_build_menu()
 	_build_end()
 
@@ -182,6 +184,12 @@ func _build_end() -> void:
 	lv_b.custom_minimum_size = Vector2(220, 52)
 	lv_b.pressed.connect(_show_menu)
 	vb.add_child(lv_b)
+
+func _ignore_all(n: Node) -> void:
+	if n is Control:
+		(n as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for ch in n.get_children():
+		_ignore_all(ch)
 
 func _show_menu() -> void:
 	endp.visible = false
@@ -270,6 +278,28 @@ func _auto_test() -> void:
 	for li in [0, 9, 8]:
 		_start(li)
 		await get_tree().create_timer(0.8).timeout
+		# a real finger swipe through the input system
+		var mv0 := board.moves
+		var fm := _find_move()
+		if not fm.is_empty():
+			var p0: Vector2 = board.to_global(board.cpos(fm[0].x, fm[0].y))
+			var p1: Vector2 = board.to_global(board.cpos(fm[1].x, fm[1].y))
+			var tdown := InputEventScreenTouch.new()
+			tdown.position = p0
+			tdown.pressed = true
+			Input.parse_input_event(tdown)
+			await get_tree().process_frame
+			var dr := InputEventScreenDrag.new()
+			dr.position = p0.lerp(p1, 0.8)
+			dr.relative = p1 - p0
+			Input.parse_input_event(dr)
+			await get_tree().process_frame
+			var tup := InputEventScreenTouch.new()
+			tup.position = p1
+			tup.pressed = false
+			Input.parse_input_event(tup)
+			await get_tree().create_timer(1.5).timeout
+			print("SWIPE TEST level ", li + 1, ": moves ", mv0, " -> ", board.moves)
 		await _shot("t_l%d_start" % (li + 1))
 		var moves_done := 0
 		var t0 := Time.get_ticks_msec()
