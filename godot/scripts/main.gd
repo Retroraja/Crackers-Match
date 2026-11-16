@@ -48,6 +48,10 @@ func _ready() -> void:
 	deb.z_index = 4
 	add_child(deb)
 	board.deb = deb
+	var f3 := CMFly.new()
+	f3.z_index = 10
+	add_child(f3)
+	board.fly3d = f3
 	board.moves_changed.connect(func(_n): _refresh())
 	board.goal_changed.connect(func(_g): _refresh())
 	board.level_won.connect(func(_m): _on_finished(true))
@@ -278,6 +282,8 @@ func _valid(m: Array) -> bool:
 	var b = board.at2(m[0] + m[2], m[1] + m[3])
 	if a == null or b == null or not board.rest(a) or not board.rest(b) or a.has("ob") or b.has("ob"):
 		return false
+	if a.k >= 6 or b.k >= 6:
+		return true
 	var t: int = a.k
 	a.k = b.k
 	b.k = t

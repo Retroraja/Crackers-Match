@@ -49,17 +49,17 @@ func _player() -> AudioStreamPlayer:
 	return pool[0]
 
 # name, volume 0..1, pitch, delay seconds, cut length seconds (0 = full)
-func play(n: String, v: float = 1.0, pitch: float = 1.0, delay: float = 0.0, cut: float = 0.0) -> void:
+func play(n: String, v: float = 1.0, pitch: float = 1.0, delay: float = 0.0, cut: float = 0.0, off: float = 0.0) -> void:
 	if not streams.has(n):
 		return
 	if delay > 0.0:
-		get_tree().create_timer(delay).timeout.connect(play.bind(n, v, pitch, 0.0, cut))
+		get_tree().create_timer(delay).timeout.connect(play.bind(n, v, pitch, 0.0, cut, off))
 		return
 	var a := _player()
 	a.stream = streams[n]
 	a.pitch_scale = clampf(pitch, 0.3, 3.0)
 	a.volume_db = linear_to_db(clampf(v, 0.01, 1.5))
-	a.play()
+	a.play(off)
 	if cut > 0.0:
 		var tw := create_tween()
 		tw.tween_interval(maxf(cut - 0.12, 0.02))
