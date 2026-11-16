@@ -100,8 +100,8 @@ var gs_open := false
 var L_card: WebLayout
 var L_hard: WebLayout
 var L_ban: WebLayout
-var L_lose: WebLayout
-var L_fail: WebLayout
+var LO: LoseUI
+var lose_tw: Tween
 var L_win: WebLayout
 var L_be: WebLayout
 var L_bc: WebLayout
@@ -375,6 +375,8 @@ var screens := {}
 func show_screen(id: String) -> void:
 	for k in screens:
 		screens[k].visible = k == id
+	if LO and id != "game":
+		lose_hide()
 	if id != "win":
 		if chakra:
 			chakra.stop()
@@ -397,6 +399,8 @@ func _board_input() -> void:
 	for c in [L_card.root, L_hard.root, L_ban.root, L_buy.root, L_got.root, L_bc.root, L_agree.root]:
 		if c.visible:
 			blocked = true
+	if LO and LO.root.visible:
+		blocked = true
 	if not screens.get("game", stage).visible:
 		blocked = true
 	if game:
@@ -1124,45 +1128,46 @@ func _build_overlays() -> void:
 		tap(L.node("lAd"), _card_ad)
 		ad_pad(L.node("lAd"))
 	# lose / failed / win / bonus end are full screens
-	L_lose = WebLayout.new()
-	screens["lose"] = L_lose.build("res://ui/lose.json", stage)
-	L_fail = WebLayout.new()
-	screens["fail"] = L_fail.build("res://ui/lose_failed.json", stage)
 	L_win = WebLayout.new()
 	screens["win"] = L_win.build("res://ui/win.json", stage)
 	L_be = WebLayout.new()
 	screens["bonusEnd"] = L_be.build("res://ui/bonusEnd.json", stage)
-	for k in ["lose", "fail", "win", "bonusEnd"]:
+	for k in ["win", "bonusEnd"]:
 		screens[k].visible = false
 		screens[k].mouse_filter = Control.MOUSE_FILTER_STOP
-	tap(L_lose.node("bAd"), func():
-		set_t(L_lose.node("lMsg"), "Loading video...")
+	# out of moves / level failed: a card over the dimmed board (agreed design, 13 Nov)
+	LO = LoseUI.new()
+	LO.build(stage)
+	tap(LO.n["bAd"], func():
+		set_t(LO.n["lMsg"], "Loading video...")
 		show_ad(func(ok: bool):
 			if ok:
 				tries.ad += 1
-				set_t(L_lose.node("lMsg"), "")
+				set_t(LO.n["lMsg"], "")
 				resume(5)
 			else:
-				set_t(L_lose.node("lMsg"), "No video right now. Try again soon.")))
-	tap(L_lose.node("bCoin"), func():
+				set_t(LO.n["lMsg"], "No video right now. Try again soon.")))
+	tap(LO.n["bCoin"], func():
 		if tries.coin >= MOVEP.size():
 			return
 		var p: int = MOVEP[tries.coin]
 		if S.coins < p:
-			set_t(L_lose.node("lMsg"), "Not enough coins. You have %d." % S.coins)
+			set_t(LO.n["lMsg"], "Not enough coins. You have %d." % S.coins)
 			sfx.play("nope")
 			return
 		S.coins -= p
 		save()
 		tries.coin += 1
 		resume(5))
-	tap(L_lose.node("bGive"), func():
-		show_screen("fail")
+	tap(LO.n["bGive"], func():
+		lose_step(2)
 		sfx.play("swoosh", 0.4))
-	tap(L_fail.node("bRetry"), func():
+	tap(LO.n["bRetry"], func():
+		lose_hide()
 		game.stopped = true
 		open_card(int(cur)))
-	tap(L_fail.node("bHome"), func():
+	tap(LO.n["bHome"], func():
+		lose_hide()
 		game.stopped = true
 		home())
 	# win
@@ -2086,46 +2091,90 @@ func lost() -> void:
 	_after(0.7, func():
 		if not game.over or ending:
 			return
-		show_screen("lose")
+		lose_step(1)
 		lost_ui())
 
-func lost_ui() -> void:
-	# near-miss: up to 3 goals that are left, fewest first
+func lose_step(k: int) -> void:
+	LO.root.visible = true
+	LO.s1.visible = k == 1
+	LO.s2.visible = k == 2
+	var card: Control = LO.s1 if k == 1 else LO.s2
+	card.pivot_offset = Vector2(195, 430)
+	card.scale = Vector2(0.7, 0.7)
+	card.modulate.a = 0
+	var tw := create_tween().set_parallel()
+	tw.tween_property(card, "modulate:a", 1.0, 0.25)
+	tw.tween_property(card, "scale", Vector2(1.04, 1.04), 0.25).set_ease(Tween.EASE_OUT)
+	tw.chain().tween_property(card, "scale", Vector2.ONE, 0.17)
+	# the green button pulses
+	var g: Control = LO.n["bAd"] if k == 1 else LO.n["bRetry"]
+	g.pivot_offset = g.size / 2
+	g.scale = Vector2.ONE
+	if lose_tw:
+		lose_tw.kill()
+	lose_tw = create_tween().set_loops()
+	lose_tw.tween_property(g, "scale", Vector2(1.05, 1.05), 0.45)
+	lose_tw.tween_property(g, "scale", Vector2.ONE, 0.45)
+	var lvl := "Level %d" % (int(cur) + 1)
+	for kk in ["1", "2"]:
+		var rb: Control = LO.n["rib" + kk]
+		fit_pill(rb, lvl)
+	_lose_goals()
+	_board_input()
+
+func lose_hide() -> void:
+	LO.root.visible = false
+	if lose_tw:
+		lose_tw.kill()
+		lose_tw = null
+	_board_input()
+
+func _lose_goals() -> void:
+	# goals left, fewest first, at most 3
 	var ks: Array = []
 	for k in realG:
 		if int(realG[k]) > 0:
 			ks.append(k)
 	ks.sort_custom(func(a, b): return int(realG[a]) < int(realG[b]))
 	ks = ks.slice(0, 3)
-	var tot := 0
+	var items: Array = []
 	for k in ks:
-		tot += int(realG[k])
-	var ni: Control = L_lose.nodes[5]
-	for c in ni.get_children():
-		c.queue_free()
-	var w := ks.size() * 64.0 + (ks.size() - 1) * 14.0
-	for j in ks.size():
-		var c := sub(L_lose, 6, ni)
-		c.position = Vector2((296.0 - w) / 2.0 + j * 78.0, 0)
-		set_img(kid(c, "img"), icon(ks[j]))
-		set_t(kid(c, "b"), str(realG[ks[j]]))
-	var one := ks.size() == 1
-	set_t(L_lose.nodes[12], ("Only %d %s left!" % [int(realG[ks[0]]), goal_name(ks[0]).to_lower()]) if one else "Only %d left!" % tot)
-	L_lose.node("bAd").visible = tries.ad < 1
-	ad_pad(L_lose.node("bAd"))
-	var bc: Control = L_lose.node("bCoin")
+		items.append([icon(k), int(realG[k])])
+	LO.goals("1", items)
+	LO.goals("2", items)
+
+func lost_ui() -> void:
+	LO.n["bAd"].visible = tries.ad < 1
+	ad_pad(LO.n["bAd"])
+	var bc: Control = LO.n["bCoin"]
 	var has_p: bool = tries.coin < MOVEP.size()
 	bc.visible = has_p
 	if has_p:
 		var p: int = MOVEP[tries.coin]
-		if kid(bc, "img"):
-			kid(bc, "img").visible = false
-		_coin_text(bc, "+5 Moves", str(p))
-		set_t(L_lose.node("lMsg"), "You have %d coins" % S.coins if S.coins < p else "")
+		set_t(LO.n["tag"], "      %d" % p)
+		_inline(bc, LO.n["tag"])
+		set_t(LO.n["lMsg"], "You have %d coins" % S.coins if S.coins < p else "")
 	else:
-		set_t(L_lose.node("lMsg"), "")
+		set_t(LO.n["lMsg"], "")
+
+# a pill and the button text centred together (blue Buy button: [coin 950] Buy)
+func _inline(c: Control, pill: Control) -> void:
+	var l := lbl(c)
+	var pl := lbl(pill)
+	var f: Font = pl.label_settings.font
+	var pw: float = f.get_string_size(pl.text, HORIZONTAL_ALIGNMENT_LEFT, -1, pl.label_settings.font_size).x + 14
+	resize_box(pill, Vector2(pw, pill.size.y))
+	pl.size.x = pw
+	var tf: Font = l.label_settings.font
+	var tw: float = tf.get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, l.label_settings.font_size).x
+	var x0 := (c.size.x - (pw + 10 + tw)) / 2.0
+	pill.position.x = x0
+	l.position.x = x0 + pw + 10
+	l.size.x = tw + 4
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 
 func resume(n: int) -> void:
+	lose_hide()
 	show_screen("game")
 	game.more(n)
 	slots()
@@ -2217,7 +2266,7 @@ func _input(e: InputEvent) -> void:
 		var any := false
 		for c in [L_card.root, L_hard.root, L_ban.root, L_buy.root, L_got.root, L_bc.root, L_agree.root]:
 			any = any or c.visible
-		if not any and not gs_open:
+		if not any and not gs_open and not LO.root.visible:
 			open_card(mini(int(S.lv), levels.size() - 1))
 			return
 	if e is InputEventMouseButton and e.pressed:
@@ -2308,11 +2357,12 @@ func _dev(a: Dictionary) -> void:
 					print("AUTO card -> play")
 					_card_play()
 				continue
-			if screens.lose.visible:
+			if LO.root.visible:
 				print("AUTO lost level ", int(cur) + 1, " -> +5 coins? ", S.coins)
 				played += 1
-				show_screen("fail")
+				lose_step(2)
 				await get_tree().create_timer(0.5).timeout
+				lose_hide()
 				game.stopped = true
 				open_card(int(cur))
 				await get_tree().create_timer(0.5).timeout
