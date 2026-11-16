@@ -1239,6 +1239,71 @@ func _build_overlays() -> void:
 	L_agree = WebLayout.new()
 	L_agree.build("res://ui/agree.json", stage)
 	L_agree.root.visible = false
+	theme_card(L_agree.nodes[1])
+	# "By playing you agree to our Privacy Policy and Terms of Use." as one centred line with gold links
+	var agl: Control = L_agree.nodes[5]
+	for ch in agl.get_children():
+		if ch is Control and ch.has_meta("web"):
+			ch.visible = false
+	if lbl(agl):
+		lbl(agl).visible = false
+	var rt := RichTextLabel.new()
+	rt.bbcode_enabled = true
+	rt.fit_content = true
+	rt.scroll_active = false
+	rt.add_theme_font_override("normal_font", WebLayout.font("Sora-500"))
+	rt.add_theme_font_size_override("normal_font_size", 15)
+	rt.add_theme_color_override("default_color", Color("#c9b6ea"))
+	rt.text = "[center]By playing you agree to our [color=#FFD24A][u]Privacy Policy[/u][/color] and [color=#FFD24A][u]Terms of Use[/u][/color].[/center]"
+	rt.size = agl.size
+	rt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	agl.add_child(rt)
+	L_buy.nodes[6].position.y += 6
+	theme_card(L_buy.nodes[1])
+	theme_card(L_be.nodes[4])
+
+
+# the game theme for the remaining white cards (16 Nov): raised gold frame, dark purple inside,
+# headings in the logo gold, other text light lilac (same as the Out of Moves card)
+func theme_card(card: Control) -> void:
+	var bx := boxr(card)
+	if bx:
+		bx.visible = false
+	var lay := WebLayout.new()
+	var sz := card.size
+	var fr := lay.make({"i": 0, "id": "", "tag": "div", "r": [0, 0, sz.x, sz.y], "op": 1, "box": {"bg": [LoseUI.lin(160, [[0, "#fff3c0"], [0.3, "#e9b23a"], [0.65, "#9a6210"], [1, "#f7d878"]])],
+		"rad": [26, 26, 26, 26], "sh": [LoseUI.sh(0, 6, 0, "#5e3a07"), LoseUI.sh(0, 18, 40, "#000000cc")]}}, Vector2.ZERO)
+	var inn := lay.make({"i": 0, "id": "", "tag": "div", "r": [3, 3, sz.x - 6, sz.y - 6], "op": 1, "box": {"bg": [LoseUI.lin(180, [[0, "#3a1866"], [0.6, "#24104a"], [1, "#1b0b38"]])], "rad": [23, 23, 23, 23],
+		"sh": [LoseUI.sh(0, 2, 0, "#ffffff22", true), LoseUI.sh(0, -3, 8, "#00000088", true)]}}, Vector2.ZERO)
+	card.add_child(fr)
+	card.move_child(fr, 0)
+	card.add_child(inn)
+	card.move_child(inn, 1)
+	_theme_text(card)
+
+func _theme_text(c: Control) -> void:
+	for ch in c.get_children():
+		if not ch is Control:
+			continue
+		var w: Dictionary = ch.get_meta("web", {})
+		var cls: String = w.get("cls", "")
+		if w.get("tag", "") == "button" and not cls.contains("ghost"):
+			continue
+		if cls.begins_with("adb") or cls.contains("ribbon"):
+			continue
+		var l := lbl(ch)
+		if l and l.label_settings:
+			var col: Color = l.label_settings.font_color
+			if col.get_luminance() < 0.45:
+				var ls: LabelSettings = l.label_settings
+				if ls.font_size >= 24:
+					ls.font_color = Color("#f6c445")
+					ls.shadow_color = Color("#8a5300")
+					ls.shadow_offset = Vector2(0, 3)
+					ls.shadow_size = 1
+				else:
+					ls.font_color = Color("#c9b6ea")
+		_theme_text(ch)
 
 # ---------------------------------------------------------------- toast and popups
 func _build_toast() -> void:
@@ -2065,6 +2130,8 @@ func bonus_end() -> void:
 	sfx.duck(0.12)
 	sfx.play("fanfare", 0.7)
 	var wc: Control = L_be.nodes[4]
+	wc.scale = Vector2.ONE
+	wc.remove_meta("base")
 	Anim.play(wc, "wcin", 0.55, 0.1, "cubic-bezier(.2,1.4,.4,1)")
 	Anim.play(L_be.node("beNext"), "fin", 0.4, 1.6)
 	var st := {"n": 0}
@@ -2412,6 +2479,10 @@ func _dev(a: Dictionary) -> void:
 		gset(true)
 	elif t == "popup":
 		popup("You got", [["art/ui-coin.webp", "+500 coins", "You have 750"], ["crk:b6", "+3 Rocket", "You have 5"]])
+	elif t == "agree":
+		open_modal(L_card.root, false)
+		open_modal(L_hard.root, false)
+		open_modal(L_agree.root, true)
 	elif t == "toast":
 		toast28("3 free Lakshmi Vedi Hammers! Drag one onto the board.")
 	if a.has("shot"):
