@@ -10,7 +10,7 @@ const C4 := [0, 1, 2, 5]
 
 static func all() -> Array:
 	return [
-		{"name": "Crate Start", "moves": 18, "colors": C3, "luck": 0.5,
+		{"name": "Crate Start", "moves": 20, "colors": C3, "luck": 0.5,
 		 "rows": ["##....##", "#......#", "........", "........", "........", "........", "........", ".cccccc.", "..cccc.."]},
 		{"name": "Rocket Lesson", "moves": 18, "colors": C3, "luck": 0.5, "teach": "rocket", "intro": ["rocket"],
 		 "rows": ["........", "........", "........", "........", "........", "cccccccc", "cccccccc", "cccccccc", "########"]},
