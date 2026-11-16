@@ -2627,6 +2627,13 @@ func _flow(a: Dictionary) -> void:
 			home_ui._building(true)
 		elif act == "play":
 			home_ui._play()
+		elif act == "winnext":
+			title_s.visible = false
+			start(0)
+			await get_tree().create_timer(1.0).timeout
+			won(8)
+			await get_tree().create_timer(3.5).timeout
+			_win_next()
 	if a.has("shot"):
 		await get_tree().create_timer(float(a.get("wait", 1.0))).timeout
 		get_viewport().get_texture().get_image().save_png(a.shot)
@@ -2688,6 +2695,12 @@ func _dev(a: Dictionary) -> void:
 				played += 1
 				_win_next()
 				await get_tree().create_timer(1.0).timeout
+				if screens.street.visible:
+					print("AUTO street: diyas ", S.diyas, " step ", S.get("step", 0))
+					home_ui.end_tutorial()
+					home_ui.notif.visible = false
+					street_play()
+					await get_tree().create_timer(1.0).timeout
 				if L_bc.root.visible:
 					print("AUTO bonus card")
 					open_modal(L_bc.root, false)
@@ -2712,6 +2725,10 @@ func _dev(a: Dictionary) -> void:
 				print("AUTO bonus end coins ", S.coins)
 				fw.run(false)
 				home()
+				await get_tree().create_timer(1.0).timeout
+				home_ui.end_tutorial()
+				home_ui.notif.visible = false
+				street_play()
 				await get_tree().create_timer(1.0).timeout
 				_card_play()
 				continue

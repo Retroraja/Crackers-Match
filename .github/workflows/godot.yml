@@ -61,7 +61,10 @@ jobs:
           cd godot
           ../godot-bin --headless --editor --quit --path . || true
           mkdir -p build
-          ../godot-bin --headless --path . --install-android-build-template --export-debug "Android" build/CrackersMatchGodot.apk
+          export GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$HOME/debug.keystore"
+          export GODOT_ANDROID_KEYSTORE_RELEASE_USER=androiddebugkey
+          export GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=android
+          ../godot-bin --headless --path . --install-android-build-template --export-release "Android" build/CrackersMatchGodot.apk
           ls -la build
       - name: Publish download
         env:
