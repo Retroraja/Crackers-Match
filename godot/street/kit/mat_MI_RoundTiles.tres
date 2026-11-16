@@ -1,0 +1,12 @@
+[gd_resource type="StandardMaterial3D" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://street/art/T_RoundTiles_BaseColor.webp" id="1_r5xxw"]
+[ext_resource type="Texture2D" path="res://street/art/T_RoundTiles_Normal.webp" id="2_58opn"]
+
+[resource]
+cull_mode = 2
+albedo_texture = ExtResource("1_r5xxw")
+roughness = 0.7
+normal_enabled = true
+normal_texture = ExtResource("2_58opn")
+texture_filter = 5
