@@ -4,7 +4,8 @@ class_name Sfx
 
 const NAMES := ["blastnew", "rocket", "chakra", "atom", "matchbox", "sparkler", "blast", "swap", "nope", "pop", "tick",
 	"thud", "swoosh", "win", "lose", "fanfare", "finale", "paper", "music", "lakshmi", "wala", "rail", "flowerpot", "skyshot", "brand",
-	"chime0", "chime1", "chime2", "coin0", "coin1", "coin2", "coin3", "coin4", "coin5", "coin6", "coin7", "coin8"]
+	"chime0", "chime1", "chime2", "coin0", "coin1", "coin2", "coin3", "coin4", "coin5", "coin6", "coin7", "coin8",
+	"bk_stone", "bk_knock", "bk_saw", "bk_plank", "bk_hum", "bk_rustle", "bk_dirt", "bk_cloth", "bk_done", "z_crackle", "z_zap"]
 var mus_on := true
 var fx_on := true
 var _duck := 0.3
@@ -33,12 +34,67 @@ func _ready() -> void:
 		m.set("loop", true)
 		music.stream = m
 		music.volume_db = linear_to_db(0.3)
-		music.play()
 	var cf := ConfigFile.new()
 	if cf.load("user://sound.cfg") == OK:
 		mus_on = cf.get_value("s", "mus", true)
 		fx_on = cf.get_value("s", "fx", true)
 	_apply_mus()
+
+# b30.js build sounds, matched to what is built (kind, length in seconds)
+func build_sound(kind: String, dur: float) -> void:
+	dur = clampf(dur, 0.8, 5.0)
+	var t := 0.1
+	match kind:
+		"stone":
+			while t < dur:
+				play("bk_stone", 1.0, randf_range(0.8, 1.25), t)
+				t += randf_range(0.11, 0.2)
+		"lamp":
+			while t < dur * 0.5:
+				play("bk_knock", 1.0, randf_range(0.85, 1.15), t)
+				t += randf_range(0.25, 0.35)
+			play("bk_hum", 1.0, 1.0, dur * 0.5)
+		"tree":
+			while t < dur * 0.6:
+				play("bk_dirt", 1.0, randf_range(0.8, 1.25), t)
+				t += randf_range(0.3, 0.5)
+			play("bk_rustle", 1.0, 1.0, dur * 0.3)
+		"farm":
+			while t < dur:
+				play("bk_dirt", 1.0, randf_range(0.8, 1.25), t)
+				t += randf_range(0.2, 0.35)
+			play("bk_rustle", 0.8, 1.0, dur * 0.5)
+		"bridge":
+			while t < dur:
+				play("bk_plank", 1.0, randf_range(0.85, 1.15), t)
+				t += randf_range(0.18, 0.3)
+			t = 0.2
+			while t < dur:
+				play("bk_knock", 1.0, randf_range(0.85, 1.15), t)
+				t += randf_range(0.5, 0.7)
+		"stall":
+			while t < dur * 0.7:
+				play("bk_knock", 1.0, randf_range(0.85, 1.15), t)
+				t += randf_range(0.2, 0.32)
+			play("bk_saw", 1.0, 1.0, dur * 0.2)
+			play("bk_cloth", 1.0, 1.0, dur * 0.75)
+			play("bk_cloth", 1.0, 1.1, dur * 0.85)
+		_:
+			while t < dur:
+				play("bk_knock", 1.0, randf_range(0.85, 1.15), t)
+				t += randf_range(0.18, 0.3)
+			play("bk_saw", 1.0, 1.0, dur * 0.15)
+			play("bk_saw", 1.0, 0.95, dur * 0.55)
+			t = 0.3
+			while t < dur:
+				play("bk_plank", 1.0, randf_range(0.85, 1.15), t)
+				t += randf_range(0.6, 0.9)
+
+# the music starts with the title logo (web: SFX.music + duck .15)
+func mus_start() -> void:
+	if music and music.stream and not music.playing:
+		music.play()
+	duck(0.15)
 
 # play every sound once, silently, so the first real one starts on time
 func warm() -> void:

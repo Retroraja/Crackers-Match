@@ -123,6 +123,11 @@ var fakead: Control
 var slot_nodes := {}
 var slot_tpl := {}
 var stars_on := [false, false, false]
+var street: Street
+var home_ui: HomeUI
+var title_s: TitleScreen
+var sky_layer: CanvasLayer
+var back: ColorRect
 
 func now() -> float:
 	return Time.get_ticks_msec() / 1000.0
@@ -137,7 +142,7 @@ func _ready() -> void:
 	add_child(sfx)
 	var cl := CanvasLayer.new()
 	add_child(cl)
-	var back := ColorRect.new()
+	back = ColorRect.new()
 	back.color = Color(0.16, 0.05, 0.29)
 	back.set_anchors_preset(Control.PRESET_FULL_RECT)
 	back.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -148,7 +153,24 @@ func _ready() -> void:
 	cl.add_child(stage)
 	_fit()
 	get_viewport().size_changed.connect(_fit)
+	# the 3D street lives behind everything; its sky is a canvas layer at the very back
+	sky_layer = CanvasLayer.new()
+	sky_layer.layer = -10
+	add_child(sky_layer)
+	var sky := TextureRect.new()
+	sky.texture = load("res://street/art/sky.png")
+	sky.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sky.stretch_mode = TextureRect.STRETCH_SCALE
+	sky.set_anchors_preset(Control.PRESET_FULL_RECT)
+	sky_layer.add_child(sky)
+	street = Street.new()
+	street.lite = lite
+	add_child(street)
 	_build_game()
+	home_ui = HomeUI.new()
+	stage.add_child(home_ui)
+	home_ui.build(self, street)
+	screens["street"] = home_ui
 	fly_layer = _layer("fly")
 	_build_overlays()
 	top_layer = _layer("top")
@@ -163,12 +185,18 @@ func _ready() -> void:
 	hand = hl.build("res://ui/hand.json", top_layer)
 	hand.visible = false
 	_build_toast()
-	show_screen("game")
+	title_s = TitleScreen.new()
+	stage.add_child(title_s)
+	stage.move_child(title_s, home_ui.get_index() + 1)
+	title_s.build(self)
+	title_s.tapped.connect(_title_tapped)
+	screens["title"] = title_s
 	game.stopped = true
-	if not S.get("agreed", false):
-		_first_open()
-	else:
-		home()
+	if Array(OS.get_cmdline_user_args()).any(func(x): return String(x).begins_with("--t=")):
+		show_screen("game")
+		return
+	show_screen("title")
+	title_s.play(not S.get("agreed", false))
 
 func _fit() -> void:
 	var vs := get_viewport().get_visible_rect().size
@@ -375,6 +403,14 @@ var screens := {}
 func show_screen(id: String) -> void:
 	for k in screens:
 		screens[k].visible = k == id
+	# the street (3D) shows behind the home screen and the title fades out over it
+	var st_on := id == "street"
+	if street:
+		street.visible = st_on
+		street.process_mode = Node.PROCESS_MODE_INHERIT if st_on else Node.PROCESS_MODE_DISABLED
+		street.cam.current = st_on
+		sky_layer.visible = st_on
+		back.visible = not st_on
 	if LO and id != "game":
 		lose_hide()
 	if id != "win":
@@ -400,6 +436,8 @@ func _board_input() -> void:
 		if c.visible:
 			blocked = true
 	if LO and LO.root.visible:
+		blocked = true
+	if L_sh and L_sh.root.visible:
 		blocked = true
 	if not screens.get("game", stage).visible:
 		blocked = true
@@ -522,6 +560,7 @@ func start(i) -> void:
 		realG[str(k)] = L0.goal[k]
 	gi_keys = ""
 	slots()
+	sfx.mus_start()
 	sfx.duck(0.3)
 	stars_on = [false, false, false]
 	sbar(0)
@@ -1239,6 +1278,7 @@ func _build_overlays() -> void:
 	L_agree = WebLayout.new()
 	L_agree.build("res://ui/agree.json", stage)
 	L_agree.root.visible = false
+	_build_sheets()
 	# "By playing you agree to our Privacy Policy and Terms of Use." as one centred line with gold links
 	var agl: Control = L_agree.nodes[5]
 	for ch in agl.get_children():
@@ -2391,14 +2431,97 @@ func _first_open() -> void:
 		open_modal(L_agree.root, false)
 		start(0))
 
-# stage 1: no street yet, so "home" opens the level card of the next level
+# home is the street: diyas earned in levels build it
 func home() -> void:
 	deb.clear()
 	hide_hand()
 	ghost.visible = false
 	game.stopped = true
-	show_screen("game")
+	for c in [L_card.root, L_hard.root]:
+		open_modal(c, false)
+	show_screen("street")
+	home_ui.sync_in()
+	street.cam_home(true)
+	sfx.duck(0.15)
+	home_ui.show_home()
+
+func street_play() -> void:
 	open_card(mini(int(S.lv), levels.size() - 1))
+
+func _title_tapped() -> void:
+	var first := int(S.lv) == 0
+	if first:
+		# first time: straight into level 1 (its banners are already seen)
+		S.seen["b_howto"] = 1
+		for k in levels[0].get("intro", []):
+			S.seen["b_" + k] = 1
+		save()
+		get_tree().create_timer(0.38).timeout.connect(func():
+			title_s.visible = false
+			start(0))
+		title_s.leave()
+		return
+	show_screen("street")
+	title_s.visible = true
+	home_ui.sync_in()
+	street.cam_home(true)
+	home_ui.home.visible = false
+	title_s.leave()
+	get_tree().create_timer(0.9).timeout.connect(func(): home_ui.show_home())
+
+# the street Welcome card (first open), over the title
+func show_agree() -> void:
+	home_ui.visible = true
+	for c in home_ui.get_children():
+		if c != home_ui.agree:
+			c.set_meta("was", c.visible)
+	home_ui.home.visible = false
+	home_ui.agree.visible = true
+	home_ui.agree.z_index = 20
+	stage.move_child(home_ui, title_s.get_index() + 1)
+	tap(home_ui.LA.node("bAgree"), func():
+		S.agreed = 1
+		save()
+		home_ui.agree.visible = false
+		stage.move_child(home_ui, title_s.get_index())
+		title_s.agreed.emit())
+
+func street_sfx(n: String) -> void:
+	if n.begins_with("bk:"):
+		var q := n.split(":")
+		sfx.build_sound(q[1], float(q[2]))
+		return
+	match n:
+		"rocket": sfx.play("rocket", 0.7)
+		"rocketS": sfx.play("rocket", 0.35, 1.15)
+		"blast": sfx.play("blast", 0.8)
+		"pop": sfx.play("pop", 0.45)
+		"open": sfx.play("swoosh", 0.35)
+		"start":
+			sfx.duck(0.06)
+			sfx.play("sparkler", 0.3, 1.6)
+			sfx.chime(0)
+		"build": sfx.play("swoosh", 0.45)
+		"done":
+			sfx.play("pop", 0.5)
+			for i in 3:
+				sfx.play("chime%d" % i, 0.6, 1.0, 0.12 + i * 0.11)
+			_after(0.9, func(): sfx.duck(0.15))
+		"area":
+			sfx.play("win", 0.8)
+			_after(3.0, func(): sfx.duck(0.15))
+
+func area_reward() -> void:
+	S.coins = int(S.coins) + 500
+	add_inv("rocket", 3)
+	add_inv("chakra", 3)
+	save()
+	popup("Area Complete!", [["art/ui-coin.webp", "+500 coins", "You have %d" % S.coins], ["crk:b%d" % IDX.rocket, "+3 " + LBL.rocket, "You have %d" % inv("rocket")], ["crk:b%d" % IDX.chakra, "+3 " + LBL.chakra, "You have %d" % inv("chakra")]])
+	sfx.play("win", 0.8)
+
+func ask_notify() -> void:
+	if OS.get_name() == "Android":
+		OS.request_permission("android.permission.POST_NOTIFICATIONS")
 
 # ================================================================== frame
 func _process(dt: float) -> void:
@@ -2445,6 +2568,41 @@ func _enter_tree() -> void:
 		save_path = "user://save_dev.json"
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))
 		call_deferred("_dev", a)
+	elif a.has("flow"):
+		# whole-app checks: -- --flow=1 --s_lv=3 --s_diyas=2 --s_step=1 --s_agreed=1 --tap=6 --act=panel|tut|build|shop|daily|bag|set --shot=png --wait=S
+		save_path = "user://save_dev.json"
+		var d := {"agreed": int(a.get("s_agreed", 0)), "lv": int(a.get("s_lv", 0)), "diyas": int(a.get("s_diyas", 0)), "step": int(a.get("s_step", 0)), "coins": int(a.get("s_coins", 300)), "tut": int(a.get("s_tut", 0))}
+		var f := FileAccess.open(save_path, FileAccess.WRITE)
+		f.store_string(JSON.stringify(d))
+		f = null
+		call_deferred("_flow", a)
+
+func _flow(a: Dictionary) -> void:
+	if a.has("tap"):
+		await get_tree().create_timer(float(a.tap)).timeout
+		_title_tapped()
+		await get_tree().create_timer(1.6).timeout
+	if a.has("act"):
+		var act: String = a.act
+		if act in ["shop", "daily", "bag", "set"]:
+			sheet(act)
+		elif act == "panel":
+			home_ui._build_btn()
+		elif act == "build":
+			home_ui.panel()
+			street.do_task(false)
+			home_ui.hide_home()
+			home_ui._building(true)
+		elif act == "all":
+			home_ui.hide_home()
+			street.build_all()
+			home_ui._building(true)
+		elif act == "play":
+			home_ui._play()
+	if a.has("shot"):
+		await get_tree().create_timer(float(a.get("wait", 1.0))).timeout
+		get_viewport().get_texture().get_image().save_png(a.shot)
+		get_tree().quit()
 
 func _dev(a: Dictionary) -> void:
 	await get_tree().process_frame
@@ -2581,3 +2739,321 @@ func _dev(a: Dictionary) -> void:
 		var img := get_viewport().get_texture().get_image()
 		img.save_png(a.shot)
 		get_tree().quit()
+
+# ================================================================== menu sheets (app.js: Shop, Daily reward, My crackers, Settings)
+const CP := [{"n": "Starter pack", "c": 1000, "p": "₹49", "st": true}, {"n": "1,000 coins", "c": 1000, "p": "₹89"}, {"n": "2,800 coins", "c": 2800, "p": "₹199"},
+	{"n": "6,500 coins", "c": 6500, "p": "₹449"}, {"n": "15,000 coins", "c": 15000, "p": "₹899"}]
+const DAYS := [50, 75, 100, 150, 200, 250, {"k": "atom", "n": 1}]
+var L_sh: WebLayout      # sheet chrome + shop row templates
+var L_sd: WebLayout      # daily templates
+var L_ss: WebLayout      # settings templates
+var L_sb: WebLayout      # bag templates
+var sh_scroll: ScrollContainer
+var sh_body: Control
+var sh_name := ""
+
+func _build_sheets() -> void:
+	L_sh = WebLayout.new()
+	L_sh.build("res://ui/sh_shop.json", stage)
+	L_sh.root.visible = false
+	L_sh.root.mouse_filter = Control.MOUSE_FILTER_STOP
+	L_sh.root.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseButton and not e.pressed and not L_sh.nodes[1].get_global_rect().has_point(e.global_position):
+			close_sheet())
+	tap(L_sh.node("sClose"), close_sheet)
+	var body: Control = L_sh.node("sBody")
+	for c in body.get_children():
+		c.visible = false
+	sh_scroll = ScrollContainer.new()
+	sh_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	sh_scroll.position = body.position
+	sh_scroll.size = Vector2(body.size.x, 400)
+	body.get_parent().add_child(sh_scroll)
+	sh_body = Control.new()
+	sh_body.mouse_filter = Control.MOUSE_FILTER_PASS
+	sh_scroll.add_child(sh_body)
+	for n in ["sh_daily", "sh_set", "sh_bag"]:
+		var L := WebLayout.new()
+		L.data = JSON.parse_string(FileAccess.get_file_as_string("res://ui/%s.json" % n))
+		match n:
+			"sh_daily": L_sd = L
+			"sh_set": L_ss = L
+			"sh_bag": L_sb = L
+
+func daily_can() -> bool:
+	return S.get("daily", {}).get("last", "") != today()
+
+func sheet(n: String) -> void:
+	sh_name = n
+	sfx.play("swoosh", 0.5)
+	var ttl: String = {"shop": "Shop", "daily": "Daily reward", "bag": "My crackers", "set": "Settings"}[n]
+	set_t(L_sh.node("sTitle"), ttl)
+	for c in sh_body.get_children():
+		c.queue_free()
+	var y := 0.0
+	match n:
+		"shop": y = _shop_rows()
+		"daily": y = _daily_rows()
+		"bag": y = _bag_rows()
+		"set": y = _set_rows()
+	sh_body.custom_minimum_size = Vector2(354, y)
+	sh_body.size = sh_body.custom_minimum_size
+	# the sheet grows with its content, up to the shop's height
+	var box: Control = L_sh.nodes[1]
+	var h := minf(658.0, y + 84 + 24)
+	box.position.y = 844 - h
+	resize_box(box, Vector2(390, h))
+	L_sh.node("sClose").position.y = 14
+	L_sh.node("sTitle").position.y = 22
+	sh_scroll.position = Vector2(18, 68)
+	sh_scroll.size = Vector2(354, h - 68 - 12)
+	L_sh.root.visible = true
+	box.position.y += 60
+	create_tween().tween_property(box, "position:y", 844 - h, 0.25).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_board_input()
+
+func close_sheet() -> void:
+	L_sh.root.visible = false
+	_board_input()
+	if home_ui:
+		home_ui.refresh()
+
+func _row_h(text: String, w: float, fs: int, font: Font) -> float:
+	var tw := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var lines := maxi(1, int(ceil(tw / maxf(w - 6, 10))))
+	return lines * fs * 1.3
+
+func _text_row(L: WebLayout, idx: int, y: float) -> Control:
+	var r := sub(L, idx, sh_body)
+	r.position = Vector2(0, y)
+	return r
+
+func _srow(L: WebLayout, idx: int, y: float, img: String, b: String, small: String) -> Control:
+	var r := sub(L, idx, sh_body)
+	r.position = Vector2(0, y)
+	if img != "" and kid(r, "img"):
+		set_img(kid(r, "img"), img)
+	var dv := kid(r, "div")
+	set_t(kid(dv, "b"), b)
+	var sm := kid(dv, "small")
+	var l := lbl(sm)
+	set_t(sm, small)
+	var hh := 0.0
+	if l:
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+		hh = _row_h(small, dv.size.x, l.label_settings.font_size, l.label_settings.font)
+		sm.size.y = hh
+		l.size = Vector2(dv.size.x, hh)
+	var rh := maxf(72.0, 22 + hh + 30)
+	resize_box(r, Vector2(r.size.x, rh))
+	# keep the picture and the button in the middle of the row
+	var dy := (rh - 82.0) / 2.0
+	for c in r.get_children():
+		if c is Control and c.has_meta("web") and c.get_meta("web").tag in ["img", "button"]:
+			c.position.y = (rh - c.size.y) / 2.0
+	dv.position.y = (rh - (22 + hh)) / 2.0
+	r.set_meta("h", rh)
+	return r
+
+func _sbtn(b: Control, text: String, on: bool, coin: bool) -> void:
+	if coin:
+		if kid(b, "img"):
+			kid(b, "img").visible = false
+		_coin_text_left(b, text)
+	else:
+		if kid(b, "img"):
+			kid(b, "img").visible = false
+		set_t(b, text)
+	set_bg(b, Color("#4CAF50") if on else Color("#BDB3A6"))
+
+# "[coin] 900" inside a small button
+func _coin_text_left(b: Control, num: String) -> void:
+	var l := lbl(b)
+	if l == null:
+		return
+	var f: Font = l.label_settings.font
+	var fs := l.label_settings.font_size
+	var ci: TextureRect = b.get_node_or_null("coinx")
+	if ci == null:
+		ci = _img_node("art/ui-coin.webp", Vector2(16, 16))
+		ci.name = "coinx"
+		b.add_child(ci)
+	ci.visible = true
+	ci.size = Vector2(16, 16)
+	l.text = num
+	var w := f.get_string_size(num, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var x0 := (b.size.x - (16 + 4 + w)) / 2.0
+	ci.position = Vector2(x0, (b.size.y - 16) / 2.0)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	l.position.x = x0 + 20
+	l.size.x = w + 4
+
+func _shop_rows() -> float:
+	var y := 0.0
+	var p := _text_row(L_sh, 5, y)
+	if kid(p, "b"):
+		kid(p, "b").visible = false
+	set_t(p, "You have %d coins." % S.coins)
+	if lbl(p):
+		lbl(p).position.x = 0
+		lbl(p).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	y += 30
+	var h3 := _text_row(L_sh, 7, y)
+	set_t(h3, "Start boosters (3 each)")
+	y += 23
+	for k in SB:
+		var r := _srow(L_sh, 8, y, "crk:b%d" % IDX[k], LBL[k] + " ×3", SBD[k])
+		var b := kid(r, "button")
+		_sbtn(b, str(PACK[k]), true, true)
+		var kk: String = k
+		tap(b, func():
+			if S.coins < PACK[kk]:
+				sfx.play("nope")
+				return
+			S.coins -= PACK[kk]
+			add_inv(kk, 3)
+			save()
+			sfx.play("fanfare", 0.4)
+			sheet("shop"))
+		y += float(r.get_meta("h")) + 10
+	var h3b := _text_row(L_sh, 7, y + 2)
+	set_t(h3b, "Coins")
+	y += 25
+	for i in CP.size():
+		var cp: Dictionary = CP[i]
+		if cp.get("st", false) and S.get("starter", false):
+			continue
+		var r := _srow(L_sh, 8, y, "art/ui-coin.webp", cp.n, "1,000 coins + 2 of each start booster. One time only." if cp.get("st", false) else "%s coins" % _commas(int(cp.c)))
+		var b := kid(r, "button")
+		_sbtn(b, cp.p, true, false)
+		tap(b, func():
+			S.coins += int(cp.c)
+			if cp.get("st", false):
+				S.starter = 1
+				for k in SB:
+					add_inv(k, 2)
+			save()
+			sfx.play("fanfare", 0.5)
+			sheet("shop"))
+		y += float(r.get_meta("h")) + 10
+	var note := _text_row(L_sh, 5, y)
+	if kid(note, "b"):
+		kid(note, "b").visible = false
+	set_t(note, "Test build: coin packs are free.")
+	return y + 30
+
+func _commas(n: int) -> String:
+	var s := str(n)
+	var o := ""
+	while s.length() > 3:
+		o = "," + s.substr(s.length() - 3) + o
+		s = s.substr(0, s.length() - 3)
+	return s + o
+
+func _daily_rows() -> float:
+	var d: Dictionary = S.get("daily", {"n": 0})
+	var can := daily_can()
+	var n: int = (int(d.get("n", 0)) % 7) if can else posmod(int(d.get("n", 0)) - 1, 7)
+	var days: Control = sub(L_sd, 5, sh_body)
+	days.position = Vector2(0, 0)
+	for c in days.get_children():
+		c.queue_free()
+	for i in 7:
+		var r = DAYS[i]
+		var obj: bool = r is Dictionary
+		var got: bool = i < n or (not can and i == n)
+		var tpl := 24 if i == 6 else (6 if (can and i == n) else 9)
+		var c := sub(L_sd, tpl, days)
+		c.position = Vector2((i % 4) * 90.67, (i / 4) * 97)
+		if i != 6:
+			c.position.x = (i % 4) * 90.67
+		set_t(c, "Day %d" % (i + 1))
+		if lbl(c):
+			lbl(c).vertical_alignment = VERTICAL_ALIGNMENT_TOP
+			lbl(c).position.y = 6
+		set_img(kid(c, "img"), ("crk:b%d" % IDX[r.k]) if obj else "art/ui-coin.webp")
+		set_t(kid(c, "b"), LBL[r.k] if obj else str(r))
+		if got:
+			c.modulate = Color(1, 1, 1, 0.55)
+			var tk := AppFx.Tick.new(Vector2(26, 26), Color("#22C55E"), 4)
+			tk.position = Vector2(c.size.x - 30, 4)
+			c.add_child(tk)
+	var b := sub(L_sd, 27, sh_body)
+	b.position = Vector2(0, 200)
+	set_t(b, "Claim" if can else "Come back tomorrow")
+	if not can:
+		set_bg(b, Color("#BDB3A6"))
+	tap(b, func():
+		if not daily_can():
+			return
+		var dd: Dictionary = S.get("daily", {"n": 0})
+		var rr = DAYS[int(dd.get("n", 0)) % 7]
+		if rr is Dictionary:
+			add_inv(rr.k, int(rr.n))
+		else:
+			S.coins += int(rr)
+		S.daily = {"n": int(dd.get("n", 0)) + 1, "last": today()}
+		save()
+		sfx.play("win", 0.6)
+		sheet("daily"))
+	return 258.0
+
+func _bag_rows() -> float:
+	var y := 0.0
+	var ks: Array = SB + SL
+	for k in ks:
+		var r := _srow(L_sb, 5, y, "crk:b%d" % IDX[k], "%s × %d" % [LBL[k], inv(k)], SBD.get(k, DESC2.get(k, "")))
+		y += float(r.get_meta("h")) + 10
+	var p := _text_row(L_ss, 23, y)
+	set_t(p, "Rocket, Flowerpot, Ground Chakra and Sky Shot are made by matching on the board.")
+	if lbl(p):
+		lbl(p).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		lbl(p).size.y = 40
+	return y + 50
+
+func _set_rows() -> float:
+	var on: bool = sfx.mus_on or sfx.fx_on
+	var r1 := sub(L_ss, 5, sh_body)
+	r1.position = Vector2(0, 0)
+	set_t(kid(kid(r1, "div"), "small"), "On" if on else "Off")
+	var b1 := kid(r1, "button")
+	_sbtn(b1, "On" if on else "Off", on, false)
+	tap(b1, func():
+		var v: bool = not (sfx.mus_on or sfx.fx_on)
+		sfx.set_mus(v)
+		sfx.set_fx(v)
+		sheet("set"))
+	var r2 := sub(L_ss, 10, sh_body)
+	r2.position = Vector2(0, 74)
+	var spdb := kid(r2, "div", 1)
+	var cur_s := int(S.get("speed", 1))
+	var bs: Array = []
+	for c in spdb.get_children():
+		if c is Control and c.has_meta("web"):
+			bs.append(c)
+	for i in bs.size():
+		var v := i + 1
+		_sbtn(bs[i], "%dx" % v, cur_s == v, false)
+		tap(bs[i], func():
+			S.speed = v
+			save()
+			if game:
+				game.gspeed = [1.2, 1.65, 2.2][v - 1]
+			sfx.play("tick", 0.5)
+			sheet("set"))
+	var r3 := sub(L_ss, 18, sh_body)
+	r3.position = Vector2(0, 148)
+	var rb := kid(r3, "button")
+	tap(rb, func():
+		if rb.get_meta("sure", false):
+			S = {"agreed": 1}
+			save()
+			close_sheet()
+			get_tree().reload_current_scene()
+		else:
+			rb.set_meta("sure", true)
+			set_t(rb, "Sure?"))
+	var p := sub(L_ss, 23, sh_body)
+	p.position = Vector2(0, 240)
+	return 258.0
