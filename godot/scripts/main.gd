@@ -61,10 +61,44 @@ func _ready() -> void:
 	_show_menu()
 
 func _weak_phone() -> bool:
-	# Android: less than about 4.5 GB memory counts as a weak phone (lighter effects)
+	# light mode is remembered once the phone has been found slow
+	if FileAccess.file_exists("user://lite"):
+		return true
+	# less than about 4.5 GB memory
 	var mem := OS.get_memory_info()
 	var phys: int = mem.get("physical", 0)
-	return phys > 0 and phys < 4800000000
+	if phys > 0 and phys < 4800000000:
+		return true
+	# entry-level graphics chips (Helio G88 / G85 / G80 = Mali-G52 MC2, older Mali and PowerVR, Adreno 5xx)
+	var gpu := RenderingServer.get_video_adapter_name().to_lower()
+	for w in ["mali-g52", "mali-g51", "mali-g31", "mali-g57 mc2", "mali-t", "powervr", "adreno (tm) 5", "adreno (tm) 4"]:
+		if gpu.contains(w):
+			return true
+	return false
+
+# like the web game (b30): if frames take longer than 24 ms on average while playing, switch to light mode and remember it
+var _ft_n := 0
+var _ft_t := 0.0
+func _auto_lite(dt: float) -> void:
+	if lite or not board.visible or board.stopped:
+		return
+	if dt < 0.2:
+		_ft_n += 1
+		_ft_t += dt
+	if _ft_n >= 150:
+		if _ft_t / _ft_n > 0.024:
+			_set_lite()
+		_ft_n = 0
+		_ft_t = 0.0
+
+func _set_lite() -> void:
+	lite = true
+	board.lite = true
+	deb.lite = true
+	board.fly3d.lite = true
+	var f := FileAccess.open("user://lite", FileAccess.WRITE)
+	if f:
+		f.store_string("1")
 
 func _panel_style(bgc: Color, border: Color, rad: int = 18) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
@@ -254,6 +288,7 @@ func _end_pressed() -> void:
 var _pt := 0.0
 var _cpu := ""
 func _process(dt: float) -> void:
+	_auto_lite(dt)
 	_pt += dt
 	if _pt >= 1.0:
 		# CPU time per frame, averaged over the last second: logic + board + debris + 3D pieces (ms)
