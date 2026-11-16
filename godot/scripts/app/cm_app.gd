@@ -295,6 +295,30 @@ func set_t(c: Control, s: String) -> void:
 			if ch is Label:
 				ch.text = s
 
+# set a label's text and shrink its font until it fits maxw (default: its box width)
+func fit_t(c: Control, s: String, maxw := -1.0) -> void:
+	set_t(c, s)
+	var l := lbl(c)
+	if l == null or l.label_settings == null:
+		return
+	if not l.has_meta("fs0"):
+		l.label_settings = l.label_settings.duplicate()
+		l.set_meta("fs0", l.label_settings.font_size)
+		for ch in l.get_children():
+			if ch is Label and ch.label_settings:
+				ch.label_settings = ch.label_settings.duplicate()
+	var w := maxw if maxw > 0 else maxf(l.size.x, c.size.x)
+	var f: Font = l.label_settings.font
+	var fs: int = l.get_meta("fs0")
+	while fs > 8 and f.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + l.label_settings.outline_size > w:
+		fs -= 1
+	for x in [l] + l.get_children():
+		if x is Label and x.label_settings:
+			x.label_settings.font_size = fs
+
+static func plural(s: String) -> String:
+	return s + ("es" if s.ends_with("x") or s.ends_with("s") else "s")
+
 static func img_of(c: Control) -> TextureRect:
 	if c == null:
 		return null
@@ -582,7 +606,7 @@ func start(i) -> void:
 				save()
 				slots()
 				_after(0.9, func():
-					toast28("3 free %ss! Drag one onto the board." % LBL[k])
+					toast28("3 free %s! Drag one onto the board." % plural(LBL[k]))
 					drag_demo(k))
 
 func _after(t: float, f: Callable) -> void:
@@ -1632,7 +1656,7 @@ func gift_sb() -> void:
 			add_inv(k, 2)
 			ch = true
 			var kk: String = k
-			_after(0.75, func(): toast28("New! 2 free %ss" % LBL[kk]))
+			_after(0.75, func(): toast28("New! 2 free %s" % plural(LBL[kk])))
 	if ch:
 		save()
 
@@ -1777,9 +1801,48 @@ func _show_ban(src: String, title: String, line: String, cb) -> void:
 	set_img(L_ban.node("bImg"), src)
 	set_t(L_ban.node("bTitle"), title)
 	set_t(L_ban.node("bLine"), line)
+	_fit_ban()
 	ban_cb = cb if cb is Callable and cb.is_valid() else func(): pass
 	open_modal(L_ban.root, true)
 	Anim.play(L_ban.nodes[1], "binm", 0.3, 0.0, "cubic-bezier(.2,1.3,.4,1)")
+
+# the web sized the title box for "Bomb": give it the card width, wrap the line, and grow the card to fit
+func _fit_ban() -> void:
+	var card: Control = L_ban.nodes[1]
+	var ti: Control = L_ban.node("bTitle")
+	var ln: Control = L_ban.node("bLine")
+	var sm: Control = L_ban.nodes[5]
+	if not card.has_meta("h0"):
+		card.set_meta("h0", card.size.y)
+	var W := card.size.x
+	ti.position.x = 14
+	ti.size.x = W - 28
+	var tl := lbl(ti)
+	if tl:
+		tl.position.x = 0
+		tl.size.x = W - 28
+		tl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		for ch in tl.get_children():
+			if ch is Label:
+				ch.size.x = tl.size.x
+				ch.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	fit_t(ti, lbl(ti).text if tl else "", W - 32)
+	var ll := lbl(ln)
+	if ll == null:
+		return
+	ln.position.x = 24
+	ln.size.x = W - 48
+	ll.position = Vector2.ZERO
+	ll.size = Vector2(W - 48, 10)
+	ll.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	ll.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ll.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	var th := float(maxi(1, ll.get_line_count()) * ll.get_line_height())
+	ll.size.y = th
+	ln.size.y = th
+	sm.position.y = ln.position.y + th + 10
+	var h := maxf(float(card.get_meta("h0")), sm.position.y + sm.size.y + 24)
+	resize_box(card, Vector2(W, h))
 
 func ban_done() -> void:
 	if ban_cb == null:
@@ -1857,7 +1920,9 @@ func _ticker() -> void:
 			want = int(L.moves) - game.moves < 3
 		else:
 			want = (L.get("teach") != null or L.get("combo") != null) and int(L.moves) - game.moves < 1
-		if want and idle > 0.9:
+		# level 1: the hand shows straight away for the first move, then after a short pause
+		var wait := 0.3 if (int(cur) == 0 and game.moves == int(L.moves)) else 0.9
+		if want and idle > wait:
 			show_hand(game.hint_move())
 			return
 	if idle > 10.0:
@@ -1897,6 +1962,7 @@ func end_off() -> void:
 		c.queue_free()
 	inflight = {}
 
+var end_t0 := 0.0
 func level_done(mv: int) -> void:
 	if is_bonus():
 		game.stopped = true
@@ -1906,6 +1972,8 @@ func level_done(mv: int) -> void:
 		return
 	endMv = mv
 	ending = true
+	end_t0 = now()
+	game.no_match = true
 	hide_hand()
 	sfx.play("fanfare", 0.85)
 	face.calm()
@@ -2159,7 +2227,14 @@ func won(mv: int) -> void:
 	guy.ox = 0
 	guy.oy = 206
 	guy.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	gc.add_child(guy)
+	for ch in gc.get_children():
+		if ch is AppFx.RingMask:
+			ch.queue_free()
+	var mask := AppFx.RingMask.new()
+	mask.size = gc.size
+	mask.xf = gc.get_global_transform().affine_inverse() * stage.get_global_transform()
+	gc.add_child(mask)
+	mask.add_child(guy)
 	chakra.start()
 	# entry animations
 	Anim.play(L_win.nodes[8].get_node("tA"), "tpop2", 0.7, 0.1, "cubic-bezier(.3,1.6,.5,1)")
@@ -2573,6 +2648,12 @@ func _input(e: InputEvent) -> void:
 		if not any and not gs_open and not LO.root.visible:
 			open_card(mini(int(S.lv), levels.size() - 1))
 			return
+	# the end sequence (leftover moves, blasts, coins) skips on a tap anywhere on the screen
+	if e is InputEventMouseButton and e.pressed and ending and game and game.over and now() - end_t0 > 1.0 and screens.game.visible:
+		get_viewport().set_input_as_handled()
+		end_off()
+		won(endMv)
+		return
 	if e is InputEventMouseButton and e.pressed:
 		lastAct = now()
 		if not demo:
@@ -2600,6 +2681,12 @@ func _enter_tree() -> void:
 		# whole-app checks: -- --flow=1 --s_lv=3 --s_diyas=2 --s_step=1 --s_agreed=1 --tap=6 --act=panel|tut|build|shop|daily|bag|set --shot=png --wait=S
 		save_path = "user://save_dev.json"
 		var d := {"agreed": int(a.get("s_agreed", 0)), "lv": int(a.get("s_lv", 0)), "diyas": int(a.get("s_diyas", 0)), "step": int(a.get("s_step", 0)), "coins": int(a.get("s_coins", 300)), "tut": int(a.get("s_tut", 0))}
+		# diyas are worked out from the levels won (best) minus the builds done
+		var bst := {}
+		var lvs := Levels.all()
+		for i in mini(d.lv, lvs.size()):
+			bst[str(i)] = 2 if lvs[i].get("ltype", "n") == "h" else 1
+		d["best"] = bst
 		var f := FileAccess.open(save_path, FileAccess.WRITE)
 		f.store_string(JSON.stringify(d))
 		f = null

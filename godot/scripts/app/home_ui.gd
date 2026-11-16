@@ -198,10 +198,24 @@ func hide_home() -> void:
 	home.visible = false
 
 func sync_in() -> void:
-	st.diyas = int(app.S.get("diyas", 0))
 	var n := mini(int(app.S.get("step", 0)), st.TASKS.size())
 	if n > st.step:
 		st.skip_to(n)
+	# diyas left = diyas earned in levels - diyas spent on builds done, so nothing is ever lost.
+	# Levels 1-10 give exactly what all ten builds cost; once level 10 is won, every build can be finished.
+	var earned := 0
+	for k in app.S.get("best", {}):
+		earned += int(app.S.best[k])
+	var spent := 0
+	var left := 0
+	for i in st.TASKS.size():
+		if i < n: spent += int(st.TASKS[i].c)
+		else: left += int(st.TASKS[i].c)
+	var d := maxi(0, earned - spent)
+	if int(app.S.lv) >= app.levels.size():
+		d = maxi(d, left)
+	st.diyas = d
+	app.S.diyas = d
 
 func sync_out() -> void:
 	app.S.diyas = st.diyas
@@ -212,7 +226,12 @@ func refresh() -> void:
 	if not home.visible:
 		return
 	var n := mini(st.step, st.TASKS.size())
-	app.set_t(LH.node("hCnt"), str(n))
+	# "n/10" in one label (the two-part web layout drew the slash badly), and the diya sits left of "Build"
+	LH.node("hCnt").visible = false
+	app.set_t(LH.nodes[27], "%d/%d" % [n, st.TASKS.size()])
+	var bl: Label = app.lbl(LH.nodes[23])
+	if bl:
+		bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var bar: Control = LH.node("hBar")
 	app.resize_box(bar, Vector2(117.0 * n / st.TASKS.size(), bar.size.y))
 	app.set_t(LH.node("tDy"), str(st.diyas))
@@ -224,10 +243,15 @@ func refresh() -> void:
 	var all: int = app.levels.size()
 	var f: Control = LH.nodes[18]
 	if lvN > all:
-		app.set_t(f, "Area 2 Soon")
 		LH.nodes[19].visible = false
+		var la: Label = app.lbl(f)
+		if la:
+			la.position.x = 0
+			la.size.x = f.size.x
+			la.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		app.fit_t(f, "Area 2 Soon", f.size.x - 14)
 	else:
-		app.set_t(f, "Level")
+		app.fit_t(f, "Level", 999)
 		LH.nodes[19].visible = true
 		app.set_t(LH.nodes[19], str(lvN))
 		var l: Label = app.lbl(f)
@@ -426,6 +450,7 @@ func tutorial() -> void:
 	var pill: Control = LH.nodes[11]
 	_lift(pill)
 	app.set_t(tip, ("You earned 1 diya! Use diyas to build your street." if st.diyas == 1 else "You earned %d diyas! Use them to build your street." % st.diyas))
+	_fit_tip()
 	tip.visible = true
 	tip.position.y = pill.get_global_rect().end.y - global_position.y + 18
 	hand.visible = false
@@ -446,6 +471,7 @@ func _tut_next() -> void:
 	Anim.play(b, "beat2", 1.0, 0.0, "ease-in-out", -1)
 	var nm: String = String(st.TASKS[0].n).trim_prefix("Build the ")
 	app.set_t(tip, "Tap Build to build the %s!" % nm)
+	_fit_tip()
 	tip.position.y = b.get_global_rect().position.y - global_position.y - tip.size.y - 26
 	var r := b.get_global_rect()
 	hand.visible = true
@@ -472,3 +498,26 @@ func end_tutorial() -> void:
 		Anim.stop(c, true)
 	lift_nodes.clear()
 	Anim.stop(LH.node("hBuild"), true)
+
+# the tip card hugs its text: padding 14, text centred both ways
+func _fit_tip() -> void:
+	var l: Label = app.lbl(tip)
+	if l == null:
+		return
+	var w := tip.size.x
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.position = Vector2(16, 0)
+	l.size = Vector2(w - 32, 10)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var lines := maxi(1, l.get_line_count())
+	var th := float(lines * l.get_line_height())
+	var h := th + 30.0
+	app.resize_box(tip, Vector2(w, h))
+	l.size = Vector2(w - 32, h)
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	for ch in l.get_children():
+		if ch is Label:
+			ch.autowrap_mode = l.autowrap_mode
+			ch.size = l.size
+			ch.horizontal_alignment = l.horizontal_alignment
+			ch.vertical_alignment = l.vertical_alignment

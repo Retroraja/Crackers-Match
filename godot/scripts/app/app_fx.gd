@@ -169,6 +169,20 @@ class Chakra extends Control:
 
 
 # ---------------------------------------------------------------- small fireworks (winBurst / winFx)
+# win screen: the man shows only above the line y = top and inside the ring (web winguy mask)
+class RingMask extends Control:
+	var top := 430.0
+	var cen := Vector2(195, 430)
+	var rad := 164.0
+	var xf := Transform2D.IDENTITY   # stage -> local
+	func _init() -> void:
+		clip_children = CanvasItem.CLIP_CHILDREN_ONLY
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+	func _draw() -> void:
+		draw_set_transform_matrix(xf)
+		draw_rect(Rect2(-200, -400, 790, top + 400), Color.WHITE)
+		draw_circle(cen, rad, Color.WHITE)
+
 class Fireworks extends Control:
 	var on := false
 	var auto := false

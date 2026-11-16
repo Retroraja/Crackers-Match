@@ -22,9 +22,10 @@ const COLS := {0: "#E8343B", 1: "#2F6FE0", 2: "#3DBB4A", 3: "#FFD24A", 4: "#8B5C
 const ID := {"rocket": 6, "flowerpot": 7, "chakra": 8, "skyshot": 9, "atom": 10, "sparkler": 11, "wala": 12, "rail": 13, "matchbox": 14}
 const OT := {"coin": {"hp": 1, "k": "b"}, "crate": {"hp": 1, "k": "b"}, "steel": {"hp": 2, "k": "b"}, "gold": {"hp": 1, "k": "f"}, "hole": {"hp": 999, "k": "b"}, "big": {"hp": 999, "k": "b"}}
 const FIX := {"big": 1, "crate": 1, "steel": 1, "hole": 1}
-const GRAV := 1500.0
-const VMAX := 540.0
+const GRAV := 1200.0   # web 1500; 20% slower fall (Rajarajan, 17 Nov)
+const VMAX := 432.0    # web 540
 const SWAP := 0.13
+const CHAIN_CAP := 2   # chains after a move before refills go quiet (17 Nov: long auto chains felt silly)
 
 var R := 9
 var C := 8
@@ -62,6 +63,7 @@ var fin_t := 0.0
 var holes_done := false
 var teach = null
 var ended := false
+var no_match := false
 var hl = null
 var frame_dt := 0.016
 static var PERF := {}
@@ -184,6 +186,7 @@ func start(level: Dictionary) -> void:
 	goal = lv.goal.duplicate()
 	over = false
 	ended = false
+	no_match = false
 	busy = false
 	stopped = false
 	fl = {}
@@ -956,7 +959,48 @@ func gravity() -> bool:
 			r -= 1
 	if not born.is_empty():
 		luck(born)
+		if casc >= CHAIN_CAP and not ended:
+			quiet(born)
 	return moved_any
+
+# after CHAIN_CAP chains: give each new cracker a colour that makes no match where it will land
+# (b already holds the final places, raw_k reads them without waiting for the fall)
+func quiet(born: Array) -> void:
+	for q in born:
+		var n = b[q[0]][q[1]]
+		if n == null or n.k < 0 or n.k >= 6 or n.get("lucky", 0):
+			continue
+		if not makes_raw(q[0], q[1]):
+			continue
+		var ks: Array = lv.colors.duplicate()
+		ks.shuffle()
+		for k in ks:
+			n.k = k
+			if not makes_raw(q[0], q[1]):
+				break
+
+func makes_raw(r: int, c: int) -> bool:
+	var k := raw_k(r, c)
+	if k < 0:
+		return false
+	var h := 1
+	var v := 1
+	var i := 1
+	while raw_k(r, c + i) == k: h += 1; i += 1
+	i = 1
+	while raw_k(r, c - i) == k: h += 1; i += 1
+	i = 1
+	while raw_k(r + i, c) == k: v += 1; i += 1
+	i = 1
+	while raw_k(r - i, c) == k: v += 1; i += 1
+	if h >= 3 or v >= 3:
+		return true
+	for d in [[0, 0], [0, -1], [-1, 0], [-1, -1]]:
+		var a: int = r + d[0]
+		var bb: int = c + d[1]
+		if raw_k(a, bb) == k and raw_k(a, bb + 1) == k and raw_k(a + 1, bb) == k and raw_k(a + 1, bb + 1) == k:
+			return true
+	return false
 
 # b27 lucky refills
 func shape_sc(r: int, c: int) -> Dictionary:
@@ -983,7 +1027,7 @@ func shape_sc(r: int, c: int) -> Dictionary:
 
 func luck(born: Array) -> void:
 	var p: float = lv.get("luck", 0.0)
-	if p <= 0.0 or ended or over or randf() > p:
+	if p <= 0.0 or ended or over or casc >= CHAIN_CAP or randf() > p:
 		return
 	var sp: Array = []
 	for r in R:
@@ -1046,6 +1090,15 @@ func fall(dt: float) -> Dictionary:
 					if e.get("fresh", 0):
 						e.fresh = 0
 						calm(r, c, e)
+					elif casc >= CHAIN_CAP + 1 and not ended and not no_match and e.k >= 0 and e.k < 6 and not e.has("ob"):
+						# hard stop: from the 3rd chain on, a falling cracker never lands into a match
+						var kk: int = e.k
+						var t := 0
+						while t < 6 and makes(r, c):
+							e.k = rk()
+							t += 1
+						if makes(r, c):
+							e.k = kk
 			elif e.get("bo", 0.0) > 0.0:
 				e.bo = maxf(0.0, e.bo - dt)
 	return {"landed": landed, "any": any}
@@ -1054,7 +1107,9 @@ func calm(r: int, c: int, e: Dictionary) -> void:
 	if e.get("lucky", 0):
 		e.lucky = 0
 		return
-	if ended or e.k < 0 or e.k >= 6 or randf() > calm_lv():
+	# after the 2nd chain in one move, new crackers never land into a match (no long auto chains)
+	var p: float = 1.0 if casc >= CHAIN_CAP else calm_lv()
+	if ended or e.k < 0 or e.k >= 6 or randf() > p:
 		return
 	var kk: int = e.k
 	var t := 0
@@ -1213,7 +1268,7 @@ func on_done() -> void:
 		return
 	if fire_next():
 		return
-	var g := find()
+	var g := find() if not no_match else []
 	if not g.is_empty():
 		casc += 1
 		busy = true
@@ -1308,7 +1363,8 @@ func _process2(delta: float) -> void:
 	if not over and not paused:
 		if f.landed or dirty:
 			dirty = false
-			var g := find()
+			# once the goal is done (or the end sequence runs) new crackers only fall, they do not match again
+			var g := find() if not (no_match or left() == 0) else []
 			if not g.is_empty():
 				casc += 1
 				cheer.emit(casc - 1 if casc >= 4 else mini(casc, 2))
