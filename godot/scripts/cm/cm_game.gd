@@ -25,7 +25,7 @@ const FIX := {"big": 1, "crate": 1, "steel": 1, "hole": 1}
 const GRAV := 1200.0   # web 1500; 20% slower fall (Rajarajan, 17 Nov)
 const VMAX := 432.0    # web 540
 const SWAP := 0.13
-const CHAIN_CAP := 2   # chains after a move before refills go quiet (17 Nov: long auto chains felt silly)
+var CHAIN_CAP := 2   # chains after a move before refills go quiet (17 Nov: long auto chains felt silly)
 
 var R := 9
 var C := 8

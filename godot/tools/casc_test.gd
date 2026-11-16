@@ -16,6 +16,8 @@ var hist := {}
 var long := 0.0
 var nm := 0
 var only := -1
+var wins := 0
+var lefts: Array = []
 
 func pick() -> Array:
 	var out: Array = []
@@ -50,6 +52,9 @@ func report() -> void:
 	var avg := 0.0
 	for k in hist:
 		avg += k * hist[k]
+	print("L%d wins %d/%d goalsLeft %s" % [li + 1, wins, seeds, str(lefts)])
+	wins = 0
+	lefts = []
 	print("L%d moves %d avgChains %.2f longest %.1fs hist %s" % [li + 1, nm, avg / maxf(1, nm), long, str(hist)])
 	hist = {}
 	long = 0.0
@@ -71,6 +76,7 @@ func _process(_delta: float) -> bool:
 		g.fly3d = f3
 		g.start(CMGame.make_level(levels[li], li))
 		g.gspeed = 3.0
+		if OS.get_environment("CAP") != "": g.CHAIN_CAP = int(OS.get_environment("CAP"))
 		m = 0
 		steps = 0
 		state = "settle"
@@ -78,8 +84,10 @@ func _process(_delta: float) -> bool:
 		steps += 1
 		if (g.busy or not g.settled()) and steps < 1200:
 			return false
-		var mv := pick() if not (g.over or g.moves <= 0 or m >= 14) else []
+		var mv := pick() if not (g.over or g.moves <= 0 or m >= 99) else []
 		if mv.is_empty():
+			wins += 1 if g.left() == 0 else 0
+			lefts.append(g.left())
 			g.queue_free()
 			d.queue_free()
 			f3.queue_free()
