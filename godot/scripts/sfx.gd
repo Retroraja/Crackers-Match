@@ -31,6 +31,17 @@ func _ready() -> void:
 		music.volume_db = -16.0
 		music.play()
 
+# play every sound once, silently, so the first real one starts on time
+func warm() -> void:
+	for n in streams:
+		if n == "music":
+			continue
+		var a := _player()
+		a.stream = streams[n]
+		a.volume_db = -80.0
+		a.play()
+		a.stop()
+
 func _player() -> AudioStreamPlayer:
 	for a in pool:
 		if not a.playing:

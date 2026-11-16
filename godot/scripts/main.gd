@@ -1,9 +1,9 @@
 # Step 1 test app: pick a level (1-10), play the board, see win/lose. FPS shown at the top for the phone test.
 extends Node2D
 
-var board: Board
+var board: CMGame
+var deb: CMDeb
 var sfx: Sfx
-var fx: Fx
 var ui: CanvasLayer
 var hud: Control
 var lbl_level: Label
@@ -38,17 +38,20 @@ func _ready() -> void:
 	add_child(dim)
 	sfx = Sfx.new()
 	add_child(sfx)
-	board = Board.new()
-	board.position = Vector2((390 - Board.C * Board.U) / 2.0, 190)
+	board = CMGame.new()
+	board.position = Vector2(0, 112)
 	board.sfx = sfx
 	board.lite = lite
 	add_child(board)
-	fx = Fx.new()
-	fx.lite = lite
-	add_child(fx)
-	board.fx = fx
-	board.changed.connect(_refresh)
-	board.finished.connect(_on_finished)
+	deb = CMDeb.new()
+	deb.lite = lite
+	deb.z_index = 4
+	add_child(deb)
+	board.deb = deb
+	board.moves_changed.connect(func(_n): _refresh())
+	board.goal_changed.connect(func(_g): _refresh())
+	board.level_won.connect(func(_m): _on_finished(true))
+	board.level_lost.connect(func(): _on_finished(false))
 	_build_ui()
 	_show_menu()
 
@@ -196,6 +199,8 @@ func _show_menu() -> void:
 	menu.visible = true
 	hud.visible = false
 	board.visible = false
+	board.stopped = true
+	deb.clear()
 
 func _start(i: int) -> void:
 	cur = i
@@ -203,7 +208,8 @@ func _start(i: int) -> void:
 	endp.visible = false
 	hud.visible = true
 	board.visible = true
-	board.setup(levels[i])
+	board.start(CMGame.make_level(levels[i], i))
+	_refresh()
 	sfx.play("swoosh", 0.4)
 
 func _refresh() -> void:
@@ -212,8 +218,8 @@ func _refresh() -> void:
 	for ch in goal_box.get_children():
 		ch.queue_free()
 	var icons := {"crate": "res://art/crate.webp", "steel": "res://art/crate2.webp", "gold": "res://art/goldfloor.webp", "cab": "res://art/sweet0.webp"}
-	for k in ["cab", "crate", "steel", "gold"]:
-		if not board.goal.has(k):
+	for k in ["cab", "crate", "steel", "gold", "hole"]:
+		if not board.goal.has(k) or not icons.has(k):
 			continue
 		var vb := VBoxContainer.new()
 		var tr := TextureRect.new()
@@ -243,80 +249,70 @@ func _end_pressed() -> void:
 func _process(_dt: float) -> void:
 	fps.text = "%d fps%s" % [Engine.get_frames_per_second(), " · light" if lite else ""]
 
-# ---- automated check (desktop only): godot --path . -- --test
+# ---- side-by-side test: godot --path . -- --cmrec=/path/plan.json  (same board and swipes as the web recording)
 func _enter_tree() -> void:
-	if "--autotest" in OS.get_cmdline_user_args():
-		call_deferred("_auto_test")
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--cmrec="):
+			call_deferred("_rec", a.substr(8))
 
-func _shot(name: String) -> void:
-	await RenderingServer.frame_post_draw
-	get_viewport().get_texture().get_image().save_png("user://%s.png" % name)
+func _swipe(r: int, c: int, dr: int, dc: int) -> void:
+	var p0: Vector2 = board.position + Vector2(board.cx(c), board.cy(r))
+	var p1: Vector2 = p0 + Vector2(dc, dr) * board.U
+	var td := InputEventScreenTouch.new()
+	td.position = p0
+	td.pressed = true
+	Input.parse_input_event(td)
+	await get_tree().process_frame
+	var dr_ := InputEventScreenDrag.new()
+	dr_.position = p0.lerp(p1, 0.6)
+	dr_.relative = p1 - p0
+	Input.parse_input_event(dr_)
+	await get_tree().process_frame
+	var tu := InputEventScreenTouch.new()
+	tu.position = p1
+	tu.pressed = false
+	Input.parse_input_event(tu)
 
-func _find_move() -> Array:
-	for r in Board.R:
-		for c in Board.C:
-			for d in [Vector2i(0, 1), Vector2i(1, 0)]:
-				var a := board.tile_at(r, c)
-				var b := board.tile_at(r + d.x, c + d.y)
-				if a == null or b == null or not board._free(r, c) or not board._free(r + d.x, c + d.y):
-					continue
-				if a.k >= 6 or b.k >= 6:
-					return [Vector2i(r, c), Vector2i(r + d.x, c + d.y)]
-				var t := a.k
-				a.k = b.k
-				b.k = t
-				var ok := not board._find_groups().is_empty()
-				b.k = a.k
-				a.k = t
-				if ok:
-					return [Vector2i(r, c), Vector2i(r + d.x, c + d.y)]
+func _valid(m: Array) -> bool:
+	var a = board.at2(m[0], m[1])
+	var b = board.at2(m[0] + m[2], m[1] + m[3])
+	if a == null or b == null or not board.rest(a) or not board.rest(b) or a.has("ob") or b.has("ob"):
+		return false
+	var t: int = a.k
+	a.k = b.k
+	b.k = t
+	var ok := not board.find().is_empty()
+	b.k = a.k
+	a.k = t
+	return ok
+
+func _auto_move() -> Array:
+	for r in range(board.R - 1, -1, -1):
+		for c in board.C:
+			for d in [[0, 1], [1, 0]]:
+				var m := [r, c, d[0], d[1]]
+				if _valid(m):
+					return m
 	return []
 
-func _auto_test() -> void:
-	await get_tree().create_timer(0.5).timeout
-	await _shot("t0_menu")
-	for li in [0, 9, 8]:
-		_start(li)
-		await get_tree().create_timer(0.8).timeout
-		# a real finger swipe through the input system
-		var mv0 := board.moves
-		var fm := _find_move()
-		if not fm.is_empty():
-			var p0: Vector2 = board.to_global(board.cpos(fm[0].x, fm[0].y))
-			var p1: Vector2 = board.to_global(board.cpos(fm[1].x, fm[1].y))
-			var tdown := InputEventScreenTouch.new()
-			tdown.position = p0
-			tdown.pressed = true
-			Input.parse_input_event(tdown)
-			await get_tree().process_frame
-			var dr := InputEventScreenDrag.new()
-			dr.position = p0.lerp(p1, 0.8)
-			dr.relative = p1 - p0
-			Input.parse_input_event(dr)
-			await get_tree().process_frame
-			var tup := InputEventScreenTouch.new()
-			tup.position = p1
-			tup.pressed = false
-			Input.parse_input_event(tup)
-			await get_tree().create_timer(1.5).timeout
-			print("SWIPE TEST level ", li + 1, ": moves ", mv0, " -> ", board.moves)
-		await _shot("t_l%d_start" % (li + 1))
-		var moves_done := 0
-		var t0 := Time.get_ticks_msec()
-		while moves_done < 40 and not board.over and Time.get_ticks_msec() - t0 < 60000:
-			while board.busy:
-				await get_tree().process_frame
-			var m := _find_move()
-			if m.is_empty():
-				break
-			board.try_swap(m[0], m[1])
-			moves_done += 1
-			await get_tree().create_timer(0.25).timeout
-			if moves_done == 1:
-				await _shot("t_l%d_m1" % (li + 1))
-		while board.busy:
-			await get_tree().process_frame
-		await get_tree().create_timer(0.8).timeout
-		await _shot("t_l%d_end" % (li + 1))
-		print("LEVEL ", li + 1, " moves_done=", moves_done, " over=", board.over, " goal=", board.goal, " moves_left=", board.moves)
+func _rec(path: String) -> void:
+	var plan: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(path))
+	fps.visible = false
+	_start(int(plan.level))
+	var bd: Array = plan.board
+	for r in bd.size():
+		for c in bd[r].size():
+			var e = board.at2(r, c)
+			if e != null and not e.has("ob") and int(bd[r][c]) >= 0:
+				e.k = int(bd[r][c])
+	await get_tree().create_timer(float(plan.get("wait", 1.0))).timeout
+	for m in plan.moves:
+		var mv := [int(m[0]), int(m[1]), int(m[2]), int(m[3])]
+		if not _valid(mv):
+			mv = _auto_move()
+		if not mv.is_empty():
+			await _swipe(mv[0], mv[1], mv[2], mv[3])
+		await get_tree().create_timer(float(m[4])).timeout
+	await get_tree().create_timer(float(plan.get("tail", 2.0))).timeout
+	print("REC DONE moves=", board.moves, " goal=", board.goal)
 	get_tree().quit()
