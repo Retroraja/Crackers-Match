@@ -1239,7 +1239,6 @@ func _build_overlays() -> void:
 	L_agree = WebLayout.new()
 	L_agree.build("res://ui/agree.json", stage)
 	L_agree.root.visible = false
-	theme_card(L_agree.nodes[1])
 	# "By playing you agree to our Privacy Policy and Terms of Use." as one centred line with gold links
 	var agl: Control = L_agree.nodes[5]
 	for ch in agl.get_children():
@@ -1253,15 +1252,62 @@ func _build_overlays() -> void:
 	rt.scroll_active = false
 	rt.add_theme_font_override("normal_font", WebLayout.font("Sora-500"))
 	rt.add_theme_font_size_override("normal_font_size", 15)
-	rt.add_theme_color_override("default_color", Color("#c9b6ea"))
-	rt.text = "[center]By playing you agree to our [color=#FFD24A][u]Privacy Policy[/u][/color] and [color=#FFD24A][u]Terms of Use[/u][/color].[/center]"
+	rt.add_theme_color_override("default_color", Color("#4B4668"))
+	rt.text = "[center]By playing you agree to our [color=#D99A00][u]Privacy Policy[/u][/color] and [color=#D99A00][u]Terms of Use[/u][/color].[/center]"
 	rt.size = agl.size
 	rt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	agl.add_child(rt)
 	L_buy.nodes[6].position.y += 6
-	theme_card(L_buy.nodes[1])
-	theme_card(L_be.nodes[4])
+	cream_card(L_bc.nodes[1])
+	set_bg(L_bc.nodes[7], INK)
+	for L in [L_card, L_hard]:
+		cream_inner(L)
 
+
+# cream cards (16 Nov, 21:30): every popup window uses the cream look of the Welcome card
+const CREAM := Color("#FFF8EE")
+const INK := Color("#1F1B3A")
+const INK2 := Color("#4B4668")
+
+func cream_card(card: Control) -> void:
+	set_bg(card, CREAM)
+	_ink(card)
+
+func _ink(c: Control) -> void:
+	for ch in c.get_children():
+		if not ch is Control:
+			continue
+		var w: Dictionary = ch.get_meta("web", {})
+		var cls: String = w.get("cls", "")
+		if w.get("tag", "") == "button" or cls.begins_with("adb") or cls.contains("rib") or boxr(ch) != null:
+			continue
+		var l := lbl(ch)
+		if l and l.label_settings:
+			var ls: LabelSettings = l.label_settings
+			if ls.font_color.get_luminance() > 0.6:
+				ls.font_color = INK if ls.font_size >= 22 else INK2
+				ls.shadow_color = Color(0, 0, 0, 0)
+				ls.outline_size = 0
+		_ink(ch)
+
+# level card: keep the pink arch, stars and PLAY; the inside becomes cream
+func cream_inner(C: WebLayout) -> void:
+	set_bg(C.nodes[4], CREAM)
+	C.nodes[5].visible = false
+	set_bg(C.nodes[7], Color("#F3E6D2"))
+	if C == L_card:
+		set_bg(C.nodes[6], Color("#6B3A7A"))
+	for nd in C.root.find_children("*", "Control", true, false):
+		var w: Dictionary = nd.get_meta("web", {})
+		var cls: String = w.get("cls", "")
+		var l := lbl(nd)
+		if l == null or l.label_settings == null:
+			continue
+		if cls.begins_with("lab2"):
+			l.label_settings.font_color = Color("#8A6A4A")
+		elif w.get("tag", "") == "small" and nd.get_parent() == C.nodes[7]:
+			l.label_settings.font_color = INK
+			l.label_settings.shadow_color = Color(0, 0, 0, 0)
 
 # the game theme for the remaining white cards (16 Nov): raised gold frame, dark purple inside,
 # headings in the logo gold, other text light lilac (same as the Out of Moves card)
