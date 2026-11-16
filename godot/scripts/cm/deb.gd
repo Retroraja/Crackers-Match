@@ -117,6 +117,11 @@ func _process(delta: float) -> void:
 
 var _was := false
 func _draw() -> void:
+	var _t0 := Time.get_ticks_usec()
+	_draw2()
+	CMGame.perf_add("deb", Time.get_ticks_usec() - _t0)
+
+func _draw2() -> void:
 	var dt := minf(get_process_delta_time(), 0.04)
 	var t := Time.get_ticks_msec() / 1000.0
 	var keep: Array = []

@@ -57,6 +57,13 @@ var teach = null
 var ended := false
 var hl = null
 var frame_dt := 0.016
+static var PERF := {}
+static func perf_add(k: String, us: int) -> void:
+	var a: Array = PERF.get(k, [0, 0, 0])
+	a[0] += us
+	a[1] += 1
+	a[2] = maxi(a[2], us)
+	PERF[k] = a
 
 var T: Array = []          # tile pictures by kind (CRK.t)
 var B: Array = []          # bare special pictures (CRK.b), used for flying specials
@@ -448,7 +455,8 @@ func has_move() -> bool:
 				var t: int = e.k
 				e.k = f.k
 				f.k = t
-				var ok := not find().is_empty()
+				# only the two swapped cells can start a new match: check around them, not the whole board
+				var ok := makes(r, c) or makes(o[0], o[1])
 				f.k = e.k
 				e.k = t
 				if ok:
@@ -1257,6 +1265,11 @@ func _is_hole(r: int, c: int) -> bool:
 
 # ------------------------------------------------------------------ frame
 func _process(delta: float) -> void:
+	var _t0 := Time.get_ticks_usec()
+	_process2(delta)
+	perf_add("logic", Time.get_ticks_usec() - _t0)
+
+func _process2(delta: float) -> void:
 	if b.is_empty() or stopped:
 		return
 	var dt := minf(delta, 0.04)
@@ -1395,6 +1408,11 @@ func spr_tex(t: Texture2D, x: float, y: float, sz: float, rot: float = 0.0, sy: 
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 func _draw() -> void:
+	var _t0 := Time.get_ticks_usec()
+	_draw2()
+	perf_add("board_draw", Time.get_ticks_usec() - _t0)
+
+func _draw2() -> void:
 	if b.is_empty():
 		return
 	var dt := frame_dt

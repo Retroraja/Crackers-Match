@@ -7,6 +7,7 @@ const OY := 112.0
 var P: Array = []
 var E: Array = []
 var dim := 0.0
+var lite := false
 var FLASH: Texture2D
 
 func rnd(a: float, b: float) -> float:
@@ -48,6 +49,8 @@ func crumb(col: String, kind: String, sz: float) -> Dictionary:
 	return {"poly": pts, "col": Color(col), "kind": kind, "k": k}
 
 func spray(px: float, py: float, cols: Array, n: int, kind: String, o: Dictionary = {}) -> void:
+	if lite:
+		n = maxi(1, n / 3)
 	for i in n:
 		var up: float = o.get("up", 0.0)
 		var a := (-PI / 2 + rnd(-up, up)) if up > 0.0 else rnd(0, 6.28)
@@ -76,6 +79,11 @@ func _process(_d: float) -> void:
 		queue_redraw()
 
 func _draw() -> void:
+	var _t0 := Time.get_ticks_usec()
+	_draw2()
+	CMGame.perf_add("fly3d", Time.get_ticks_usec() - _t0)
+
+func _draw2() -> void:
 	var dt := minf(get_process_delta_time(), 0.04)
 	if dim > 0.0:
 		dim = maxf(0.0, dim - dt * 1.6)
@@ -99,9 +107,9 @@ func _draw() -> void:
 		elif e.k == "flash":
 			draw_texture_rect(FLASH, Rect2(e.x - e.r, e.y - e.r, e.r * 2, e.r * 2), false, Color(1, 1, 1, (1 - p) * 0.7))
 	E = ke
-	if P.size() > 150:
-		P = P.slice(P.size() - 150)
-	P.sort_custom(func(a, b): return a.s0 * (1 + a.z) < b.s0 * (1 + b.z))
+	var cap := 80 if lite else 150
+	if P.size() > cap:
+		P = P.slice(P.size() - cap)
 	var kp: Array = []
 	for o in P:
 		o.t += dt

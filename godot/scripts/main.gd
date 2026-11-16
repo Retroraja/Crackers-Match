@@ -50,6 +50,7 @@ func _ready() -> void:
 	board.deb = deb
 	var f3 := CMFly.new()
 	f3.z_index = 10
+	f3.lite = lite
 	add_child(f3)
 	board.fly3d = f3
 	board.moves_changed.connect(func(_n): _refresh())
@@ -138,8 +139,8 @@ func _build_ui() -> void:
 	back.pressed.connect(_show_menu)
 	hud.add_child(back)
 	fps = _label("", 14, Color(0.8, 1, 0.8))
-	fps.position = Vector2(250, 8)
-	fps.size = Vector2(130, 24)
+	fps.position = Vector2(150, 8)
+	fps.size = Vector2(230, 24)
 	fps.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	ui.add_child(fps)
 	_ignore_all(top)
@@ -250,8 +251,22 @@ func _end_pressed() -> void:
 	else:
 		_start(cur)
 
-func _process(_dt: float) -> void:
-	fps.text = "%d fps%s" % [Engine.get_frames_per_second(), " · light" if lite else ""]
+var _pt := 0.0
+var _cpu := ""
+func _process(dt: float) -> void:
+	_pt += dt
+	if _pt >= 1.0:
+		# CPU time per frame, averaged over the last second: logic + board + debris + 3D pieces (ms)
+		var tot := 0.0
+		var n := 1
+		for k in CMGame.PERF:
+			var a: Array = CMGame.PERF[k]
+			tot += float(a[0]) / 1000.0
+			n = maxi(n, a[1])
+		_cpu = " · cpu %.1f ms" % (tot / n)
+		CMGame.PERF.clear()
+		_pt = 0.0
+	fps.text = "%d fps%s%s" % [Engine.get_frames_per_second(), _cpu, " · light" if lite else ""]
 
 # ---- side-by-side test: godot --path . -- --cmrec=/path/plan.json  (same board and swipes as the web recording)
 func _enter_tree() -> void:
@@ -320,5 +335,8 @@ func _rec(path: String) -> void:
 			await _swipe(mv[0], mv[1], mv[2], mv[3])
 		await get_tree().create_timer(float(m[4])).timeout
 	await get_tree().create_timer(float(plan.get("tail", 2.0))).timeout
+	for k in CMGame.PERF:
+		var a: Array = CMGame.PERF[k]
+		print("PERF ", k, " avg_us=", a[0] / maxi(a[1], 1), " max_us=", a[2], " n=", a[1])
 	print("REC DONE moves=", board.moves, " goal=", board.goal)
 	get_tree().quit()
