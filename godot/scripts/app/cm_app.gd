@@ -1252,17 +1252,47 @@ func _build_overlays() -> void:
 	rt.scroll_active = false
 	rt.add_theme_font_override("normal_font", WebLayout.font("Sora-500"))
 	rt.add_theme_font_size_override("normal_font_size", 15)
-	rt.add_theme_color_override("default_color", Color("#4B4668"))
-	rt.text = "[center]By playing you agree to our [color=#D99A00][u]Privacy Policy[/u][/color] and [color=#D99A00][u]Terms of Use[/u][/color].[/center]"
+	rt.add_theme_color_override("default_color", Color(UISkin.TEXT))
+	rt.text = "[center]By playing you agree to our [color=#C8102E][u]Privacy Policy[/u][/color] and [color=#C8102E][u]Terms of Use[/u][/color].[/center]"
 	rt.size = agl.size
 	rt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	agl.add_child(rt)
 	L_buy.nodes[6].position.y += 6
-	cream_card(L_bc.nodes[1])
-	set_bg(L_bc.nodes[7], INK)
-	for L in [L_card, L_hard]:
-		cream_inner(L)
+	_skin_all()
 
+
+
+# every popup window in the street Welcome look (Skin)
+func _skin_all() -> void:
+	UISkin.card(L_buy.nodes[1])
+	UISkin.button(L_buy.node("buyY"), "yellow")
+	UISkin.button(L_buy.node("buyA"), "red")
+	UISkin.button(L_buy.node("buyN"), "white")
+	UISkin.card(L_agree.nodes[1])
+	UISkin.button(L_agree.node("agY"), "red")
+	UISkin.card(L_bc.nodes[1])
+	set_bg(L_bc.nodes[7], Color(UISkin.DARK))
+	UISkin.button(L_bc.node("bcGo"), "red")
+	UISkin.card(L_be.nodes[4])
+	UISkin.button(L_be.node("beNext"), "red")
+	UISkin.card(L_got.nodes[1])
+	UISkin.card(L_ban.nodes[1])
+	for L in [L_card, L_hard]:
+		# level card: the arch head, stars and PLAY stay; the inside becomes the cream card
+		UISkin.reskin(L.nodes[4], {"bg": [UISkin.lin([[0, "#fffdf2"], [1, "#ffefc4"]])], "rad": [22, 22, 22, 22]})
+		L.nodes[5].visible = false
+		UISkin.reskin(L.nodes[7], {"bgc": UISkin.rgba("#FFF3D6"), "rad": [18, 18, 18, 18], "bw": [2, 2, 2, 2], "bcol": UISkin.rgba("#E8C98A")})
+		if L == L_card:
+			set_bg(L.nodes[6], Color(UISkin.DARK))
+		for nd in L.root.find_children("*", "Control", true, false):
+			var w: Dictionary = nd.get_meta("web", {})
+			var l := lbl(nd)
+			if l == null or l.label_settings == null:
+				continue
+			if String(w.get("cls", "")).begins_with("lab2"):
+				UISkin.text_label(l, UISkin.DARK)
+			elif w.get("tag", "") == "small" and nd.get_parent() == L.nodes[7]:
+				UISkin.text_label(l, UISkin.TEXT)
 
 # cream cards (16 Nov, 21:30): every popup window uses the cream look of the Welcome card
 const CREAM := Color("#FFF8EE")
@@ -1395,6 +1425,16 @@ func popup(t: String, rows: Array) -> void:
 	var extra := (rows.size() - 1) * 72.0
 	box.position.y = 332 - extra / 2.0
 	resize_box(box, Vector2(box.size.x, 179 + extra))
+	if box.has_node("skin"):
+		resize_box(box.get_node("skin"), box.size)
+	for c in gl.get_children():
+		set_bg(c, Color("#FFF3D6"))
+		var tx: Control = kid(c, "div")
+		if tx:
+			if lbl(kid(tx, "b")):
+				UISkin.text_label(lbl(kid(tx, "b")), UISkin.DARK)
+			if lbl(kid(tx, "span")):
+				UISkin.text_label(lbl(kid(tx, "span")), UISkin.TEXT)
 	L_got.nodes[9].position.y = 146 + extra
 	open_modal(L_got.root, true)
 	Anim.play(box, "g28", 0.35, 0.0, "ease-out")

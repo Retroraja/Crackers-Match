@@ -54,6 +54,11 @@ func build(parent: Control) -> void:
 		"st": [[0, rgba("#2a0f50", 0.75)], [1, rgba("#0a0318", 0.93)]]}]})
 	s1 = _card(222, 452, "Out of Moves", "You're almost there! Keep going?", true)
 	s2 = _card(260, 318, "Level Failed", "So close! You only needed a little more.", false)
+	for t in ["title1", "title2", "big"]:
+		UISkin.title_label(n[t].get_node("txt"))
+	UISkin.button(n["bAd"], "red")
+	UISkin.button(n["bCoin"], "yellow")
+	UISkin.button(n["bRetry"], "red")
 
 func _card(top: float, h: float, title: String, line: String, step1: bool) -> Control:
 	var card := Control.new()
@@ -63,19 +68,19 @@ func _card(top: float, h: float, title: String, line: String, step1: bool) -> Co
 	var k := "1" if step1 else "2"
 	# gold frame and purple inside
 	# cream card like the Welcome window
-	mk(card, [28, top, 334, h], {"bgc": rgba("#FFF8EE"), "rad": [26, 26, 26, 26], "sh": [sh(0, 8, 0, "#E2D2B6"), sh(0, 18, 40, "#1F1B3A88")]}, null, "frame" + k)
+	mk(card, [28, top, 334, h], UISkin.card_box(), null, "frame" + k)
 	# ribbon
 	mk(card, [125, top - 22, 140, 44], {"bg": [lin(180, [[0, "#ff7a7a"], [0.55, "#e2384a"], [1, "#a81f33"]])], "rad": [14, 14, 14, 14],
 		"sh": [sh(0, 4, 0, "#6e1020"), sh(0, 6, 10, "#00000088")]}, txt("Level 1", "TitanOne", 22, "#ffffff", [{"x": 0, "y": 2, "b": 0, "c": rgba("#6e1020")}]), "rib" + k)
 	var y := top + 3 + 26 + 6
-	mk(card, [X0, y, W, 40], null, txt(title, "TitanOne", 34, "#1F1B3A"), "title" + k)
+	mk(card, [X0, y, W, 40], null, txt(title, "LilitaOne", 34, UISkin.TITLE), "title" + k)
 	y += 42
-	mk(card, [X0, y, W, 20], null, txt(line, "Sora-500", 15, "#4B4668"), "line" + k)
+	mk(card, [X0, y, W, 20], null, txt(line, "Sora-700", 15, UISkin.TEXT), "line" + k)
 	y += 34
 	mk(card, [X0, y, W, 64], null, null, "goals" + k)
 	y += 64 + 18
 	if step1:
-		mk(card, [X0, y - 4, W, 50], null, txt("+5 Moves", "TitanOne", 44, "#2f86e0", [{"x": 0, "y": 3, "b": 0, "c": rgba("#1d5fae", 0.35)}]), "big")
+		mk(card, [X0, y - 4, W, 50], null, txt("+5 Moves", "LilitaOne", 44, UISkin.TITLE), "big")
 		y += 56
 		var g := mk(card, [X0, y, W, 58], {"bg": [lin(180, [[0, "#86e86f"], [0.55, "#36b52f"], [1, "#22861d"]])], "rad": [18, 18, 18, 18],
 			"sh": [sh(0, 5, 0, "#165f12"), sh(0, 8, 12, "#00000077")]}, txt("Watch Ad", "TitanOne", 22, "#ffffff", [{"x": 0, "y": 2, "b": 0, "c": rgba("#165f12")}]), "bAd")
@@ -95,14 +100,14 @@ func _card(top: float, h: float, title: String, line: String, step1: bool) -> Co
 		coin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tag.add_child(coin)
 		y += 66
-		mk(card, [X0, y, W, 16], null, txt("", "Sora-500", 12.5, "#4B4668"), "lMsg")
+		mk(card, [X0, y, W, 16], null, txt("", "Sora-500", 12.5, UISkin.DARK), "lMsg")
 		y += 26
-		mk(card, [X0 + 80, y, W - 160, 26], null, txt("Give Up", "Sora-700", 15, "#4B4668"), "bGive")
+		mk(card, [X0 + 80, y, W - 160, 26], null, txt("Give Up", "Sora-700", 15, UISkin.DARK), "bGive")
 	else:
 		var g2 := mk(card, [X0, y, W, 58], {"bg": [lin(180, [[0, "#86e86f"], [0.55, "#36b52f"], [1, "#22861d"]])], "rad": [18, 18, 18, 18],
 			"sh": [sh(0, 5, 0, "#165f12"), sh(0, 8, 12, "#00000077")]}, txt("Try Again", "TitanOne", 22, "#ffffff", [{"x": 0, "y": 2, "b": 0, "c": rgba("#165f12")}]), "bRetry")
 		y += 74
-		mk(card, [X0 + 60, y, W - 120, 26], null, txt("Back to Street", "Sora-700", 15, "#4B4668"), "bHome")
+		mk(card, [X0 + 60, y, W - 120, 26], null, txt("Back to Street", "Sora-700", 15, UISkin.DARK), "bHome")
 	return card
 
 # goals left: dark rounded tiles with a red count badge
@@ -113,8 +118,7 @@ func goals(k: String, items: Array) -> void:
 	var tot := items.size() * 64.0 + (items.size() - 1) * 10.0
 	for j in items.size():
 		var x := (W - tot) / 2.0 + j * 74.0
-		var t := lay.make({"i": 0, "id": "", "tag": "div", "r": [x, 0, 64, 64], "op": 1, "box": {"bgc": rgba("#F1E4CF"), "rad": [16, 16, 16, 16],
-			"sh": [sh(0, 2, 5, "#00000033", true), sh(0, 1, 0, "#ffffff")]}}, Vector2.ZERO)
+		var t := lay.make({"i": 0, "id": "", "tag": "div", "r": [x, 0, 64, 64], "op": 1, "box": {"bgc": rgba("#FFF3D6"), "rad": [16, 16, 16, 16], "bw": [2, 2, 2, 2], "bcol": rgba("#E8C98A")}}, Vector2.ZERO)
 		row.add_child(t)
 		var im := TextureRect.new()
 		im.texture = WebLayout.tex(items[j][0])
