@@ -9,11 +9,18 @@ signal goal_changed(goal: Dictionary)
 signal score_changed(v: int)
 signal level_won(moves_left: int)
 signal level_lost()
+signal fly(k, x: float, y: float)     # a goal piece flies to the HUD (colours); obstacles only bump
+signal cheer(c: int)
+signal big()
+signal meter(n: int)
+
+var gspeed := 1.2   # web GSPEED: speed x1 = 1.2, x2 = 1.65, x3 = 2.2
+var mN := 0
 
 const COL := ["#E8123C", "#1E5BFF", "#0DB865", "#2B3FBF", "#8A2BE2", "#FF6A00"]  # fx.js COL (big smash)
 const COLS := {0: "#E8343B", 1: "#2F6FE0", 2: "#3DBB4A", 3: "#FFD24A", 4: "#8B5CF6", 5: "#FF8A1A"}  # b27 COLS (small pieces)
 const ID := {"rocket": 6, "flowerpot": 7, "chakra": 8, "skyshot": 9, "atom": 10, "sparkler": 11, "wala": 12, "rail": 13, "matchbox": 14}
-const OT := {"crate": {"hp": 1, "k": "b"}, "steel": {"hp": 2, "k": "b"}, "gold": {"hp": 1, "k": "f"}, "hole": {"hp": 999, "k": "b"}, "big": {"hp": 999, "k": "b"}}
+const OT := {"coin": {"hp": 1, "k": "b"}, "crate": {"hp": 1, "k": "b"}, "steel": {"hp": 2, "k": "b"}, "gold": {"hp": 1, "k": "f"}, "hole": {"hp": 999, "k": "b"}, "big": {"hp": 999, "k": "b"}}
 const FIX := {"big": 1, "crate": 1, "steel": 1, "hole": 1}
 const GRAV := 1500.0
 const VMAX := 540.0
@@ -80,11 +87,12 @@ func rnd(a: float, b_: float) -> float:
 
 # ------------------------------------------------------------------ setup
 func _init() -> void:
-	for i in 17:
+	for i in 20:
 		var p := "res://art/crk/t%d.webp" % i
 		T.append(load(p) if ResourceLoader.exists(p) else null)
 		var p2 := "res://art/crk/b%d.webp" % i
 		B.append(load(p2) if ResourceLoader.exists(p2) else null)
+	IC["ui-coin"] = load("res://art/web/ui-coin.webp")
 	for n in ["crate", "crate2", "goldfloor", "cab-base", "cab-items", "cab-door"]:
 		IC[n] = load("res://art/%s.webp" % n)
 	IC["crate2_top"] = _top_half(IC["crate2"])
@@ -147,7 +155,11 @@ static func make_level(o: Dictionary, idx: int) -> Dictionary:
 			elif SPK.has(ch): pre.append([r, c, SPK[ch]])
 		shape.append(sh)
 	var L := {"name": o.name, "moves": o.moves, "colors": o.colors, "shape": shape, "ob": ob, "big": big, "goal": {}, "hide": hide,
-		"pre": pre, "luck": o.get("luck", 0.0), "teach": o.get("teach", null), "idx": idx, "combo": o.get("combo", null)}
+		"pre": pre, "luck": o.get("luck", 0.0), "teach": o.get("teach", null), "idx": idx, "combo": o.get("combo", null),
+		"intro": o.get("intro", []), "ltype": o.get("ltype", "n"), "reward": o.get("reward", null),
+		"diyas": 2 if o.get("ltype", "n") == "h" else (3 if o.get("ltype", "n") == "s" else 1)}
+	for k in o.get("goal", {}):
+		L.goal[k] = o.goal[k]
 	for bb in big:
 		L.goal[bb.t] = L.goal.get(bb.t, 0) + bb.n
 	for k in ob:
@@ -592,6 +604,8 @@ func count(k, r = null, c = null) -> void:
 	var key = str(k)
 	if goal.get(key, 0) > 0:
 		goal[key] -= 1
+		if r != null:
+			fly.emit(key, cx(c), cy(r))
 		goal_changed.emit(goal)
 
 func sync() -> void:
@@ -704,6 +718,9 @@ func smash(r: int, c: int, o: Dictionary = {}) -> void:
 	var e = b[r][c]
 	if e == null:
 		return
+	if not e.has("ob") and not e.get("diya", false) and e.k >= 0 and e.k < 6 and not ended:
+		mN += 1
+		meter.emit(mN)
 	if e.has("ob"):
 		hit_ob(e, [r, c], true)
 		return
@@ -762,10 +779,15 @@ func hit_ob(e: Dictionary, p: Array, blast_: bool) -> void:
 	var dead: bool = o.hp <= 0
 	ring(x, y, "#FFFFFF", S * 0.9, 5)
 	if sfx:
-		if dead:
+		if t == "coin":
+			sfx.coin(randi() % 8)
+		elif dead:
 			sfx.play("thud", 1.0, 1.0 - OT[t].hp * 0.06)
 		else:
 			sfx.play("paper", 0.7, 1.1)
+	if t == "coin":
+		deb.bits(x, y, 9, ["#FFD23F", "#FFF3B0", "#F5A623"], 5, 1)
+		spark(x, y, 10, ["#FFE27A", "#FFFFFF"], 200)
 	if t == "crate" or (t == "steel" and dead):
 		deb.chunks(IC.crate, Lx, Ty, S, 1, 4, pw, {"poly": false})
 		deb.bits(x, y, 10, ["#B9772F", "#8A5520", "#E8123C"], 6, pw)
@@ -1172,6 +1194,8 @@ func tap_sp(r: int, c: int) -> void:
 func use(r: int, c: int, dr: int, dc: int) -> void:
 	var e = b[r][c]
 	spend()
+	if e.k in [8, 9, 10, 12, 14]:
+		big.emit()
 	special_sound(e.k)
 	go(r, c, e.k, dr, dc)
 
@@ -1193,6 +1217,7 @@ func on_done() -> void:
 	if not g.is_empty():
 		casc += 1
 		busy = true
+		cheer.emit(casc)
 		blast(g, null)
 		return
 	if moved:
@@ -1272,7 +1297,7 @@ func _process(delta: float) -> void:
 func _process2(delta: float) -> void:
 	if b.is_empty() or stopped:
 		return
-	var dt := minf(delta, 0.04)
+	var dt := minf(delta, 0.04) * gspeed
 	if stop > 0.0:
 		stop -= dt
 		dt *= 0.06
@@ -1286,6 +1311,7 @@ func _process2(delta: float) -> void:
 			var g := find()
 			if not g.is_empty():
 				casc += 1
+				cheer.emit(casc - 1 if casc >= 4 else mini(casc, 2))
 				blast(g, null)
 		if pq != null:
 			if clock - pq.t > 1.2:
@@ -1443,6 +1469,7 @@ func _draw2() -> void:
 				_draw_over(e, px, py, sz)
 				if e.get("dead", false):
 					fill_rr(px + 3, py + 3, sz - 6, sz - 6, 11, Color(1, 1, 1, 0.62))
+	_draw_hl(u)
 	if dim > 0.01:
 		fill_rr(OX - 9, OY - 9, u * C + 18, u * R + 18, 22, Color(30 / 255.0, 20 / 255.0, 70 / 255.0, dim))
 	var cur: Array = fx
@@ -1577,6 +1604,19 @@ func _draw_over(e: Dictionary, x: float, y: float, s: float) -> void:
 	if t == "crate" or t == "steel":
 		var im: Texture2D = IC.crate2 if (t == "steel" and o.hp > 1) else IC.crate
 		draw_texture_rect(im, Rect2(x - 2, y - 2, s + 4, s + 4), false)
+	elif t == "coin":
+		var p := rr_poly(x + 1, y + 1, s - 2, s - 2, 10)
+		var cols := PackedColorArray()
+		for v in p:
+			cols.append(Color("#FFE58A").lerp(Color("#E9A21C"), clampf((v.y - y) / s, 0, 1)))
+		draw_polygon(p, cols)
+		stroke_rr(x + 1, y + 1, s - 2, s - 2, 10, Color("#FFF4C4"), 2)
+		var cs := s * 0.6
+		draw_texture_rect(IC["ui-coin"], Rect2(x + (s - cs) / 2, y + (s - cs) / 2, cs, cs * 0.96), false)
+		var sg := fmod(clock * 0.5 + x * 0.004 + y * 0.002, 2.0) - 0.4
+		var band := PackedVector2Array([Vector2(x + s * sg, y), Vector2(x + s * sg + 7, y), Vector2(x + s * sg - s * 0.4 + 7, y + s), Vector2(x + s * sg - s * 0.4, y + s)])
+		for q in Geometry2D.intersect_polygons(band, p):
+			draw_colored_polygon(q, Color(1, 1, 1, 0.45))
 	if o.get("fl", 0.0) > 0.0:
 		fill_rr(x, y, s, s, 9, Color(1, 1, 1, o.fl * 0.8))
 		o.fl = maxf(0.0, o.fl - 0.12)
@@ -1701,6 +1741,8 @@ func go(r: int, c: int, k: int, dr: int, dc: int) -> void:
 		elif k == 15 or k == 16:
 			d_rocket(tr, tc, 0, 1, 15)
 			d_rocket(tr, tc, 0, -1, 16)
+		elif k == 11:
+			sparkler_fork(tr, tc, -1 if tap else dr, 0 if tap else dc)
 		else:
 			var f = at2(tr, tc)
 			if f != null:
@@ -2674,3 +2716,246 @@ class CMGold extends Node2D:
 	var g: CMGame
 	func _draw() -> void:
 		g._gold_static(self, float(g.U))
+
+
+# ================================================================== bar boosters, more moves, hints (fx.js, b26.js, specials2.js, combos.js)
+func more(n: int) -> void:
+	moves += n
+	over = false
+	busy = false
+	hl = null
+	moves_changed.emit(moves)
+
+func specials() -> Array:
+	var a: Array = []
+	for r in R:
+		for c in C:
+			var e = b[r][c]
+			if e != null and e.k >= 6:
+				a.append({"k": e.k, "r": r, "c": c})
+	return a
+
+func cell_at(p: Vector2) -> Array:
+	return [int(floor((p.y - OY) / U)), int(floor((p.x - OX) / U))]
+
+const KID := {"rocket": 6, "flowerpot": 7, "chakra": 8, "skyshot": 9, "atom": 10, "bomb": 10, "sparkler": 11, "wala": 12, "rail": 13, "matchbox": 14, "hammer": 17, "seven": 18, "snake": 19}
+
+func place(k: String, r: int, c: int) -> bool:
+	var e = at2(r, c)
+	if k == "hammer":
+		if e == null or e.get("diya", false) or busy or over or moves <= 0:
+			return false
+		spend()
+		hammer2(r, c)
+		return true
+	if e == null or e.has("ob") or e.get("diya", false) or busy or over or moves <= 0 or not KID.has(k):
+		return false
+	e.k = KID[k]
+	use(r, c, 0, 0)
+	return true
+
+# cracker meter reward: put the special on the tile and fire it
+func meter_pop(k: String, r: int, c: int) -> bool:
+	var e = at2(r, c)
+	if e == null or e.has("ob") or e.get("dead", false) or e.get("diya", false) or not KID.has(k):
+		return false
+	e.k = KID[k]
+	e.safe = 0.0
+	get_tree().create_timer(0.06).timeout.connect(func():
+		if is_same(at2(r, c), e):
+			use(r, c, 0, 0))
+	return true
+
+# b26.js Lakshmi Vedi hammer: drops in, then clears a plus
+func hammer2(r: int, c: int) -> void:
+	var u = float(U)
+	var x = cx(c)
+	var y = cy(r)
+	snd("swoosh", {"v": 0.5, "rate": 1.3})
+	var e = at2(r, c)
+	if e != null:
+		e.firing = true
+	obj(func(t, dt):
+		var f = minf(t / 0.24, 1.0)
+		spr(17, x, y - (1 - f * f) * u * 3.2, u * 1.25, (1 - f) * -0.7)
+		if f >= 1.0:
+			if e != null:
+				e.firing = false
+			snd("thud", {"v": 1.0, "rate": 0.6})
+			snd("lakshmi", {"v": 1.0, "rate": 0.88, "at": 0.02})
+			snd("atom", {"v": 0.45, "rate": 1.3, "cut": 0.35})
+			pop(x, y, "#FFD24A", 1.4)
+			ring(x, y, "#FFFFFF", u * 1.8, 8)
+			ring(x, y, "#FFD24A", u * 2.4, 6)
+			flash = maxf(flash, 0.3)
+			var i = 0
+			for d in [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]:
+				var rr: int = r + d[0]
+				var cc: int = c + d[1]
+				if at2(rr, cc) != null:
+					hit(rr, cc, {"d": 0.05 if i else 0.0, "pw": 1.3})
+				i += 1
+			return false
+		return true, 0.3)
+
+# fx.js sparkler with the b28 "fork" shape: three straight then a fork at the end
+func sparkler_fork(orr: int, oc: int, dr: int, dc: int) -> void:
+	var u = float(U)
+	var sx = 1 if dr != 0 else 0
+	var sy = 1 if dc != 0 else 0
+	var L: Array = []
+	for q in [[1, 0], [2, 0], [3, 0], [3, -1], [3, 1]]:
+		var p = [orr + dr * q[0] + sy * q[1], oc + dc * q[0] + sx * q[1], q[0]]
+		if p[0] >= 0 and p[0] < R and p[1] >= 0 and p[1] < C:
+			L.append(p)
+	var x = cx(oc)
+	var y = cy(orr)
+	b[orr][oc] = null
+	pop(x, y, "#FFC62B", 1.3)
+	ring(x, y, "#FFC62B", 70, 7)
+	obj(func(t, dt):
+		var uu = minf(t / 0.14, 1.0)
+		spr(11, x + dc * 10 * uu, y + dr * 10 * uu - 10, u * 1.35, atan2(dc, -dr))
+		for k in 8:
+			var a = atan2(dr, dc) + rnd(-0.75, 0.75) * 0.3
+			var v = rnd(150, 430)
+			fx.append({"k": "spark", "x": x, "y": y, "vx": cos(a) * v, "vy": sin(a) * v, "col": Color("#FFFFFF" if k % 2 else "#FFD24A"), "a": 0.0, "l": rnd(0.2, 0.45), "g": 260.0})
+		return t < 0.55, 0.6)
+	for p in L:
+		var tx = cx(p[1])
+		var ty = cy(p[0])
+		at(0.08 + p[2] * 0.11, func():
+			obj(func(t, dt):
+				var w = minf(t / 0.1, 1.0)
+				var X = x + (tx - x) * w
+				var Y = y + (ty - y) * w
+				draw_line(Vector2(X - (tx - x) * 0.12, Y - (ty - y) * 0.12), Vector2(X, Y), Color("#FFC62B"), 4, true)
+				if w >= 1.0:
+					hit(p[0], p[1], {"d": 0.0, "pw": 1.15, "dx": dc * 120.0, "dy": dr * 120.0})
+					return false
+				return true, 0.14))
+	finish(1.05)
+
+# combos.js cSpin: a chakra spins up and blasts a square around it
+func c_spin(r: int, c: int, rad: int, o: Dictionary = {}) -> float:
+	var u = float(U)
+	var x = cx(c)
+	var y = cy(r)
+	var S: float = o.get("S", 0.42)
+	var grow: float = o.get("grow", 0.0)
+	var st = {"rot": 0.0, "blown": false}
+	at(o.get("d", 0.0), func():
+		obj(func(q, dt):
+			var spin = minf(q / S, 1.0)
+			st.rot += (2 + spin * 34) * dt
+			var sz = u * (1.05 + spin * (0.35 + grow))
+			var z = spin * 10
+			var al = maxf(0.0, 1 - (q - S) / 0.18) if q > S else 1.0
+			spr(8, x, y - z, sz, st.rot, 1.0, al)
+			if q < S:
+				for k in 3:
+					var a: float = st.rot + k * 2.09
+					fx.append({"k": "spark", "x": x + cos(a) * sz * 0.45, "y": y - z + sin(a) * sz * 0.45, "vx": -sin(a) * rnd(120, 300), "vy": cos(a) * rnd(120, 300), "col": Color("#FF2FA8" if k == 1 else "#FFC62B"), "a": 0.0, "l": rnd(0.2, 0.4)})
+			if q >= S and not st.blown:
+				st.blown = true
+				ring(x, y, "#FF2FA8", u * (rad + 1) * 1.2, 9)
+				if rad >= 2:
+					flash = maxf(flash, 0.45)
+					stop = 0.05
+					spark(x, y, 50, ["#FF2FA8", "#FFC62B", "#FFFFFF"], 560)
+				for a2 in range(-rad, rad + 1):
+					for b2 in range(-rad, rad + 1):
+						var dd = maxi(absi(a2), absi(b2))
+						hit(r + a2, c + b2, {"d": dd * 0.06 + rnd(0, 0.03), "pw": 1.15 + rad * 0.12, "dx": b2 * 70.0, "dy": a2 * 70.0})
+			return q < S + 0.2, S + 0.25))
+	return S
+
+# combos.js cFire: the end sweep fires a special where it stands, without a move
+func c_fire(r: int, c: int, e: Dictionary) -> void:
+	var k: int = e.k
+	b[r][c] = null
+	e.queued = false
+	pop(cx(c), cy(r), "#FFC62B", 1.0)
+	if k == 6:
+		snd("rocket", {"v": 0.5, "rate": rnd(0.95, 1.12)})
+		c_fly(r, c, "U")
+	elif k == 15:
+		snd("rocket", {"v": 0.5, "rate": rnd(0.95, 1.12)})
+		c_fly(r, c, "R")
+	elif k == 16:
+		snd("rocket", {"v": 0.5, "rate": rnd(0.95, 1.12)})
+		c_fly(r, c, "L")
+	elif k == 8:
+		snd("chakra", {"v": 0.55, "cut": 0.8, "rate": rnd(1, 1.15)})
+		c_spin(r, c, 1, {"S": 0.22})
+
+# fx.js hintMove / showHint
+func hint_move():
+	for r in R:
+		for c in C:
+			var e = b[r][c]
+			if e != null and e.k >= 6:
+				return {"r": r, "c": c, "tap": 1}
+	if lv.get("combo") != null and moves == lv.moves:
+		var cb = lv.combo
+		var e2 = at2(cb.r, cb.c)
+		if e2 != null and e2.k >= 6:
+			return cb
+	if teach != null:
+		return {"r": teach[0], "c": teach[1], "dr": teach[2], "dc": teach[3]}
+	var spm = spmoves()
+	if not spm.is_empty():
+		var z = spm[randi() % spm.size()]
+		return {"r": z.r, "c": z.c, "dr": z.dr, "dc": z.dc}
+	var best = null
+	var bs = 0
+	for r in R:
+		for c in C:
+			for d in [[0, 1], [1, 0]]:
+				var e = at2(r, c)
+				var f = at2(r + d[0], c + d[1])
+				if e == null or f == null or stuck(e) or stuck(f):
+					continue
+				var t: int = e.k
+				e.k = f.k
+				f.k = t
+				var sc = 0
+				for q in find():
+					sc += q.cells.size() * (2 if goal.get(str(q.k), 0) > 0 else 1)
+					for p in q.cells:
+						for z in [[1, 0], [-1, 0], [0, 1], [0, -1]]:
+							var y = at2(p[0] + z[0], p[1] + z[1])
+							if y != null and y.has("ob"):
+								sc += 3
+							if fl.has("%d,%d" % [p[0] + z[0], p[1] + z[1]]):
+								sc += 2
+				f.k = e.k
+				e.k = t
+				if sc > bs:
+					bs = sc
+					best = {"r": r, "c": c, "dr": d[0], "dc": d[1]}
+	return best
+
+func show_hint() -> void:
+	if hl != null or busy or over:
+		return
+	var h = hint_move()
+	if h == null:
+		return
+	if h.has("tap"):
+		hl = [[h.r, h.c]]
+		return
+	if at2(h.r, h.c) == null or at2(h.r + h.dr, h.c + h.dc) == null:
+		return
+	hl = [[h.r, h.c], [h.r + h.dr, h.c + h.dc]]
+
+func _draw_hl(u: float) -> void:
+	if hl == null:
+		return
+	var q = 0.5 + 0.5 * sin(clock * 7)
+	for p in hl:
+		var x = OX + p[1] * u + 2 - q * 2
+		var y = OY + p[0] * u + 2 - q * 2
+		var w = u - 4 + q * 4
+		stroke_rr(x - 2, y - 2, w + 4, w + 4, 13, Color(1, 46 / 255.0, 126 / 255.0, 0.35), 3 + 3 * q + 6)
+		stroke_rr(x, y, w, w, 11, Color.WHITE, 3 + 3 * q)
