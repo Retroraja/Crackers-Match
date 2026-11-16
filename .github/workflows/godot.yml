@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - 'godot/**'
+      - 'tools/cmads-android/**'
       - '.github/workflows/godot.yml'
   workflow_dispatch:
 permissions:
@@ -29,6 +30,15 @@ jobs:
           mkdir -p ~/.local/share/godot/export_templates/4.3.stable tpl
           unzip -q Godot_v4.3-stable_export_templates.tpz -d tpl
           mv tpl/templates/* ~/.local/share/godot/export_templates/4.3.stable/
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Build the ads plugin (AAR)
+        run: |
+          cd tools/cmads-android
+          gradle :cmads:assembleRelease --no-daemon -q
+          mkdir -p ../../godot/addons/cmads/bin
+          cp cmads/build/outputs/aar/cmads-release.aar ../../godot/addons/cmads/bin/
       - name: Android settings and debug key
         run: |
           keytool -genkeypair -v -keystore "$HOME/debug.keystore" -storepass android -alias androiddebugkey -keypass android \
@@ -51,13 +61,15 @@ jobs:
           cd godot
           ../godot-bin --headless --editor --quit --path . || true
           mkdir -p build
-          ../godot-bin --headless --path . --export-debug "Android" build/CrackersMatchGodot.apk
+          ../godot-bin --headless --path . --install-android-build-template --export-debug "Android" build/CrackersMatchGodot.apk
           ls -la build
       - name: Publish download
         env:
           GH_TOKEN: ${{ github.token }}
+          MSG: ${{ github.event.head_commit.message }}
         run: |
-          TAG=godot-test
+          TAG=godot-dev
+          if printf '%s' "$MSG" | grep -q "\[final\]"; then TAG=godot-test; fi
           gh release delete "$TAG" --yes --cleanup-tag || true
           gh release create "$TAG" godot/build/CrackersMatchGodot.apk --target "$GITHUB_SHA" --title "Crackers Match Godot (test build)" --prerelease \
             --notes "Godot build ${GITHUB_RUN_NUMBER}. Installs next to the old app. Download CrackersMatchGodot.apk on your phone and open it."

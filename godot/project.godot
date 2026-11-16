@@ -35,3 +35,7 @@ environment/defaults/default_clear_color=Color(0.16, 0.05, 0.29, 1)
 [autoload]
 
 Anim="*res://scripts/ui/css_anim.gd"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/cmads/plugin.cfg")

@@ -140,6 +140,7 @@ func _ready() -> void:
 	lite = _weak_phone()
 	sfx = Sfx.new()
 	add_child(sfx)
+	_ads_init()
 	var cl := CanvasLayer.new()
 	add_child(cl)
 	back = ColorRect.new()
@@ -1480,8 +1481,33 @@ func popup(t: String, rows: Array) -> void:
 	Anim.play(box, "g28", 0.35, 0.0, "ease-out")
 	sfx.play("fanfare", 0.4)
 
-# ---------------------------------------------------------------- test ads (AdMob comes in stage 4)
+# ---------------------------------------------------------------- rewarded ads (AdMob through the CMAds Android plugin; a short test card elsewhere)
+var ads: Object = null
+var ad_cb: Callable
+
+func _ads_init() -> void:
+	if Engine.has_singleton("CMAds"):
+		ads = Engine.get_singleton("CMAds")
+		ads.connect("ad_done", _ad_done)
+		ads.init()
+
+func _ad_done(ok: bool) -> void:
+	sfx.duck(0.3)
+	var cb := ad_cb
+	ad_cb = Callable()
+	_board_input()
+	if not ok:
+		_after(0.05, func(): toast28("No video right now. Try again soon."))
+	if cb.is_valid():
+		cb.call(ok)
+
 func show_ad(cb: Callable) -> void:
+	if ads:
+		toast28("Loading video...")
+		ad_cb = cb
+		sfx.duck(0.0)
+		ads.showAd()
+		return
 	toast28("Loading video...")
 	fakead = ColorRect.new()
 	(fakead as ColorRect).color = Color(0, 0, 0, 0.85)
@@ -2520,7 +2546,9 @@ func area_reward() -> void:
 	sfx.play("win", 0.8)
 
 func ask_notify() -> void:
-	if OS.get_name() == "Android":
+	if ads:
+		ads.askNotify()
+	elif OS.get_name() == "Android":
 		OS.request_permission("android.permission.POST_NOTIFICATIONS")
 
 # ================================================================== frame
