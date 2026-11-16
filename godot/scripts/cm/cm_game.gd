@@ -180,6 +180,9 @@ func start(level: Dictionary) -> void:
 	fresh()
 	if floor_node:
 		floor_node.queue_free()
+	if gold_node:
+		gold_node.queue_free()
+		gold_node = null
 	floor_node = CMFloor.new()
 	floor_node.g = self
 	floor_node.show_behind_parent = true
@@ -785,6 +788,8 @@ func hit_fl(r: int, c: int) -> void:
 		sfx.play("paper", 0.6)
 	if f.hp <= 0:
 		fl.erase(key)
+		if f.t == "gold":
+			gold_changed()
 		sync()
 
 # ------------------------------------------------------------------ a match
@@ -1475,18 +1480,9 @@ func _draw() -> void:
 			var sc := maxf(0.35, 1.0 + f.z / 190.0)
 			var xf := Transform2D(f.r, Vector2(f.x, f.y - f.z * 0.3)) * Transform2D(0.0, Vector2(sc, sc * (absf(cos(f.f)) * 0.85 + 0.15)), 0.0, Vector2.ZERO) * Transform2D(0.0, Vector2(-u / 2, -u / 2))
 			draw_set_transform_matrix(xf)
-			var pts := PackedVector2Array()
-			var uvs := PackedVector2Array()
-			for p in f.po:
-				pts.append(p * u)
-				uvs.append(p.clamp(Vector2.ZERO, Vector2.ONE))
-			var cut := Geometry2D.intersect_polygons(pts, PackedVector2Array([Vector2(0, 0), Vector2(u, 0), Vector2(u, u), Vector2(0, u)]))
-			if not cut.is_empty():
-				var pp: PackedVector2Array = cut[0]
-				var uv2 := PackedVector2Array()
-				for p in pp:
-					uv2.append(p / u)
-				draw_colored_polygon(pp, Color(1, 1, 1, minf(1.0, (0.95 - f.a) * 5.0)), uv2, f.im)
+			var sh: Array = _shard_poly(f.po)
+			if not sh.is_empty():
+				draw_colored_polygon(sh[0], Color(1, 1, 1, minf(1.0, (0.95 - f.a) * 5.0)), sh[1], f.im)
 			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 			keep.append(f)
 	fx = keep + fx
@@ -1494,6 +1490,27 @@ func _draw() -> void:
 		fx = fx.slice(fx.size() - 900)
 	if flash > 0.02:
 		draw_rect(Rect2(0, 0, W, H), Color(1, 1, 1, flash * 0.75))
+
+# a shard's polygon clipped to the tile, worked out once per shape (the shapes never change)
+var _shard_cache := {}
+func _shard_poly(po: Array) -> Array:
+	var key := polys.find(po) * 1000 + U
+	if _shard_cache.has(key):
+		return _shard_cache[key]
+	var u := float(U)
+	var pts := PackedVector2Array()
+	for p in po:
+		pts.append(p * u)
+	var out: Array = []
+	var cut := Geometry2D.intersect_polygons(pts, PackedVector2Array([Vector2(0, 0), Vector2(u, 0), Vector2(u, u), Vector2(0, u)]))
+	if not cut.is_empty():
+		var pp: PackedVector2Array = cut[0]
+		var uv := PackedVector2Array()
+		for p in pp:
+			uv.append(p / u)
+		out = [pp, uv]
+	_shard_cache[key] = out
+	return out
 
 func _draw_special(e: Dictionary, r: int, k: int, px: float, py: float, sz: float) -> void:
 	var pu := 0.5 + 0.5 * sin(clock * 5.0 + r + k)
@@ -2290,88 +2307,122 @@ func _is_gold(r: int, c: int) -> bool:
 	var f = fl.get("%d,%d" % [r, c])
 	return f != null and f.t == "gold"
 
-func _gold_carpet(u: float) -> void:
-	var cells: Array = []
+# static part (fill, lattice, diamonds, dots, edges) is drawn once by a child node and redrawn only when gold breaks;
+# only the moving shine and the twinkles are drawn every frame
+var gold_node: Node2D
+
+func gold_changed() -> void:
+	if gold_node == null:
+		gold_node = CMGold.new()
+		gold_node.g = self
+		gold_node.show_behind_parent = true
+		add_child(gold_node)
+	gold_node.queue_redraw()
+
+# segment of the line {p : n.p = d} inside the square [L, L+u] x [T, T+u]
+static func _seg_in_cell(n: Vector2, d: float, L: float, T_: float, u: float) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	var cs := [Vector2(L, T_), Vector2(L + u, T_), Vector2(L + u, T_ + u), Vector2(L, T_ + u)]
+	for i in 4:
+		var a: Vector2 = cs[i]
+		var b: Vector2 = cs[(i + 1) % 4]
+		var fa := n.dot(a) - d
+		var fb := n.dot(b) - d
+		if (fa <= 0 and fb > 0) or (fa > 0 and fb <= 0):
+			pts.append(a.lerp(b, fa / (fa - fb)))
+	return pts
+
+func _gold_static(ci: CanvasItem, u: float) -> void:
+	var g0 := Vector2(OX, OY)
+	var gd := Vector2(u * C, u * R)
+	var stops := [[0.0, Color("#FBD966")], [0.35, Color("#E9A72A")], [0.6, Color("#FFE48A")], [1.0, Color("#D18E1C")]]
+	var line_col := Color(160 / 255.0, 95 / 255.0, 10 / 255.0, 0.35)
+	var segs := PackedVector2Array()
 	for r in R:
 		for c in C:
-			if _is_gold(r, c):
-				cells.append(Vector2i(r, c))
-	if cells.is_empty():
-		return
-	var t = clock
-	var g0 = Vector2(OX, OY)
-	var g1 = Vector2(OX + u * C, OY + u * R)
-	var gd = g1 - g0
-	var stops = [[0.0, Color("#FBD966")], [0.35, Color("#E9A72A")], [0.6, Color("#FFE48A")], [1.0, Color("#D18E1C")]]
-	var gcol = func(p: Vector2) -> Color:
-		var k = clampf((p - g0).dot(gd) / gd.length_squared(), 0.0, 1.0)
-		for i in range(1, stops.size()):
-			if k <= stops[i][0]:
-				var a = stops[i - 1]
-				var bb = stops[i]
-				return (a[1] as Color).lerp(bb[1], (k - a[0]) / (bb[0] - a[0]))
-		return stops[-1][1]
-	var line_col = Color(160 / 255.0, 95 / 255.0, 10 / 255.0, 0.35)
-	var sx = OX - u * 3 + fmod(t * 90.0, u * C + u * 8)
-	for cl in cells:
-		var L = OX + cl.y * u
-		var T_ = OY + cl.x * u
-		var q = PackedVector2Array([Vector2(L - 0.5, T_ - 0.5), Vector2(L + u + 0.5, T_ - 0.5), Vector2(L + u + 0.5, T_ + u + 0.5), Vector2(L - 0.5, T_ + u + 0.5)])
-		var cols = PackedColorArray()
-		for p in q:
-			cols.append(gcol.call(p))
-		draw_polygon(q, cols)
-		# diagonal lattice, clipped to the cell
-		for k in range(-R * 2, (C + R) * 2):
-			for seg in [[Vector2(OX + k * u / 2, OY), Vector2(OX + k * u / 2 + u * R, OY + u * R)], [Vector2(OX + k * u / 2 + u * R, OY), Vector2(OX + k * u / 2, OY + u * R)]]:
-				var cut = Geometry2D.intersect_polyline_with_polygon(PackedVector2Array(seg), q)
-				for pl in cut:
-					draw_polyline(pl, line_col, 1.0)
-		# moving shine band
-		var a0 = maxf(sx, L)
-		var a1 = minf(sx + u * 2.4, L + u)
-		if a1 > a0:
-			var mid = sx + u * 1.2
-			var shine = func(x: float) -> Color:
-				var f = (x - sx) / (u * 2.4)
-				return Color(1, 1, 245 / 255.0, 0.5 * (1.0 - absf(f - 0.5) * 2.0))
-			var xs = [a0]
-			if mid > a0 and mid < a1:
-				xs.append(mid)
-			xs.append(a1)
-			for i in range(xs.size() - 1):
-				var x0: float = xs[i]
-				var x1: float = xs[i + 1]
-				draw_polygon(PackedVector2Array([Vector2(x0, T_), Vector2(x1, T_), Vector2(x1, T_ + u), Vector2(x0, T_ + u)]),
-					PackedColorArray([shine.call(x0), shine.call(x1), shine.call(x1), shine.call(x0)]))
-		# diamond in the middle and dots on the corners
-		var mx = L + u / 2
-		var my = T_ + u / 2
-		var d = u * 0.22
-		draw_colored_polygon(PackedVector2Array([Vector2(mx, my - d), Vector2(mx + d, my), Vector2(mx, my + d), Vector2(mx - d, my)]), Color("#FFF1B8"))
-		draw_colored_polygon(PackedVector2Array([Vector2(mx, my - d * 0.5), Vector2(mx + d * 0.5, my), Vector2(mx, my + d * 0.5), Vector2(mx - d * 0.5, my)]), Color("#E39A1E"))
-		for p in [Vector2(L, T_), Vector2(L + u, T_), Vector2(L, T_ + u), Vector2(L + u, T_ + u)]:
-			draw_circle(p, u * 0.05, Color(1, 250 / 255.0, 220 / 255.0, 0.9))
-		if (cl.x * 7 + cl.y * 3) % 5 == 0:
-			var px = L + u * 0.78
-			var py = T_ + u * 0.22
-			var s2 = u * 0.13 * (0.6 + 0.4 * absf(sin(t * 3.0 + cl.x + cl.y)))
-			var star = PackedVector2Array()
-			for i in 16:
-				var an = i / 16.0 * TAU
-				var rr = s2 * (1.0 if i % 4 == 0 else 0.3)
-				star.append(Vector2(px + cos(an) * rr, py + sin(an) * rr))
-			draw_colored_polygon(star, Color.WHITE)
-	# light edge where gold meets non-gold
-	var ec = Color("#FFF6CC")
-	var i2 = 2.5
-	for cl in cells:
-		var L = OX + cl.y * u
-		var T_ = OY + cl.x * u
-		if not _is_gold(cl.x - 1, cl.y): draw_line(Vector2(L, T_ + i2), Vector2(L + u, T_ + i2), ec, 1.8, true)
-		if not _is_gold(cl.x + 1, cl.y): draw_line(Vector2(L, T_ + u - i2), Vector2(L + u, T_ + u - i2), ec, 1.8, true)
-		if not _is_gold(cl.x, cl.y - 1): draw_line(Vector2(L + i2, T_), Vector2(L + i2, T_ + u), ec, 1.8, true)
-		if not _is_gold(cl.x, cl.y + 1): draw_line(Vector2(L + u - i2, T_), Vector2(L + u - i2, T_ + u), ec, 1.8, true)
+			if not _is_gold(r, c):
+				continue
+			var L := OX + c * u
+			var T_ := OY + r * u
+			var q := PackedVector2Array([Vector2(L - 0.5, T_ - 0.5), Vector2(L + u + 0.5, T_ - 0.5), Vector2(L + u + 0.5, T_ + u + 0.5), Vector2(L - 0.5, T_ + u + 0.5)])
+			var cols := PackedColorArray()
+			for p in q:
+				var k := clampf((p - g0).dot(gd) / gd.length_squared(), 0.0, 1.0)
+				var col: Color = stops[-1][1]
+				for i in range(1, stops.size()):
+					if k <= stops[i][0]:
+						col = (stops[i - 1][1] as Color).lerp(stops[i][1], (k - stops[i - 1][0]) / (stops[i][0] - stops[i - 1][0]))
+						break
+				cols.append(col)
+			ci.draw_polygon(q, cols)
+			# lattice: lines x - y = OX - OY + k u/2 and x + y = OX + OY + u R + k u/2
+			for k in range(-R * 2, (C + R) * 2):
+				var s1 := _seg_in_cell(Vector2(1, -1), OX - OY + k * u / 2.0, L, T_, u)
+				if s1.size() == 2: segs.append_array(s1)
+				var s2 := _seg_in_cell(Vector2(1, 1), OX + OY + u * R + k * u / 2.0, L, T_, u)
+				if s2.size() == 2: segs.append_array(s2)
+	if not segs.is_empty():
+		ci.draw_multiline(segs, line_col, 1.0)
+	var ec := Color("#FFF6CC")
+	for r in R:
+		for c in C:
+			if not _is_gold(r, c):
+				continue
+			var L := OX + c * u
+			var T_ := OY + r * u
+			var mx := L + u / 2
+			var my := T_ + u / 2
+			var d := u * 0.22
+			ci.draw_colored_polygon(PackedVector2Array([Vector2(mx, my - d), Vector2(mx + d, my), Vector2(mx, my + d), Vector2(mx - d, my)]), Color("#FFF1B8"))
+			ci.draw_colored_polygon(PackedVector2Array([Vector2(mx, my - d * 0.5), Vector2(mx + d * 0.5, my), Vector2(mx, my + d * 0.5), Vector2(mx - d * 0.5, my)]), Color("#E39A1E"))
+			for p in [Vector2(L, T_), Vector2(L + u, T_), Vector2(L, T_ + u), Vector2(L + u, T_ + u)]:
+				ci.draw_circle(p, u * 0.05, Color(1, 250 / 255.0, 220 / 255.0, 0.9))
+			var i2 := 2.5
+			if not _is_gold(r - 1, c): ci.draw_line(Vector2(L, T_ + i2), Vector2(L + u, T_ + i2), ec, 1.8, true)
+			if not _is_gold(r + 1, c): ci.draw_line(Vector2(L, T_ + u - i2), Vector2(L + u, T_ + u - i2), ec, 1.8, true)
+			if not _is_gold(r, c - 1): ci.draw_line(Vector2(L + i2, T_), Vector2(L + i2, T_ + u), ec, 1.8, true)
+			if not _is_gold(r, c + 1): ci.draw_line(Vector2(L + u - i2, T_), Vector2(L + u - i2, T_ + u), ec, 1.8, true)
+
+func _gold_carpet(u: float) -> void:
+	if gold_node == null:
+		var any := false
+		for k in fl:
+			if fl[k].t == "gold":
+				any = true
+				break
+		if not any:
+			return
+		gold_changed()
+	var t := clock
+	var sx := OX - u * 3 + fmod(t * 90.0, u * C + u * 8)
+	var c0 := maxi(0, int(floor((sx - OX) / u)))
+	var c1 := mini(C - 1, int(floor((sx + u * 2.4 - OX) / u)))
+	for r in R:
+		for c in C:
+			if not _is_gold(r, c):
+				continue
+			var L := OX + c * u
+			var T_ := OY + r * u
+			if c >= c0 and c <= c1:
+				var a0 := maxf(sx, L)
+				var a1 := minf(sx + u * 2.4, L + u)
+				if a1 > a0:
+					var mid := sx + u * 1.2
+					var xs := [a0]
+					if mid > a0 and mid < a1:
+						xs.append(mid)
+					xs.append(a1)
+					for i in range(xs.size() - 1):
+						var x0: float = xs[i]
+						var x1: float = xs[i + 1]
+						var c_a := Color(1, 1, 245 / 255.0, 0.5 * (1.0 - absf((x0 - sx) / (u * 2.4) - 0.5) * 2.0))
+						var c_b := Color(1, 1, 245 / 255.0, 0.5 * (1.0 - absf((x1 - sx) / (u * 2.4) - 0.5) * 2.0))
+						draw_polygon(PackedVector2Array([Vector2(x0, T_), Vector2(x1, T_), Vector2(x1, T_ + u), Vector2(x0, T_ + u)]), PackedColorArray([c_a, c_b, c_b, c_a]))
+			if (r * 7 + c * 3) % 5 == 0:
+				var px := L + u * 0.78
+				var py := T_ + u * 0.22
+				var s2 := u * 0.13 * (0.6 + 0.4 * absf(sin(t * 3.0 + r + c)))
+				draw_colored_polygon(PackedVector2Array([Vector2(px, py - s2), Vector2(px + s2 * 0.3, py - s2 * 0.3), Vector2(px + s2, py), Vector2(px + s2 * 0.3, py + s2 * 0.3), Vector2(px, py + s2), Vector2(px - s2 * 0.3, py + s2 * 0.3), Vector2(px - s2, py), Vector2(px - s2 * 0.3, py - s2 * 0.3)]), Color.WHITE)
 
 
 # ================================================================== sweet-shop cabinet (cabinet.js)
@@ -2600,3 +2651,8 @@ func _cab_down(BB: Dictionary) -> void:
 	burst(g.cx, g.cy, ["#FFD24A", "#FFFFFF", "#FF7A1A"], 30, 340)
 	snd("thud", {"v": 1.0, "rate": 0.8})
 	snd("blast", {"v": 0.35})
+
+class CMGold extends Node2D:
+	var g: CMGame
+	func _draw() -> void:
+		g._gold_static(self, float(g.U))
