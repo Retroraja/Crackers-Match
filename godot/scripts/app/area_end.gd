@@ -160,50 +160,56 @@ func _truck(id: int) -> void:
 	_later(0.6, id, func(): say("The first load of crackers\nleaves for Chennai.", id, 4.2))
 	_later(6.6, id, func(): _shot(4))
 
+# a small Indian lorry built from simple shapes (the Kenney truck model did not show on screen, only its shadow):
+# red cab with a yellow stripe, open wooden back loaded with cracker boxes, black wheels. Faces +z, 1 unit ~ 1 m.
 func _make_truck() -> void:
 	if truck or street == null:
 		return
-	var ps: PackedScene = load("res://art/vehicles/truck.glb")
-	if ps == null:
-		return
 	truck = Node3D.new()
-	var body := ps.instantiate() as Node3D
+	var body := Node3D.new()
 	body.scale = Vector3.ONE * TRUCK_SCALE
 	truck.add_child(body)
-	for c in body.find_children("*", "MeshInstance3D", true, false):
-		var mi := c as MeshInstance3D
-		if String(mi.name).begins_with("wheel"):
-			wheels.append(mi)
-		else:
-			_paint(mi)
-	# cracker boxes in the open back
-	var cols := [Color("#D7263D"), Color("#FFC93C"), Color("#FF7A1A"), Color("#D7263D"), Color("#2E86DE")]
-	var spots := [Vector3(-0.32, 0.78, -1.05), Vector3(0.32, 0.78, -1.05), Vector3(-0.32, 0.78, -0.5), Vector3(0.32, 0.78, -0.5), Vector3(0, 1.2, -0.78)]
-	for i in spots.size():
-		var b := MeshInstance3D.new()
+	var B := func(sz: Vector3, pos: Vector3, col: Color, par: Node3D, nm := "") -> MeshInstance3D:
+		var m := MeshInstance3D.new()
 		var bm := BoxMesh.new()
-		bm.size = Vector3(0.56, 0.42, 0.5)
-		b.mesh = bm
+		bm.size = sz
+		m.mesh = bm
 		var mat := StandardMaterial3D.new()
-		mat.albedo_color = cols[i]
-		mat.roughness = 0.6
-		b.material_override = mat
-		b.position = spots[i]
-		b.name = "box%d" % i
-		body.add_child(b)
-		# a gold band round each box
-		var band := MeshInstance3D.new()
-		var bb := BoxMesh.new()
-		bb.size = Vector3(0.58, 0.08, 0.52)
-		band.mesh = bb
-		var gm := StandardMaterial3D.new()
-		gm.albedo_color = Color("#F5C542")
-		gm.metallic = 0.6
-		gm.roughness = 0.35
-		band.material_override = gm
-		b.add_child(band)
-		if i == spots.size() - 1:
-			b.visible = false
+		mat.albedo_color = col
+		mat.roughness = 0.55
+		m.material_override = mat
+		m.position = pos
+		if nm != "":
+			m.name = nm
+		par.add_child(m)
+		return m
+	B.call(Vector3(1.5, 0.25, 3.0), Vector3(0, 0.45, 0), Color("#3a3a3a"), body)               # chassis
+	B.call(Vector3(1.5, 1.0, 1.0), Vector3(0, 1.05, 0.95), Color("#D7263D"), body)             # cab
+	B.call(Vector3(1.52, 0.12, 1.02), Vector3(0, 0.85, 0.95), Color("#FFC93C"), body)          # stripe
+	B.call(Vector3(1.3, 0.42, 0.04), Vector3(0, 1.25, 1.46), Color("#9fd3ff"), body)           # windscreen
+	B.call(Vector3(1.5, 0.08, 1.9), Vector3(0, 0.62, -0.55), Color("#8A5A3C"), body)           # bed floor
+	for sx in [-0.73, 0.73]:
+		B.call(Vector3(0.06, 0.45, 1.9), Vector3(sx, 0.86, -0.55), Color("#A8703F"), body)     # bed sides
+	B.call(Vector3(1.5, 0.45, 0.06), Vector3(0, 0.86, -1.48), Color("#A8703F"), body)          # tailgate
+	for w in [Vector3(-0.72, 0.32, 0.9), Vector3(0.72, 0.32, 0.9), Vector3(-0.72, 0.32, -0.9), Vector3(0.72, 0.32, -0.9)]:
+		var wm := MeshInstance3D.new()
+		var cy := CylinderMesh.new()
+		cy.top_radius = 0.32
+		cy.bottom_radius = 0.32
+		cy.height = 0.22
+		wm.mesh = cy
+		var mt := StandardMaterial3D.new()
+		mt.albedo_color = Color("#1c1c1c")
+		wm.material_override = mt
+		wm.rotation.z = PI / 2
+		wm.position = w
+		body.add_child(wm)
+		wheels.append(wm)
+	var cols := [Color("#D7263D"), Color("#FFC93C"), Color("#FF7A1A"), Color("#2E86DE"), Color("#7B3FBF"), Color("#2EAD5B")]
+	var spots := [Vector3(-0.38, 0.9, -1.1), Vector3(0.38, 0.9, -1.1), Vector3(-0.38, 0.9, -0.45), Vector3(0.38, 0.9, -0.45), Vector3(0, 1.32, -0.78), Vector3(-0.38, 0.9, 0.12)]
+	for i in spots.size():
+		var b: MeshInstance3D = B.call(Vector3(0.6, 0.42, 0.55), spots[i], cols[i], body, "box%d" % i)
+		B.call(Vector3(0.62, 0.08, 0.57), Vector3.ZERO, Color("#F5C542"), b)
 	street.add_child(truck)
 	_road()
 	_place(0.0)
