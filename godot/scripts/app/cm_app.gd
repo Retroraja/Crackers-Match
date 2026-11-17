@@ -2740,6 +2740,27 @@ func play_story(then: Callable) -> void:
 		then.call())
 	st.tree_exited.connect(cl.queue_free)
 
+# end of Area 1 (once): factory lights, fireworks, the truck leaves for Chennai, the notebook tick
+func play_area_end(then: Callable) -> void:
+	if S.get("end1", 0):
+		then.call()
+		return
+	home_ui.home.visible = false
+	var cl := CanvasLayer.new()
+	cl.layer = 60
+	add_child(cl)
+	var st := AreaEndScene.new()
+	st.app = self
+	st.street = street
+	street.sky_node = sky_layer.get_child(0)
+	cl.add_child(st)
+	st.play(get_viewport().get_visible_rect().size.y)
+	st.finished.connect(func():
+		S.end1 = 1
+		save()
+		then.call())
+	st.tree_exited.connect(cl.queue_free)
+
 func _title_tapped() -> void:
 	var first := int(S.lv) == 0
 	if first:
@@ -3060,6 +3081,24 @@ func _dev(a: Dictionary) -> void:
 		open_modal(L_card.root, false)
 		open_modal(L_hard.root, false)
 		play_story(func(): start(0))
+	elif t == "areaend":
+		# dev / preview video: Area 1 fully built, then the end scene, then quit
+		open_modal(L_card.root, false)
+		open_modal(L_hard.root, false)
+		title_s.visible = false
+		S.step = 99
+		S.end1 = 0
+		show_screen("street")
+		home_ui.sync_in()
+		home_ui.home.visible = false
+		var w: Dictionary = street.wide()
+		street.camP = w.p
+		street.camL = w.look
+		await get_tree().create_timer(float(a.get("wait", 1.0))).timeout
+		play_area_end(func():
+			await get_tree().create_timer(1.2).timeout
+			if a.has("quit"):
+				get_tree().quit())
 	if a.has("shot"):
 		await get_tree().create_timer(float(a.get("wait", 1.5))).timeout
 		if t == "end":

@@ -19,6 +19,11 @@ var serif: Font
 var grain: PackedVector2Array
 var app
 var _last_n := 0
+# end of Area 1: the page already holds Grandpa's line and his list; step 1 gets a red tick, step 2 a gold underline
+var end_mode := false
+var tick := 0.0
+var next_hi := 0.0
+const LIST := [["1. Rebuild our street", "and the factory"], ["2. Our first shop", "in Chennai"]]
 
 func _ready() -> void:
 	pen = Pen.new(self)
@@ -35,6 +40,13 @@ func reset() -> void:
 	wk = 0.0
 	sig = 0.0
 	_last_n = 0
+	tick = 0.0
+	next_hi = 0.0
+
+func anim(prop: String, to: float, dur: float) -> void:
+	create_tween().set_trans(Tween.TRANS_SINE).tween_method(func(v: float):
+		set(prop, v)
+		queue_redraw(), get(prop), to, dur)
 
 func write(dur: float, a) -> void:
 	app = a
@@ -126,6 +138,9 @@ func _cover(w: float) -> void:
 		draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
 
 func _text(S: float) -> void:
+	if end_mode:
+		_text_end(S)
+		return
 	var total := 0
 	for l in LINES:
 		total += l.length()
@@ -221,3 +236,45 @@ func _grandpa(a: float) -> void:
 	c.begin(); c.move(-36, 38); c.bez(-28, 32, -10, 30, 0, 33); c.bez(10, 30, 28, 32, 36, 38); c.stroke(A.call("#BFB4A3"), 1.4)
 	c.begin(); c.move(-14, 46); c.quad(0, 54, 14, 46); c.stroke(A.call("#6E3E2A"), 2.6)
 	c.restore()
+
+# end of Area 1 page: Grandpa's line (small, faded), his signature, a rule, then his list
+func _text_end(S: float) -> void:
+	var faded := Color(INK.r, INK.g, INK.b, 0.62)
+	var y := 34.0
+	for l in ["One day, Sivakasi", "crackers will light", "up every home."]:
+		draw_string(hand, Vector2(S + 14, y), l, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, faded)
+		y += 18
+	draw_string(hand, Vector2(S + 84, y + 4), "— Thatha", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, faded)
+	var c := pen
+	c.begin(); c.move(S + 14, y + 16); c.line(S + 148, y + 16); c.stroke(Color(0.45, 0.3, 0.2, 0.35), 1.2)
+	y += 44
+	for i in LIST.size():
+		var it: Array = LIST[i]
+		draw_string(hand, Vector2(S + 12, y), it[0], HORIZONTAL_ALIGNMENT_LEFT, -1, 19, INK)
+		draw_string(hand, Vector2(S + 30, y + 20), it[1], HORIZONTAL_ALIGNMENT_LEFT, -1, 19, INK)
+		if i == 0 and tick > 0:
+			_tick_mark(S + 128, y + 14, tick)
+		if i == 1 and next_hi > 0:
+			var w := 104.0 * next_hi
+			c.begin(); c.move(S + 30, y + 26); c.line(S + 30 + w, y + 25); c.stroke(Color(0.93, 0.66, 0.2, 0.9), 2.4)
+		y += 50
+
+# a red pencil tick drawn stroke by stroke (k 0..1)
+func _tick_mark(x: float, y: float, k: float) -> void:
+	var a := Vector2(x, y)
+	var b := Vector2(x + 9, y + 11)
+	var e := Vector2(x + 30, y - 22)
+	var l1 := a.distance_to(b)
+	var l2 := b.distance_to(e)
+	var d := k * (l1 + l2)
+	var col := Color("#C8283A")
+	var c := pen
+	c.begin(); c.move(a.x, a.y)
+	if d <= l1:
+		var p := a.lerp(b, d / l1)
+		c.line(p.x, p.y)
+	else:
+		c.line(b.x, b.y)
+		var p2 := b.lerp(e, (d - l1) / l2)
+		c.line(p2.x, p2.y)
+	c.stroke(col, 4.0)

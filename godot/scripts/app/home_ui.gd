@@ -395,7 +395,11 @@ func _task_done(last: bool) -> void:
 			get_tree().create_timer(0.9).timeout.connect(app.street_play)
 
 func _area_won() -> void:
-	get_tree().create_timer(1.6).timeout.connect(func():
+	# the end-of-area story plays first (once), then the banner, fireworks and reward as before
+	get_tree().create_timer(1.2).timeout.connect(func(): app.play_area_end(_area_won_show))
+
+func _area_won_show() -> void:
+	get_tree().create_timer(0.6).timeout.connect(func():
 		ban.visible = true
 		Anim.play(ban, "pop2", 0.6, 0.0, "cubic-bezier(.3,1.5,.5,1)")
 		for i in 7:
