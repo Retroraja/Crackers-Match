@@ -44,12 +44,12 @@ func _shot(n: int) -> void:
 			3: _next(id)
 			_: _finish()
 		return
+	# (the truck shot is left out for now: the truck did not draw on phones)
 	match n:
 		1: _dusk(id)
 		2: _fireworks(id)
-		3: _truck(id)
-		4: _tick(id)
-		5: _next(id)
+		3: _tick(id)
+		4: _next(id)
 		_: _finish()
 
 # Area 2: the camera pulls back over the open shop, customers inside, the man cheers
@@ -77,7 +77,6 @@ func _dusk(id: int) -> void:
 		street.cam_to(Vector3(-3, 6.5, -27), Vector3(0, 4.2, -57), 4.0)
 		var st = street
 		create_tween().set_trans(Tween.TRANS_SINE).tween_method(func(k: float): st.night(k), 0.0, 0.8, 3.2)
-		_make_truck()
 		_factory_lights(id)
 	motes.rate = 8.0
 	_later(0.8, id, func(): say("“Thatha… your factory is ready.”", id, 3.0))
@@ -141,7 +140,10 @@ func _fireworks(id: int) -> void:
 	m.tween_property(man, "position:y", H - BOT - 236, 1.0).set_delay(0.6).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	_later(1.2, id, func(): man.mood("cheer", 1.2))
 	_later(0.5, id, func(): say("Sivakasi Street shines again!", id, 3.0))
-	_later(4.2, id, func(): _shot(3))
+	_later(3.0, id, func(): say("Tomorrow, the first load of crackers\nleaves for Chennai.", id, 1.6))
+	_later(4.8, id, func():
+		_tw().tween_property(man, "position:y", H + 40, 0.6)
+		_shot(3))
 
 # ------------------------------------------------------------------ 3. the loaded truck leaves for Chennai
 func _truck(id: int) -> void:

@@ -26,23 +26,11 @@ func _road() -> void:
 
 func _arrive(id: int) -> void:
 	if street:
-		street.camP = Vector3(-6, 4.0, 17)
-		street.camL = Vector3(-8, 1.6, 2)
-		street.cam_to(Vector3(0, 4.5, 15), Vector3(0, 2.4, -1), 5.0)
-		_make_truck()
-		_later(0.4, id, func():
-			drive = 0.0
-			_sfx("swoosh", 0.4, 0.6))
+		street.camP = Vector3(-14, 7.0, 34)
+		street.camL = Vector3(-8, 5.0, -2)
+		street.cam_to(Vector3(0, 6.5, 30), Vector3(0, 5.2, -2), 5.0)
 	_later(0.6, id, func(): say("Chennai.  Bunder Street,\nwhere the big city buys its crackers.", id, 3.6))
 	_later(4.6, id, func(): _shot(2))
-
-func _process(dt: float) -> void:
-	# the truck slows to a stop at the shop
-	if truck and drive >= 0.0 and drive >= plen[plen.size() - 1] - 0.2:
-		drive = -1.0
-		_sfx("bk_thud", 0.5)
-		return
-	super._process(dt)
 
 func _shop(id: int) -> void:
 	man.mood("worried", 99)
