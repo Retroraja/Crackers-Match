@@ -23,7 +23,8 @@ var _last_n := 0
 var end_mode := false
 var tick := 0.0
 var next_hi := 0.0
-const LIST := [["1. Rebuild our street", "and the factory"], ["2. Our first shop", "in Chennai"]]
+var tick_i := 0          # which step gets the tick now (earlier steps show a full tick)
+const LIST := [["1. Rebuild our street", "and the factory"], ["2. Our first shop", "in Chennai"], ["3. Light up", "more towns"]]
 
 func _ready() -> void:
 	pen = Pen.new(self)
@@ -240,24 +241,26 @@ func _grandpa(a: float) -> void:
 # end of Area 1 page: Grandpa's line (small, faded), his signature, a rule, then his list
 func _text_end(S: float) -> void:
 	var faded := Color(INK.r, INK.g, INK.b, 0.62)
-	var y := 34.0
+	var y := 30.0
 	for l in ["One day, Sivakasi", "crackers will light", "up every home."]:
-		draw_string(hand, Vector2(S + 14, y), l, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, faded)
-		y += 18
-	draw_string(hand, Vector2(S + 84, y + 4), "— Thatha", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, faded)
+		draw_string(hand, Vector2(S + 14, y), l, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, faded)
+		y += 16
+	draw_string(hand, Vector2(S + 86, y + 2), "— Thatha", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, faded)
 	var c := pen
-	c.begin(); c.move(S + 14, y + 16); c.line(S + 148, y + 16); c.stroke(Color(0.45, 0.3, 0.2, 0.35), 1.2)
-	y += 44
+	c.begin(); c.move(S + 14, y + 12); c.line(S + 148, y + 12); c.stroke(Color(0.45, 0.3, 0.2, 0.35), 1.2)
+	y += 34
 	for i in LIST.size():
 		var it: Array = LIST[i]
 		draw_string(hand, Vector2(S + 12, y), it[0], HORIZONTAL_ALIGNMENT_LEFT, -1, 19, INK)
-		draw_string(hand, Vector2(S + 30, y + 20), it[1], HORIZONTAL_ALIGNMENT_LEFT, -1, 19, INK)
-		if i == 0 and tick > 0:
-			_tick_mark(S + 128, y + 14, tick)
-		if i == 1 and next_hi > 0:
+		draw_string(hand, Vector2(S + 30, y + 18), it[1], HORIZONTAL_ALIGNMENT_LEFT, -1, 19, INK)
+		if i < tick_i:
+			_tick_mark(S + 128, y + 10, 1.0)
+		if i == tick_i and tick > 0:
+			_tick_mark(S + 128, y + 10, tick)
+		if i == tick_i + 1 and next_hi > 0:
 			var w := 104.0 * next_hi
-			c.begin(); c.move(S + 30, y + 26); c.line(S + 30 + w, y + 25); c.stroke(Color(0.93, 0.66, 0.2, 0.9), 2.4)
-		y += 50
+			c.begin(); c.move(S + 30, y + 24); c.line(S + 30 + w, y + 23); c.stroke(Color(0.93, 0.66, 0.2, 0.9), 2.4)
+		y += 42
 
 # a red pencil tick drawn stroke by stroke (k 0..1)
 func _tick_mark(x: float, y: float, k: float) -> void:

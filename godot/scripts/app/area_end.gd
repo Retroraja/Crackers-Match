@@ -5,6 +5,7 @@
 extends StoryScene
 class_name AreaEndScene
 
+var area := 1           # 1: Sivakasi Street done   2: the Chennai shop is open
 var truck: Node3D
 var wheels: Array = []
 var glows: Array = []
@@ -27,11 +28,22 @@ func play(height: float) -> void:
 	var u: Label = card.get_node("u")
 	u.text = "our first shop in the big city"
 	book.end_mode = true
+	book.tick_i = area - 1
+	if area == 2:
+		t.text = "More towns to light up"
+		u.text = "Area 3 is coming soon"
 
 func _shot(n: int) -> void:
 	shot = n
 	sid += 1
 	var id := sid
+	if area == 2:
+		match n:
+			1: _open_shop(id)
+			2: _tick(id)
+			3: _next(id)
+			_: _finish()
+		return
 	match n:
 		1: _dusk(id)
 		2: _fireworks(id)
@@ -39,6 +51,25 @@ func _shot(n: int) -> void:
 		4: _tick(id)
 		5: _next(id)
 		_: _finish()
+
+# Area 2: the camera pulls back over the open shop, customers inside, the man cheers
+func _open_shop(id: int) -> void:
+	if street:
+		var w: Dictionary = street.wide()
+		street.cam_to(w.p, w.look, 3.2)
+		for i in 5:
+			_later(0.6 + i * 0.5, id, func():
+				street.sparkle(Vector3(randf_range(-4, 4), 0, randf_range(-12, -3)), 30, 3.0)
+				_sfx("story_ting", 0.4, randf_range(0.9, 1.2)))
+	man.base = "idle"
+	man.mood("smile", 99)
+	man.position.x = 2
+	_tw().tween_property(man, "position:y", H - BOT - 236, 1.0).set_delay(0.6).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_later(1.2, id, func(): man.mood("cheer", 1.2))
+	_later(0.5, id, func(): say("“Thatha, our first shop\nin Chennai is open!”", id, 3.4))
+	_later(4.4, id, func():
+		_tw().tween_property(man, "position:y", H + 40, 0.6)
+		_shot(2))
 
 # ------------------------------------------------------------------ 1. dusk: the factory windows light up
 func _dusk(id: int) -> void:
@@ -299,12 +330,12 @@ func _tick(id: int) -> void:
 			_sfx("story_pen", 0.7, randf_range(0.9, 1.1), i * 0.15))
 	_later(3.0, id, func():
 		_sfx("story_chime", 0.9)
-		motes.burst(Vector2(book.position.x + 315, book.position.y + 150), 30))
+		motes.burst(Vector2(book.position.x + 315, book.position.y + 120 + 42 * (area - 1)), 30))
 	_later(3.9, id, func():
 		book.anim("next_hi", 1.0, 0.8)
 		_sfx("story_ting", 0.6))
 	_later(3.4, id, func(): say("One step done.\nThe next one is waiting…", id, 3.4))
-	_later(7.2, id, func(): _shot(5))
+	_later(7.2, id, func(): _shot(shot + 1))
 
 # ------------------------------------------------------------------ 5. NEXT: Bunder Street, Chennai
 func _next(id: int) -> void:

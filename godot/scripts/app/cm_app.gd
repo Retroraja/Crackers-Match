@@ -167,6 +167,8 @@ func _ready() -> void:
 	street = Street.new()
 	street.lite = lite
 	add_child(street)
+	if int(S.get("area", 1)) == 2:
+		street.set_area(2)
 	_build_game()
 	home_ui = HomeUI.new()
 	stage.add_child(home_ui)
@@ -877,10 +879,9 @@ func _on_meter(n: int) -> void:
 		mRew = mk28()
 		meter_ui(MMAX)
 		sfx.play("swoosh", 0.4, 1.6)
-		if not S.seen.has("b_meter"):
-			S.seen["b_meter"] = 1
-			save()
-			_after(0.7, func(): banner("meter", func(): _after(0.35, meter_demo)))
+		if not S.seen.has("meter_done"):
+			_meter_rep = false
+			_after(0.7, meter_demo)
 
 func mk28() -> String:
 	var n: int = (int(cur) if not is_bonus() else S.lv) + 1
@@ -961,7 +962,47 @@ func _slot_down(k: String) -> void:
 		return
 	_start_drag({"k": k, "meter": false})
 
+# the picture floats above the finger so it is not hidden; the cracker lands on the tile under the PICTURE
+# (its centre), shown by a gold glow. Near a tile the picture snaps onto it. Let go off the board: it flies back.
+const LIFT := Vector2(0, -62)
+var drop_hl: Panel
+var drag_src := Vector2.ZERO
+func _drop_cell(p: Vector2):
+	if game == null:
+		return null
+	var lp: Vector2 = p + LIFT - G.node("board").position
+	var c := game.cell_at(lp)
+	var e = game.at2(c[0], c[1])
+	if e == null:
+		return null
+	return c
+
+func _show_target(c) -> void:
+	if drop_hl == null:
+		drop_hl = Panel.new()
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(1, 0.85, 0.3, 0.28)
+		sb.border_color = Color("#FFD23F")
+		sb.set_border_width_all(3)
+		sb.set_corner_radius_all(10)
+		sb.shadow_color = Color(1, 0.8, 0.2, 0.6)
+		sb.shadow_size = 10
+		drop_hl.add_theme_stylebox_override("panel", sb)
+		drop_hl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		top_layer.add_child(drop_hl)
+		top_layer.move_child(drop_hl, 0)
+	if c == null:
+		drop_hl.visible = false
+		return
+	var U: float = game.U
+	drop_hl.visible = true
+	drop_hl.size = Vector2(U, U)
+	drop_hl.position = G.node("board").position + Vector2(game.cx(c[1]), game.cy(c[0])) - Vector2(U, U) / 2.0
+
 func _start_drag(d: Dictionary) -> void:
+	stop_demo()
+	var src: Control = G.node("mRew") if d.meter else slot_nodes.get(d.k, G.node("mRew"))
+	drag_src = src.get_global_rect().get_center() - stage.global_position
 	drag = d
 	ghost.texture = WebLayout.tex("crk:b%d" % IDX[d.k])
 	ghost.visible = true
@@ -969,26 +1010,49 @@ func _start_drag(d: Dictionary) -> void:
 	_board_input()
 
 func _ghost_to(p: Vector2) -> void:
-	ghost.position = p - Vector2(45, 90)
+	var at := p + LIFT
+	var c = _drop_cell(p) if drag != null else null
+	if c != null:
+		# magnet: pull the picture towards the target tile's centre
+		var cc: Vector2 = G.node("board").position + Vector2(game.cx(c[1]), game.cy(c[0]))
+		at = at.lerp(cc, 0.55)
+	_show_target(c)
+	ghost.position = at - ghost.size / 2.0
 
 func _end_drag(p: Vector2) -> void:
 	var d = drag
+	var c = _drop_cell(p)
 	drag = null
-	ghost.visible = false
+	_show_target(null)
 	_board_input()
 	if d == null:
+		ghost.visible = false
 		return
-	var lp: Vector2 = p - G.node("board").position
-	var c := game.cell_at(lp)
-	if d.meter:
-		if game.meter_pop(d.k, c[0], c[1]):
-			mRew = null
-			meter_ui(0)
-	else:
-		if game.place(d.k, c[0], c[1]):
+	var ok := false
+	if c != null:
+		if d.meter:
+			if game.meter_pop(d.k, c[0], c[1]):
+				ok = true
+				mRew = null
+				meter_ui(0)
+				if not S.seen.has("meter_done"):
+					S.seen["meter_done"] = 1
+					save()
+		elif game.place(d.k, c[0], c[1]):
+			ok = true
 			S.inv[d.k] = inv(d.k) - 1
 			save()
 			slots()
+	if ok:
+		ghost.visible = false
+		return
+	# missed the board: the cracker flies back home
+	var tw := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(ghost, "position", drag_src - ghost.size / 2.0, 0.28)
+	tw.parallel().tween_property(ghost, "scale", Vector2.ONE * 0.6, 0.28)
+	tw.tween_callback(func():
+		ghost.visible = false
+		ghost.scale = Vector2.ONE)
 
 func drop(k: String) -> void:
 	var L: Array = []
@@ -1009,27 +1073,49 @@ func drag_demo(k: String) -> void:
 		return
 	_drag_demo_from(slot_nodes[k], k)
 
-# first full Cracker Meter: after the banner, the hand picks the cracker in the meter and drags it onto the board
+# first full Cracker Meter (no banner): the hand presses the cracker in the meter and drags it onto the board,
+# twice. If the player waits 5 s with the cracker still there, once more. Any touch stops it. Never again after
+# the player has dragged a meter cracker once (S.seen.meter_done).
+var _meter_rep := false
 func meter_demo() -> void:
-	if mRew == null or drag != null or demo or game == null or game.over or ending:
+	if mRew == null or drag != null or demo or game == null or game.over or ending or S.seen.has("meter_done"):
 		return
 	toast28("Drag the cracker onto the board!")
-	_drag_demo_from(G.node("mRew"), mRew)
+	_drag_demo_from(G.node("mRew"), mRew, true)
 
-func _drag_demo_from(sl: Control, k: String) -> void:
+var demo_tw: Tween
+func stop_demo() -> void:
+	if not demo:
+		return
+	if demo_tw:
+		demo_tw.kill()
+	demo = false
+	if drag == null:
+		ghost.visible = false
+	hand.visible = false
+	hand.scale = Vector2.ONE
+
+func _drag_demo_from(sl: Control, k: String, press := false) -> void:
 	var a := sl.get_global_rect().get_center() - stage.global_position
 	var bpos := Vector2(195, game.cy(4) + 120)
 	ghost.texture = WebLayout.tex("crk:b%d" % IDX[k])
 	demo = true
 	var tw := create_tween()
+	demo_tw = tw
 	for n in 2:
 		tw.tween_callback(func():
-			ghost.visible = true
-			hand.visible = true)
+			hand.visible = true
+			hand.position = a - Vector2(10, 10)
+			ghost.visible = not press)
+		if press:
+			# touch: the hand presses the cracker, then picks it up
+			tw.tween_property(hand, "scale", Vector2.ONE * 0.82, 0.18)
+			tw.tween_property(hand, "scale", Vector2.ONE, 0.14)
+			tw.tween_callback(func(): ghost.visible = true)
 		tw.tween_method(func(p: float):
 			var e := 2 * p * p if p < 0.5 else 1 - pow(-2 * p + 2, 2) / 2
 			var x := a.lerp(bpos, e)
-			ghost.position = x - Vector2(45, 90)
+			ghost.position = x + LIFT - ghost.size / 2.0
 			hand.position = x - Vector2(10, 10), 0.0, 1.0, 1.1)
 		tw.tween_interval(0.35)
 	tw.tween_callback(func():
@@ -2067,6 +2153,10 @@ func _ticker() -> void:
 		hide_hand()
 		return
 	var idle := now() - lastAct
+	if mRew != null and not _meter_rep and not demo and not S.seen.has("meter_done") and idle > 5.0:
+		_meter_rep = true
+		meter_demo()
+		return
 	var L := LV()
 	if not hand.visible and not is_bonus():
 		var want := false
@@ -2447,7 +2537,7 @@ func next_level() -> void:
 		card_after_build = true
 		home()
 		return
-	if int(S.lv) >= levels.size():
+	if int(S.lv) >= mini(area_cap(), levels.size()):
 		home()
 		return
 	deb.clear()
@@ -2718,7 +2808,38 @@ func home() -> void:
 	home_ui.show_home()
 
 func street_play() -> void:
+	if int(S.lv) >= area_cap():
+		toast28("Finish the builds to open Area 2!" if street.area == 1 else "Area 3 is coming soon!")
+		return
 	open_card(mini(int(S.lv), levels.size() - 1))
+
+# areas: Area 1 = levels 1-10 (Sivakasi Street), Area 2 = levels 11-25 (the shop, Bunder Street, Chennai)
+func area_levels() -> Vector2i:
+	return Vector2i(0, 10) if street.area == 1 else Vector2i(10, 25)
+
+func area_cap() -> int:
+	return mini(area_levels().y, levels.size())
+
+# after the Area 1 reward: switch the 3D world to the shop and play the Chennai start card
+func enter_area2() -> void:
+	S.area = 2
+	S.step1 = int(S.get("step", 0))
+	S.step = 0
+	save()
+	street.set_area(2)
+	home_ui.sync_in()
+	home_ui.home.visible = false
+	var cl := CanvasLayer.new()
+	cl.layer = 60
+	add_child(cl)
+	var st := AreaStartScene.new()
+	st.app = self
+	st.street = street
+	street.sky_node = sky_layer.get_child(0)
+	cl.add_child(st)
+	st.play(get_viewport().get_visible_rect().size.y)
+	st.finished.connect(func(): home_ui.show_home())
+	st.tree_exited.connect(cl.queue_free)
 
 # first open: "Grandpa's Dream" over the live street, then level 1
 func play_story(then: Callable) -> void:
@@ -2742,7 +2863,8 @@ func play_story(then: Callable) -> void:
 
 # end of Area 1 (once): factory lights, fireworks, the truck leaves for Chennai, the notebook tick
 func play_area_end(then: Callable) -> void:
-	if S.get("end1", 0):
+	var key := "end%d" % street.area
+	if S.get(key, 0):
 		then.call()
 		return
 	home_ui.home.visible = false
@@ -2750,13 +2872,14 @@ func play_area_end(then: Callable) -> void:
 	cl.layer = 60
 	add_child(cl)
 	var st := AreaEndScene.new()
+	st.area = street.area
 	st.app = self
 	st.street = street
 	street.sky_node = sky_layer.get_child(0)
 	cl.add_child(st)
 	st.play(get_viewport().get_visible_rect().size.y)
 	st.finished.connect(func():
-		S.end1 = 1
+		S[key] = 1
 		save()
 		then.call())
 	st.tree_exited.connect(cl.queue_free)
@@ -2828,12 +2951,18 @@ func street_sfx(n: String) -> void:
 			sfx.play("win", 0.8)
 			_after(3.0, func(): sfx.duck(0.15))
 
+# area reward: Area 1 = 500 coins, 3 rockets, 3 chakras. Area 2 = 1000 coins, 3 matchboxes, 2 atoms.
 func area_reward() -> void:
-	S.coins = int(S.coins) + 500
-	add_inv("rocket", 3)
-	add_inv("chakra", 3)
+	var a2: bool = street.area == 2
+	var c := 1000 if a2 else 500
+	var k1 := "matchbox" if a2 else "rocket"
+	var k2 := "atom" if a2 else "chakra"
+	var n2 := 2 if a2 else 3
+	S.coins = int(S.coins) + c
+	add_inv(k1, 3)
+	add_inv(k2, n2)
 	save()
-	popup("Area Complete!", [["art/ui-coin.webp", "+500 coins", "You have %d" % S.coins], ["crk:b%d" % IDX.rocket, "+3 " + LBL.rocket, "You have %d" % inv("rocket")], ["crk:b%d" % IDX.chakra, "+3 " + LBL.chakra, "You have %d" % inv("chakra")]])
+	popup("Area %d Complete!" % street.area, [["art/ui-coin.webp", "+%d coins" % c, "You have %d" % S.coins], ["crk:b%d" % IDX[k1], "+3 " + LBL[k1], "You have %d" % inv(k1)], ["crk:b%d" % IDX[k2], "+%d %s" % [n2, LBL[k2]], "You have %d" % inv(k2)]])
 	sfx.play("win", 0.8)
 
 func ask_notify() -> void:
@@ -2872,8 +3001,8 @@ func _input(e: InputEvent) -> void:
 		return
 	if e is InputEventMouseButton and e.pressed:
 		lastAct = now()
-		if not demo:
-			hide_hand()
+		stop_demo()
+		hide_hand()
 		if game:
 			game.hl = null
 	if drag == null:
@@ -3081,6 +3210,35 @@ func _dev(a: Dictionary) -> void:
 		open_modal(L_card.root, false)
 		open_modal(L_hard.root, false)
 		play_story(func(): start(0))
+	elif t == "area2":
+		# dev / preview video: Area 1 done -> Chennai start card -> all 10 shop builds -> Area 2 end -> reward
+		open_modal(L_card.root, false)
+		open_modal(L_hard.root, false)
+		title_s.visible = false
+		S.step = 99
+		S.end1 = 1
+		S.end2 = 0
+		S.lv = 25
+		var bst := {}
+		for i in 25:
+			bst[str(i)] = 2 if levels[i].get("ltype", "n") == "h" else 1
+		S.best = bst
+		show_screen("street")
+		home_ui.sync_in()
+		home_ui.home.visible = false
+		await get_tree().create_timer(1.0).timeout
+		enter_area2()
+		await get_tree().create_timer(15.0).timeout
+		home_ui.hide_home()
+		street.do_task(true)
+		home_ui._building(true)
+		for i in 400:
+			await get_tree().create_timer(0.5).timeout
+			if S.get("end2", 0):
+				break
+		await get_tree().create_timer(7.5).timeout
+		if a.has("quit"):
+			get_tree().quit()
 	elif t == "areaend":
 		# dev / preview video: Area 1 fully built, then the end scene, then quit
 		open_modal(L_card.root, false)

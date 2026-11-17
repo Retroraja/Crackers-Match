@@ -205,15 +205,17 @@ func sync_in() -> void:
 	# diyas left = diyas earned in levels - diyas spent on builds done, so nothing is ever lost.
 	# Levels 1-10 give exactly what all ten builds cost; once level 10 is won, every build can be finished.
 	var earned := 0
+	var r: Vector2i = app.area_levels()
 	for k in app.S.get("best", {}):
-		earned += int(app.S.best[k])
+		if int(k) >= r.x and int(k) < r.y:
+			earned += int(app.S.best[k])
 	var spent := 0
 	var left := 0
 	for i in st.TASKS.size():
 		if i < n: spent += int(st.TASKS[i].c)
 		else: left += int(st.TASKS[i].c)
 	var d := maxi(0, earned - spent)
-	if int(app.S.lv) >= app.levels.size():
+	if int(app.S.lv) >= app.area_cap():
 		d = maxi(d, left)
 	st.diyas = d
 	app.S.diyas = d
@@ -241,7 +243,7 @@ func refresh() -> void:
 	app.set_t(badge, str(c))
 	badge.visible = c > 0
 	var lvN := int(app.S.lv) + 1
-	var all: int = app.levels.size()
+	var all: int = app.area_cap()
 	var f: Control = LH.nodes[18]
 	if lvN > all:
 		LH.nodes[19].visible = false
@@ -250,7 +252,7 @@ func refresh() -> void:
 			la.position.x = 0
 			la.size.x = f.size.x
 			la.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		app.fit_t(f, "Area 2 Soon", f.size.x - 14)
+		app.fit_t(f, "Build to Unlock" if st.area == 1 else "Area 3 Soon", f.size.x - 14)
 	else:
 		app.fit_t(f, "Level", 999)
 		LH.nodes[19].visible = true
@@ -413,7 +415,11 @@ func _area_won_show() -> void:
 	get_tree().create_timer(5.6).timeout.connect(func():
 		ban.visible = false
 		app.area_reward())
-	get_tree().create_timer(7.0).timeout.connect(show_home)
+	get_tree().create_timer(7.0).timeout.connect(func():
+		if st.area == 1:
+			app.enter_area2()
+		else:
+			show_home())
 
 # the diya leaves the Build button and flies to the building site (web spendFx option B), then a burst there
 func _spend(site: Vector3, done: Callable) -> void:

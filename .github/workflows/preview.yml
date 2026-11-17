@@ -22,7 +22,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[preview]')
     runs-on: ubuntu-latest
     env:
-      T: ${{ github.event.inputs.t || 'areaend' }}
+      T: ${{ github.event.inputs.t || 'areaend,area2' }}
       NAME: ${{ github.event.inputs.name || 'area1-end' }}
       SECS: ${{ github.event.inputs.secs || '1200' }}
     timeout-minutes: 30
@@ -38,22 +38,26 @@ jobs:
       - name: Import
         run: |
           cd godot
-          ../godot-bin --headless --editor --quit --path . || true
+          ../godot-bin --headless --import --path . > /dev/null 2>&1 || true
+          ../godot-bin --headless --editor --quit --path . > /dev/null 2>&1 || true
+          ../godot-bin --headless --editor --quit --path . 2>&1 | grep -i "error" | grep -v "imported\|Make sure\|at: " | head -30 || true
+          ls .godot/imported | wc -l
       - name: Record
         run: |
           cd godot
           export LIBGL_ALWAYS_SOFTWARE=1
-          timeout $SECS xvfb-run -a -s "-screen 0 1280x1800x24" ../godot-bin --path . \
-            --rendering-driver opengl3 --resolution 720x1558 --fixed-fps 30 --write-movie ../out.avi \
-            -- --t=$T --wait=1 --quit=1 || true
-          ls -la ..
-          cd ..
-          ffmpeg -y -loglevel error -i out.avi -c:v libx264 -preset veryfast -crf 22 -pix_fmt yuv420p -c:a aac -b:a 160k \
-            -movflags +faststart "$NAME.mp4"
-          ls -la *.mp4
+          IFS=',' read -ra TS <<< "$T"
+          for t in "${TS[@]}"; do
+            timeout $SECS xvfb-run -a -s "-screen 0 1280x1800x24" ../godot-bin --path . \
+              --rendering-driver opengl3 --resolution 720x1560 --fixed-fps 30 --write-movie ../out-$t.avi \
+              -- --t=$t --wait=1 --quit=1 2>&1 | grep -v "imported\|resource_\|Make sure\|at: \(load\|_load\)" | tail -60 || true
+            ffmpeg -y -loglevel error -i ../out-$t.avi -vf "scale=720:-2" -c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p \
+              -c:a aac -b:a 160k -movflags +faststart ../$t.mp4 || true
+          done
+          ls -la ../*.mp4
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release view preview-video >/dev/null 2>&1 || gh release create preview-video --title "Preview videos" --prerelease --notes "Scene recordings (no APK)."
-          gh release upload preview-video "$NAME.mp4" --clobber
+          gh release upload preview-video *.mp4 --clobber

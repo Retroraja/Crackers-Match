@@ -41,6 +41,8 @@ var CAMID := 0
 var expo := 1.0
 var _tint_cache := {}
 var lite := false
+var area := 1
+var shop: ShopArea
 
 static func V(a: Array) -> Vector3:
 	return Vector3(a[0], a[1], a[2])
@@ -371,7 +373,35 @@ func smoke_from(id: int) -> void:
 	var p: Vector3 = N[id].global_position + Vector3(0, 1.6, 0)
 	EM.append({"k": "smoke", "p": p, "r": 3.0, "a": 0.0})
 
+# Area 2: the shop. The street stays loaded but hidden; tasks, camera views and builds come from ShopArea.
+func set_area(a: int) -> void:
+	if a == area or a != 2:
+		return
+	area = 2
+	if shop == null:
+		shop = ShopArea.new()
+		shop.st = self
+		add_child(shop)
+		shop.build()
+	for c in get_children():
+		if c == cam or c == fx or c == sun or c == shop or c is WorldEnvironment:
+			continue
+		if c is Node3D:
+			(c as Node3D).visible = false
+	fx.clear()
+	EM.clear()
+	SHOW = false
+	won = false
+	busy = false
+	step = 0
+	TASKS = ShopArea.TASKS.duplicate(true)
+	VW = shop.VW
+	cam_home(true)
+
 func run_task(name: String) -> void:
+	if area == 2:
+		shop.run(name)
+		return
 	var LS: Dictionary = L.lists
 	match name:
 		"Light the Street Lamps":
@@ -660,9 +690,14 @@ func cam_to(p: Vector3, l: Vector3, d: float) -> void:
 		camL = l0.lerp(l, e))
 
 func wide() -> Dictionary:
+	if area == 2:
+		return shop.WIDE
 	return {"p": Vector3(0, 45, 75), "look": Vector3(0, 0, -5)}
 
 func cam_home(instant := false) -> void:
+	if step >= TASKS.size() and area == 2:
+		cam_to(shop.HOME.p, shop.HOME.look, 0.01 if instant else 1.6)
+		return
 	if step >= TASKS.size():
 		cam_to(Vector3(0, 9.5, -24), Vector3(0, 6.5, -58), 0.01 if instant else 1.6)
 		return
