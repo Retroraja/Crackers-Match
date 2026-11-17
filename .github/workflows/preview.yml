@@ -25,7 +25,7 @@ jobs:
       T: ${{ github.event.inputs.t || 'areaend,area2' }}
       NAME: ${{ github.event.inputs.name || 'area1-end' }}
       SECS: ${{ github.event.inputs.secs || '1200' }}
-    timeout-minutes: 30
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - name: Get Godot 4.3, Xvfb, Mesa, ffmpeg
@@ -42,17 +42,23 @@ jobs:
           ../godot-bin --headless --editor --quit --path . > /dev/null 2>&1 || true
           ../godot-bin --headless --editor --quit --path . 2>&1 | grep -i "error" | grep -v "imported\|Make sure\|at: " | head -30 || true
           ls .godot/imported | wc -l
-      - name: Check scripts
+      - name: Record
         run: |
           cd godot
           export LIBGL_ALWAYS_SOFTWARE=1
+          mkdir -p /tmp/vid
           for t in areaend area2; do
-            timeout 420 xvfb-run -a -s "-screen 0 1280x1800x24" ../godot-bin --path . --rendering-driver opengl3 \
-              --resolution 360x780 -- --t=$t --wait=1 --quit=1 --shots=$PWD/../shot-$t > ../log-$t.txt 2>&1 || true
-            echo "== $t"; grep -E -A2 "SCRIPT ERROR|Parse Error|Invalid|Nonexistent" ../log-$t.txt | grep -v "imported" | head -40 || true
+            timeout 3000 xvfb-run -a -s "-screen 0 1280x1800x24" ../godot-bin --path . --rendering-driver opengl3 \
+              --resolution 360x780 --fixed-fps 20 --write-movie /tmp/vid/$t.avi -- --t=$t --wait=1 --quit=1 > /dev/null 2>&1 || true
+            ffmpeg -y -loglevel error -i /tmp/vid/$t.avi -vf "scale=360:-2" -c:v libx264 -preset veryfast -crf 26 -pix_fmt yuv420p \
+              -c:a aac -b:a 96k -movflags +faststart /tmp/vid/$t.mp4 || true
+            ls -la /tmp/vid
+            cd ..
+            git config user.name ci && git config user.email ci@example.com
+            git fetch -q origin ci-shots || true
+            git checkout -q -B ci-video
+            git rm -rfq . > /dev/null
+            cp /tmp/vid/*.mp4 . && git add *.mp4 && git commit -qm "video $t" && git push -fq origin ci-video
+            git checkout -q -f "$GITHUB_SHA"
+            cd godot
           done
-      - name: Push screenshots to the ci-shots branch
-        run: |
-          mkdir -p /tmp/sh && cp shot-*.png /tmp/sh/ || true
-          git config user.name ci && git config user.email ci@example.com
-          git checkout --orphan ci-shots && git rm -rfq . && cp /tmp/sh/* . && git add *.png && git commit -qm shots && git push -f origin ci-shots
