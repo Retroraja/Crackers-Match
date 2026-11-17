@@ -369,7 +369,13 @@ func run(name: String) -> void:
 				var rb: Node3D = ribbon[i]
 				var s := -1.0 if i == 0 else 1.0
 				if i < 2:
-					st.tween(0.6, func(k: float): rb.rotation.z = s * k * 1.3, 1.45)
+					# each half snaps back towards its post and disappears
+					var x0r: float = rb.position.x
+					st.tween(0.5, func(k: float):
+						rb.position.x = x0r + s * k * 2.8
+						rb.scale.x = maxf(0.01, 1.0 - k)
+						if k >= 1:
+							rb.visible = false, 1.45)
 				else:
 					st.tween(0.5, func(k: float): rb.position.y = 1.4 - k * 1.3, 1.45)
 			for i in people.size():
