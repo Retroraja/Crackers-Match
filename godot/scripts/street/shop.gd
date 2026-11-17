@@ -25,8 +25,8 @@ const TASKS := [
 
 var st            # Street
 var VW: Array = []
-var WIDE := {"p": Vector3(0, 16, 30), "look": Vector3(0, 3, -7)}
-var HOME := {"p": Vector3(0, 12.5, 20), "look": Vector3(0, 2.0, -8)}
+var WIDE := {"p": Vector3(0, 6.0, 30), "look": Vector3(0, 3.2, -5)}
+var HOME := {"p": Vector3(0, 3.3, 13.5), "look": Vector3(0, 1.7, -8)}   # eye level, through the open front
 var OUT := {"p": Vector3(0, 6.5, 30), "look": Vector3(0, 5.2, -2)}
 
 var walls: Array = []        # [mesh, clean colour]
@@ -196,6 +196,11 @@ func build() -> void:
 		walls.append([box(Vector3(0.05, 1.0, RD), Vector3(s * (RW - 0.02), 0.5, -RD / 2), Color("#5d574f")), Color("#8E2B2B")])
 	for w in walls:
 		textured(w[0], pl, 0.18)
+	# ceiling (wood planks look) so the room is closed like a real shop
+	var ceil := box(Vector3(2 * RW + 0.6, 0.3, RD + 0.3), Vector3(0, RH + 0.15, -RD / 2), Color("#8A5A3C"))
+	textured(ceil, pl, 0.2)
+	for i in 6:
+		box(Vector3(2 * RW, 0.22, 0.3), Vector3(0, RH - 0.1, -1.5 - i * 2.5), Color("#5E3820"))
 	# wooden beams along the wall tops and brick pillars at the front corners give the room some weight
 	box(Vector3(2 * RW + 1.0, 0.35, 0.5), Vector3(0, RH + 0.1, -RD - 0.1), Color("#6B3F25"))
 	for s in [-1.0, 1.0]:

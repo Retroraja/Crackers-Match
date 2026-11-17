@@ -394,6 +394,11 @@ func set_area(a: int) -> void:
 	won = false
 	busy = false
 	step = 0
+	# indoors: crisper edges (2x MSAA), warm ambient light, no distance fog
+	get_viewport().msaa_3d = Viewport.MSAA_2X
+	env.fog_enabled = false
+	env.ambient_light_color = Color("#ffe2c4")
+	env.ambient_light_energy = 0.75
 	TASKS = ShopArea.TASKS.duplicate(true)
 	VW = shop.VW
 	cam_home(true)
