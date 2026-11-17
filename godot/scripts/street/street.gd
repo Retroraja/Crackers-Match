@@ -514,11 +514,18 @@ func ghost(on: bool) -> void:
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_back, fog_disabled;
 uniform float a = 0.0;
+uniform float h = 100.0;
 uniform vec4 col : source_color = vec4(1.0, 0.76, 0.32, 1.0);
+varying float wy;
+void vertex() {
+	wy = (MODEL_MATRIX * vec4(VERTEX, 1.0)).y;
+}
 void fragment() {
 	float f = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.2);
-	ALBEDO = col.rgb;
-	ALPHA = a * (0.07 + f * 0.85);
+	float shown = 1.0 - smoothstep(h - 0.05, h, wy);
+	float band = exp(-abs(wy - h) * 3.0) * step(wy, h + 0.4);
+	ALBEDO = mix(col.rgb, vec3(1.0, 0.95, 0.8), band);
+	ALPHA = a * ((0.07 + f * 0.85) * shown + band * 0.9);
 }
 """
 	_ghost_mat = ShaderMaterial.new()
@@ -545,10 +552,66 @@ void fragment() {
 			m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_ghost.append(d)
 	sparkle(V(L.SITE.crk) + Vector3(0, 3, 0), 40, 5)
+	# traced from the ground up like a blueprint coming alive, then it breathes
+	_ghost_mat.set_shader_parameter("a", 1.0)
 	_ghost_tw = create_tween()
-	_ghost_tw.tween_method(func(v: float): _ghost_mat.set_shader_parameter("a", v), 0.0, 1.0, 1.4)
+	_ghost_tw.tween_method(func(v: float): _ghost_mat.set_shader_parameter("h", v), -0.5, 14.0, 2.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_ghost_tw.tween_callback(func(): sparkle(V(L.SITE.crk) + Vector3(0, 6, 0), 50, 6))
 	_ghost_tw.tween_method(func(v: float): _ghost_mat.set_shader_parameter("a", v), 1.0, 0.65, 1.0).set_trans(Tween.TRANS_SINE)
 	_ghost_tw.tween_method(func(v: float): _ghost_mat.set_shader_parameter("a", v), 0.65, 1.0, 1.0).set_trans(Tween.TRANS_SINE)
+
+# story: night (k 0..1) and a row of diyas lighting up along the path
+var _night0 := {}
+var sky_node: CanvasItem
+func night(k: float) -> void:
+	if _night0.is_empty():
+		_night0 = {"se": sun.light_energy, "sc": sun.light_color, "ac": env.ambient_light_color, "ae": env.ambient_light_energy, "fc": env.fog_light_color, "ex": env.tonemap_exposure}
+	sun.light_energy = lerpf(_night0.se, 0.32, k)
+	sun.light_color = (_night0.sc as Color).lerp(Color("#8fa0ff"), k)
+	env.ambient_light_color = (_night0.ac as Color).lerp(Color("#5464b0"), k)
+	env.ambient_light_energy = lerpf(_night0.ae, 0.62, k)
+	env.fog_light_color = (_night0.fc as Color).lerp(Color("#232a52"), k)
+	env.tonemap_exposure = lerpf(_night0.ex, 1.1, k)
+	if water_mat:
+		water_mat.emission = Color("#0a2236").lerp(Color("#03070f"), k)
+	if sky_node:
+		sky_node.modulate = Color.WHITE.lerp(Color(0.22, 0.24, 0.48), k)
+	env.glow_enabled = k > 0.01
+	env.glow_intensity = 1.1
+	env.glow_bloom = 0.15
+	env.glow_hdr_threshold = 0.9
+
+var _diyas: Array = []
+func story_diyas(dur: float, on_each: Callable) -> void:
+	var pts: Array = STD.duplicate()
+	pts.sort_custom(func(a, b): return a.d < b.d)
+	var n := 0
+	var last := Vector3(1e9, 0, 0)
+	var picks: Array = []
+	for i in pts.size():
+		var q: Dictionary = pts[i]
+		var p := Vector3(q.x, 0.15, q.z)
+		if p.distance_to(last) < 5.5 or q.z < -50 or q.z > 58:
+			continue
+		last = p
+		var side := 1.0 if n % 2 == 0 else -1.0
+		var nx: Dictionary = pts[mini(i + 3, pts.size() - 1)]
+		var dir := Vector3(nx.x - q.x, 0, nx.z - q.z).normalized()
+		var perp := Vector3(-dir.z, 0, dir.x) * side * 2.1
+		picks.append(p + perp)
+		n += 1
+	picks.sort_custom(func(a, b): return a.z > b.z)
+	for i in picks.size():
+		var at: Vector3 = picks[i]
+		after(i * dur / maxf(1, picks.size()), func():
+			fx.part(false, at + Vector3(0, 0.35, 0), {"s0": 0.2, "s1": 2.6, "col": Color(1, 0.66, 0.26), "op": 0.9, "d": 999.0, "add": true, "in": 0.5, "fl": 9.0})
+			fx.part(false, at + Vector3(0, 0.35, 0), {"s0": 0.05, "s1": 0.7, "col": Color(1, 0.95, 0.75), "op": 1.0, "d": 999.0, "add": true, "in": 0.35, "fl": 13.0})
+			sparkle(at, 6, 0.6)
+			on_each.call())
+
+func story_clear() -> void:
+	fx.clear()
+	night(0.0)
 
 func glide_to(v: Dictionary) -> float:
 	CAMID += 1

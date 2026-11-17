@@ -2695,6 +2695,7 @@ func play_story(then: Callable) -> void:
 	var st := StoryScene.new()
 	st.app = self
 	st.street = street
+	street.sky_node = sky_layer.get_child(0)
 	cl.add_child(st)
 	st.play(get_viewport().get_visible_rect().size.y)
 	st.finished.connect(func():

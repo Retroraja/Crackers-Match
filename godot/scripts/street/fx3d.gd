@@ -80,7 +80,7 @@ func part(soft: bool, pos: Vector3, o: Dictionary) -> void:
 		return
 	var k := ("soft_" if soft else "glow_") + ("add" if o.get("add", false) else "mix")
 	P.append({"k": k, "p": pos, "v": o.get("v", Vector3.ZERO), "g": o.get("g", 0.0), "s0": o.get("s0", 1.0), "s1": o.get("s1", o.get("s0", 1.0)), "op": o.get("op", 1.0),
-		"col": o.get("col", Color.WHITE), "t": 0.0, "d": o.get("d", 1.0)})
+		"col": o.get("col", Color.WHITE), "t": 0.0, "d": o.get("d", 1.0), "in": o.get("in", 0.0), "fl": o.get("fl", 0.0)})
 
 func step(dt: float) -> void:
 	var cnt := {"glow_add": 0, "glow_mix": 0, "soft_add": 0, "soft_mix": 0}
@@ -99,6 +99,11 @@ func step(dt: float) -> void:
 			continue
 		cnt[o.k] = i + 1
 		var s: float = maxf(0.001, o.s0 + (o.s1 - o.s0) * q)
+		if o.get("in", 0.0) > 0.0:
+			# grows to s1 in "in" seconds, then a gentle flame flicker
+			s = maxf(0.001, lerpf(o.s0, o.s1, minf(1.0, o.t / float(o["in"]))))
+			if o.get("fl", 0.0) > 0.0:
+				s *= 1.0 + sin(o.t * o.fl) * 0.05 + sin(o.t * o.fl * 2.3) * 0.03
 		mm.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3(s, s, s)), o.p))
 		var c: Color = o.col
 		c.a = o.op * (1.0 - q * q)

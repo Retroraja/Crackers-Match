@@ -22,6 +22,12 @@ var lk := 0.0
 var bounce := 0.0
 var v := {"sm": 0.3, "br": 0.0, "ey": 1.0, "mo": 0.0, "wo": 0.0, "wk": 0.0}
 var pen: Pen
+# story: head turn (-1 left .. 1 right), walk bob, body sway and breathing; all 0 in the game badge
+var turn := 0.0
+var bob := 0.0
+var sway := 0.0
+var breathe := 0.0
+var shrug := 0.0
 
 func _ready() -> void:
 	pen = Pen.new(self)
@@ -76,24 +82,30 @@ func _draw() -> void:
 	c.clip_poly = PackedVector2Array()
 	c.save()
 	var sc := minf(W / 150.0, H / 235.0)
-	c.translate(W / 2, H + 2 - sin(bounce * PI) * 4)
+	c.translate(W / 2, H + 2 - sin(bounce * PI) * 4 - bob)
 	c.scale(sc, sc)
+	c.rotate(sway)
+	var br2 := sin(t * 1.6) * breathe
+	c.save()
+	c.scale(1.0 + br2 * 0.01, 1.0 + br2 * 0.025 - shrug * 0.04)
 	# coat shoulders
 	c.begin(); c.move(-80, 0); c.bez(-80, -40, -60, -62, -30, -70); c.line(30, -70); c.bez(60, -62, 80, -40, 80, 0); c.close(); c.fill(Color("#2C2B34"))
 	c.begin(); c.move(-22, -72); c.line(22, -72); c.line(4, 0); c.line(-4, 0); c.close(); c.fill(Color("#F2F3F7"))
 	c.begin(); c.move(-28, -72); c.line(-46, -30); c.line(-30, -24); c.line(-3, 0); c.line(-10, 0); c.close(); c.move(28, -72); c.line(46, -30); c.line(30, -24); c.line(3, 0); c.line(10, 0); c.close(); c.fill(Color("#3A3944"))
 	c.begin(); c.move(60, -34); c.line(38, -38); c.line(40, -30); c.line(58, -26); c.close(); c.fill(Color("#FF2FA8"))
+	c.restore()
 	# neck and head
-	c.translate(0, -140)
+	c.translate(0, -140 - br2 * 1.5 + shrug * 4)
+	c.rotate(turn * 0.05)
 	CMFace.head_base(c)
-	c.translate(-4, 0)
+	c.translate(-4 + turn * 13, 0)
 	var br: float = v.br * 6
 	var wo: float = v.wo
 	var sm: float = v.sm
 	c.begin(); c.move(-36, -14 - br + wo * 3); c.quad(-23, -21 - br - sm, -10, -14 - br - wo * 6); c.move(10, -14 - br - wo * 6); c.quad(23, -21 - br - sm, 36, -14 - br + wo * 3); c.stroke("#2A282D", 4.2)
 	# eyes
 	var blink := bl > 0
-	var lx := look * 3.5
+	var lx := look * 3.5 + turn * 3.0
 	for i in 2:
 		var ex := -23.0 if i == 0 else 23.0
 		var shut: bool = blink or (i == 1 and v.wk > 0.5)

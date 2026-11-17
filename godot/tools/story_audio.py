@@ -166,3 +166,16 @@ y = np.zeros(int(2.6 * R)); add(y, 0, x)
 add(y, 1.45, bell(hz('D6'), 0.4, 1.2)); add(y, 1.45, bell(hz('A6'), 0.3, 1.2)); add(y, 1.45, drum(0.5))
 save('story_rise', reverb(y, 0.3), 0.85)
 print('ok')
+
+# ---------------------------------------------------------------- v2: footstep, sigh, diya ting
+n = int(0.22 * R); t = np.arange(n) / R
+st = np.sin(2 * np.pi * np.cumsum(90 + 60 * np.exp(-t * 40)) / R) * np.exp(-t * 28) * 0.6
+st += bp(rng.standard_normal(n), 600, 4000) * np.exp(-t * 22) * 0.5
+save('story_step', st, 0.7)
+n = int(1.4 * R); t = np.arange(n) / R
+env = np.minimum(1, t / 0.25) * np.exp(-np.maximum(0, t - 0.25) * 2.6)
+sg = bp(rng.standard_normal(n), 350, 1600) * env + bp(rng.standard_normal(n), 2000, 5000) * env * 0.3
+save('story_sigh', sg, 0.6)
+x = np.zeros(int(1.3 * R)); add(x, 0, bell(hz('D7'), 0.4, 1.2)); add(x, 0.03, bell(hz('A7'), 0.15, 1.0))
+save('story_ting', reverb(x, 0.35), 0.6)
+print('v2 ok')
