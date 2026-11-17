@@ -47,7 +47,11 @@ jobs:
           cd godot
           export LIBGL_ALWAYS_SOFTWARE=1
           for t in areaend area2; do
-            timeout 240 xvfb-run -a -s "-screen 0 1280x1800x24" ../godot-bin --path . --rendering-driver opengl3 \
-              --resolution 360x780 -- --t=$t --wait=1 --quit=1 > ../log-$t.txt 2>&1 || true
+            timeout 420 xvfb-run -a -s "-screen 0 1280x1800x24" ../godot-bin --path . --rendering-driver opengl3 \
+              --resolution 360x780 -- --t=$t --wait=1 --quit=1 --shots=$PWD/../shot-$t > ../log-$t.txt 2>&1 || true
             echo "== $t"; grep -E -A2 "SCRIPT ERROR|Parse Error|Invalid|Nonexistent" ../log-$t.txt | grep -v "imported" | head -40 || true
           done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shots
+          path: shot-*.png

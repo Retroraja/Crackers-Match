@@ -3229,11 +3229,19 @@ func _dev(a: Dictionary) -> void:
 		await get_tree().create_timer(1.0).timeout
 		enter_area2()
 		await get_tree().create_timer(15.0).timeout
+		if a.has("shots"):
+			get_viewport().get_texture().get_image().save_png(a.shots + "-1-outside.png")
 		home_ui.hide_home()
 		street.do_task(true)
+		if a.has("shots"):
+			for k in [6, 20, 34]:
+				get_tree().create_timer(float(k)).timeout.connect(func(): get_viewport().get_texture().get_image().save_png("%s-2-build%02d.png" % [a.shots, k]))
 		home_ui._building(true)
 		for i in 400:
 			await get_tree().create_timer(0.5).timeout
+			if a.has("shots") and street.step >= street.TASKS.size() and not a.has("_s3"):
+				a["_s3"] = 1
+				get_viewport().get_texture().get_image().save_png(a.shots + "-3-done.png")
 			if S.get("end2", 0):
 				break
 		await get_tree().create_timer(7.5).timeout
