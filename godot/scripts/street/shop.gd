@@ -25,9 +25,9 @@ const TASKS := [
 
 var st            # Street
 var VW: Array = []
-var WIDE := {"p": Vector3(0, 21, 25), "look": Vector3(0, 1, -7)}
-var HOME := {"p": Vector3(0, 18, 19), "look": Vector3(0, 1, -7.5)}
-var OUT := {"p": Vector3(0, 4.5, 15), "look": Vector3(0, 2.8, -1)}
+var WIDE := {"p": Vector3(0, 16, 30), "look": Vector3(0, 3, -7)}
+var HOME := {"p": Vector3(0, 12.5, 20), "look": Vector3(0, 2.0, -8)}
+var OUT := {"p": Vector3(0, 6.5, 30), "look": Vector3(0, 5.2, -2)}
 
 var walls: Array = []        # [mesh, clean colour]
 var floor_m: StandardMaterial3D
@@ -75,6 +75,83 @@ func kit(n: String, pos: Vector3, rot_y := 0.0, s := K) -> Node3D:
 	add_child(o)
 	return o
 
+# a Kenney City Kit building, its white walls tinted (Chennai colours) and its green trims recoloured
+func city(n: String, pos: Vector3, s: float, wall: Color, trim: Color, rot_y := 0.0) -> Node3D:
+	var o := kit_at("res://art/city/%s.glb" % n, pos, rot_y, s)
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode cull_disabled;
+uniform sampler2D tex : source_color, filter_nearest;
+uniform vec3 wall = vec3(1.0);
+uniform vec3 trim = vec3(0.85, 0.2, 0.2);
+void fragment() {
+	vec3 c = texture(tex, UV).rgb;
+	float mx = max(c.r, max(c.g, c.b));
+	float mn = min(c.r, min(c.g, c.b));
+	if (mx - mn < 0.09 && mx > 0.7) {
+		c = wall * mx;
+	} else if (c.g > c.r * 1.3 && c.g > c.b * 1.05) {
+		c = trim * clamp(dot(c, vec3(0.3, 0.59, 0.11)) / 0.42, 0.5, 1.4);
+	}
+	ALBEDO = c;
+	ROUGHNESS = 0.8;
+}
+"""
+	for c in o.find_children("*", "MeshInstance3D", true, false):
+		var mi := c as MeshInstance3D
+		var src = mi.get_active_material(0)
+		if src is BaseMaterial3D and src.albedo_texture:
+			var m := ShaderMaterial.new()
+			m.shader = sh
+			m.set_shader_parameter("tex", src.albedo_texture)
+			m.set_shader_parameter("wall", Vector3(wall.r, wall.g, wall.b))
+			m.set_shader_parameter("trim", Vector3(trim.r, trim.g, trim.b))
+			mi.material_override = m
+	return o
+
+func kit_at(path: String, pos: Vector3, rot_y: float, s: float) -> Node3D:
+	var ps: PackedScene = load(path)
+	var o: Node3D = ps.instantiate() if ps else Node3D.new()
+	o.scale = Vector3.ONE * s
+	o.rotation.y = rot_y
+	o.position = pos
+	add_child(o)
+	return o
+
+# plaster for walls, terracotta-and-cream tiles for the floor (both drawn in code, mapped by world position)
+func plaster_tex() -> Texture2D:
+	var n := FastNoiseLite.new()
+	n.frequency = 0.05
+	var t := NoiseTexture2D.new()
+	t.width = 256
+	t.height = 256
+	t.seamless = true
+	t.noise = n
+	var g := Gradient.new()
+	g.set_color(0, Color(0.86, 0.84, 0.8))
+	g.set_color(1, Color(1, 1, 1))
+	t.color_ramp = g
+	return t
+
+func tile_tex() -> Texture2D:
+	var img := Image.create(128, 128, false, Image.FORMAT_RGB8)
+	for y in 128:
+		for x in 128:
+			var a := (x / 64 + y / 64) % 2 == 0
+			var col := Color("#F1E3C8") if a else Color("#C8693E")
+			if x % 64 < 3 or y % 64 < 3:
+				col = Color("#8f7a66")
+			img.set_pixel(x, y, col)
+	img.generate_mipmaps()
+	return ImageTexture.create_from_image(img)
+
+func textured(m: MeshInstance3D, t: Texture2D, sc: float) -> void:
+	var mat: StandardMaterial3D = m.material_override
+	mat.albedo_texture = t
+	mat.uv1_triplanar = true
+	mat.uv1_scale = Vector3.ONE * sc
+
 func hide_all(a: Array) -> void:
 	for o in a:
 		(o as Node3D).visible = false
@@ -90,21 +167,41 @@ func build() -> void:
 	# street outside and the neighbours
 	box(Vector3(60, 0.2, 30), Vector3(0, -0.1, 14), Color("#8b8378"))
 	box(Vector3(60, 0.25, 2.4), Vector3(0, 0.02, 1.4), Color("#a39a8c"))
-	for s in [-1.0, 1.0]:
-		var nb := box(Vector3(14, 6.5, 16), Vector3(s * (RW + 7.4), 3.25, -8), Color("#C9A27A") if s < 0 else Color("#9FB3C8"))
-		box(Vector3(10, 3.2, 0.2), Vector3(0, -1.4, 8.05), Color("#5a4636") if s < 0 else Color("#3d4a57"), nb)
-		box(Vector3(11, 1.0, 0.25), Vector3(0, 1.0, 8.1), Color("#E85D3B") if s < 0 else Color("#2E86DE"), nb)
-	facade.append(box(Vector3(2 * RW + 0.6, 2.6, 0.4), Vector3(0, RH + 1.3, 0.1), Color("#B5826A")))   # upper front, outside only
+	# Bunder Street: colourful city blocks on both sides of our shop (Kenney City Kit, tinted)
+	city("building-k", Vector3(-19.0, 0, -5.3), 12.0, Color("#F2C94C"), Color("#D7263D"))
+	city("building-g", Vector3(12.4, 0, -5.2), 12.0, Color("#F4A6B7"), Color("#2E86DE"))
+	city("building-c", Vector3(-36.8, 0, -6.3), 12.0, Color("#9ED9CF"), Color("#E85D3B"))
+	city("building-f", Vector3(23.4, 0, -5.9), 12.0, Color("#FFD9A0"), Color("#2EAD5B"))
+	for i in 5:
+		city("low-detail-building-wide-a" if i % 2 else "low-detail-building-d", Vector3(-30 + i * 15, 0, 34), 12.0, Color("#E8D9C5"), Color("#B3171E"), PI)
+	# our building: upper floors above the shop and a striped canopy (outside only; hidden once the shutter opens)
+	facade.append(city("building-h", Vector3(0, RH - 0.05, -6.6), 13.6, Color("#FFE7B3"), Color("#B3171E")))
+	var cano := Node3D.new()
+	add_child(cano)
+	for i in 8:
+		box(Vector3(1.5, 0.12, 2.0), Vector3(-5.25 + i * 1.5, RH + 0.25, 1.0), Color("#D7263D") if i % 2 == 0 else Color("#FFF1D6"), cano, 0.7)
+	cano.rotation.x = 0.18
+	facade.append(cano)
 	# floor
 	var fl := box(Vector3(2 * RW, 0.2, RD), Vector3(0, -0.05, -RD / 2), Color("#6f6458"))
 	floor_m = fl.material_override
+	textured(fl, tile_tex(), 0.25)
+	var pl := plaster_tex()
 	# walls (dirty grey until painted): back, left, right, and a dado band
-	walls.append([box(Vector3(2 * RW + 0.6, RH, 0.3), Vector3(0, RH / 2, -RD - 0.15), Color("#8a8378")), Color("#F3DDB0")])
+	walls.append([box(Vector3(2 * RW + 0.6, RH, 0.3), Vector3(0, RH / 2, -RD - 0.15), Color("#8a8378")), Color("#FFE6B8")])
 	for s in [-1.0, 1.0]:
-		walls.append([box(Vector3(0.3, RH, RD), Vector3(s * (RW + 0.15), RH / 2, -RD / 2), Color("#7f786e")), Color("#EFD3A0")])
+		walls.append([box(Vector3(0.3, RH, RD), Vector3(s * (RW + 0.15), RH / 2, -RD / 2), Color("#7f786e")), Color("#FFDCA8")])
 	walls.append([box(Vector3(2 * RW, 1.0, 0.05), Vector3(0, 0.5, -RD + 0.02), Color("#5d574f")), Color("#8E2B2B")])
 	for s in [-1.0, 1.0]:
 		walls.append([box(Vector3(0.05, 1.0, RD), Vector3(s * (RW - 0.02), 0.5, -RD / 2), Color("#5d574f")), Color("#8E2B2B")])
+	for w in walls:
+		textured(w[0], pl, 0.18)
+	# wooden beams along the wall tops and brick pillars at the front corners give the room some weight
+	box(Vector3(2 * RW + 1.0, 0.35, 0.5), Vector3(0, RH + 0.1, -RD - 0.1), Color("#6B3F25"))
+	for s in [-1.0, 1.0]:
+		box(Vector3(0.5, 0.35, RD + 0.4), Vector3(s * (RW + 0.2), RH + 0.1, -RD / 2), Color("#6B3F25"))
+		var pil := box(Vector3(0.8, RH + 0.5, 0.8), Vector3(s * (RW + 0.25), (RH + 0.5) / 2, 0.05), Color("#B5583A"))
+		textured(pil, pl, 0.3)
 	# front: lintel above the shutter, and the rusty shutter itself (ridged)
 	facade.append(box(Vector3(2 * RW + 0.6, 0.9, 0.4), Vector3(0, RH - 0.2, 0.1), Color("#9c7a64")))
 	shutter = Node3D.new()
@@ -207,9 +304,7 @@ func build() -> void:
 		opening.append(kit("pottedPlant", Vector3(s * 5.0 - 0.3, 0, -0.8), 0.0, 3.0))
 		ribbon.append(box(Vector3(5.6, 0.18, 0.05), Vector3(s * 2.8, 1.4, -0.2), Color("#E3202F"), self, 0.4))
 	ribbon.append(box(Vector3(0.6, 0.6, 0.08), Vector3(0, 1.4, -0.18), Color("#FFC93C"), self, 0.4))
-	var pc := [Color("#2E86DE"), Color("#E85D3B"), Color("#2EAD5B"), Color("#B03FBF")]
-	for i in 4:
-		people.append(_person(pc[i]))
+	# opening night: a row of diyas along the counter front (lit by the Grand Opening)
 	for a in [lamps, counter, shelves, display, deco, photo, opening, ribbon, people]:
 		hide_all(a)
 
@@ -308,7 +403,7 @@ func run(name: String) -> void:
 				var p: Vector3 = junk[i].position
 				st.after(0.2 + i * 0.22, func(): st.dust(p, 5, 0.8))
 			var c0 := floor_m.albedo_color
-			st.tween(1.2, func(k: float): floor_m.albedo_color = c0.lerp(Color("#B98A5E"), k), 1.6)
+			st.tween(1.2, func(k: float): floor_m.albedo_color = c0.lerp(Color.WHITE, k), 1.6)
 			st.after(2.8, func(): st.sparkle(Vector3(0, 0, -8), 30, 2))
 		"Paint the Walls":
 			for i in walls.size():
@@ -378,15 +473,14 @@ func run(name: String) -> void:
 							rb.visible = false, 1.45)
 				else:
 					st.tween(0.5, func(k: float): rb.position.y = 1.4 - k * 1.3, 1.45)
-			for i in people.size():
-				var p: Node3D = people[i]
-				var x0: float = -1.5 + i * 1.0
-				var to := Vector3(-2.5 + i * 1.7, 0, -2.6 - (i % 2) * 0.8)
-				st.tween(1.8, func(k: float):
-					p.visible = true
-					var q := Vector3(x0, 0, 7.0).lerp(to, st.sm(k))
-					q.y = absf(sin(k * 14.0)) * 0.12
-					p.position = q, 2.0 + i * 0.35)
+			for i in 9:
+				var at := Vector3(-4.0 + i * 1.0, 0.25, -3.6)
+				st.after(2.0 + i * 0.12, func():
+					st.fx.part(false, at, {"s0": 0.15, "s1": 1.2, "col": Color(1, 0.66, 0.26), "op": 0.9, "d": 999.0, "add": true, "in": 0.4, "fl": 9.0})
+					st.fx.part(false, at, {"s0": 0.05, "s1": 0.35, "col": Color(1, 0.95, 0.75), "op": 1.0, "d": 999.0, "add": true, "in": 0.3, "fl": 13.0}))
+			for o in lights:
+				var ol: OmniLight3D = o
+				st.tween(0.8, func(k: float): ol.light_energy = 2.4 + k * 1.2, 2.2)
 			st.after(3.0, func():
 				st.sparkle(Vector3(0, 0, -4), 60, 3.4)
 				st.ring(Vector3(0, 0, -3), Color("#ffd27a")))

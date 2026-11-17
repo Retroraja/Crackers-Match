@@ -214,6 +214,7 @@ func _paint(mi: MeshInstance3D) -> void:
 	var sh := Shader.new()
 	sh.code = """
 shader_type spatial;
+render_mode cull_disabled;
 uniform sampler2D tex : source_color, filter_nearest;
 void fragment() {
 	vec3 c = texture(tex, UV).rgb;

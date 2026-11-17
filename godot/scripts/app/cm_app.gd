@@ -3229,6 +3229,8 @@ func _dev(a: Dictionary) -> void:
 		home_ui.home.visible = false
 		await get_tree().create_timer(1.0).timeout
 		enter_area2()
+		if a.has("shots"):
+			get_tree().create_timer(3.8).timeout.connect(func(): get_viewport().get_texture().get_image().save_png(a.shots + "-0-truck.png"))
 		await get_tree().create_timer(15.0).timeout
 		if a.has("shots"):
 			get_viewport().get_texture().get_image().save_png(a.shots + "-1-outside.png")
@@ -3262,6 +3264,9 @@ func _dev(a: Dictionary) -> void:
 		street.camP = w.p
 		street.camL = w.look
 		await get_tree().create_timer(float(a.get("wait", 1.0))).timeout
+		if a.has("shots"):
+			for k in [3.0, 10.5, 13.0]:
+				get_tree().create_timer(k).timeout.connect(func(): get_viewport().get_texture().get_image().save_png("%s-%04.1f.png" % [a.shots, k]))
 		play_area_end(func():
 			await get_tree().create_timer(1.2).timeout
 			if a.has("quit"):
