@@ -2684,6 +2684,25 @@ func home() -> void:
 func street_play() -> void:
 	open_card(mini(int(S.lv), levels.size() - 1))
 
+# first open: "Grandpa's Dream" over the live street, then level 1
+func play_story(then: Callable) -> void:
+	show_screen("street")
+	home_ui.sync_in()
+	home_ui.home.visible = false
+	var cl := CanvasLayer.new()
+	cl.layer = 60
+	add_child(cl)
+	var st := StoryScene.new()
+	st.app = self
+	st.street = street
+	cl.add_child(st)
+	st.play(get_viewport().get_visible_rect().size.y)
+	st.finished.connect(func():
+		S.story = 1
+		save()
+		then.call())
+	st.tree_exited.connect(cl.queue_free)
+
 func _title_tapped() -> void:
 	var first := int(S.lv) == 0
 	if first:
@@ -2694,7 +2713,10 @@ func _title_tapped() -> void:
 		save()
 		get_tree().create_timer(0.38).timeout.connect(func():
 			title_s.visible = false
-			start(0))
+			if S.get("story", 0):
+				start(0)
+			else:
+				play_story(func(): start(0)))
 		title_s.leave()
 		return
 	show_screen("street")
@@ -2997,6 +3019,10 @@ func _dev(a: Dictionary) -> void:
 		open_modal(L_agree.root, true)
 	elif t == "toast":
 		toast28("3 free Lakshmi Vedi Hammers! Drag one onto the board.")
+	elif t == "story":
+		open_modal(L_card.root, false)
+		open_modal(L_hard.root, false)
+		play_story(func(): start(0))
 	if a.has("shot"):
 		await get_tree().create_timer(float(a.get("wait", 1.5))).timeout
 		if t == "end":

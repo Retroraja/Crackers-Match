@@ -5,7 +5,7 @@ class_name Sfx
 const NAMES := ["blastnew", "rocket", "chakra", "atom", "matchbox", "sparkler", "blast", "swap", "nope", "pop", "tick",
 	"thud", "swoosh", "win", "lose", "fanfare", "finale", "paper", "music", "lakshmi", "wala", "rail", "flowerpot", "skyshot", "brand",
 	"chime0", "chime1", "chime2", "coin0", "coin1", "coin2", "coin3", "coin4", "coin5", "coin6", "coin7", "coin8",
-	"bk_stone", "bk_knock", "bk_saw", "bk_plank", "bk_hum", "bk_rustle", "bk_dirt", "bk_cloth", "bk_done", "bk_hammer", "bk_thud", "bk_rise", "bk_tada", "z_crackle", "z_zap"]
+	"bk_stone", "bk_knock", "bk_saw", "bk_plank", "bk_hum", "bk_rustle", "bk_dirt", "bk_cloth", "bk_done", "bk_hammer", "bk_thud", "bk_rise", "bk_tada", "story_page", "story_pen", "story_chime", "story_dream", "story_rise", "z_crackle", "z_zap"]
 var mus_on := true
 var fx_on := true
 var _duck := 0.3

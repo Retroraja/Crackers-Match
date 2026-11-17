@@ -494,6 +494,62 @@ func build_all() -> void:
 	FT = n
 	do_task(true)
 
+# story: a golden "dream" outline of the Crackers Factory (rim-lit, additive), before it is built
+var _ghost: Array = []
+var _ghost_mat: ShaderMaterial
+var _ghost_tw: Tween
+func ghost(on: bool) -> void:
+	if not on:
+		if _ghost_tw:
+			_ghost_tw.kill()
+		for d in _ghost:
+			if is_instance_valid(d):
+				d.queue_free()
+		_ghost.clear()
+		return
+	if not _ghost.is_empty():
+		return
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode unshaded, blend_add, depth_draw_never, cull_back, fog_disabled;
+uniform float a = 0.0;
+uniform vec4 col : source_color = vec4(1.0, 0.76, 0.32, 1.0);
+void fragment() {
+	float f = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.2);
+	ALBEDO = col.rgb;
+	ALPHA = a * (0.07 + f * 0.85);
+}
+"""
+	_ghost_mat = ShaderMaterial.new()
+	_ghost_mat.shader = sh
+	var LS: Dictionary = L.lists
+	var src: Array = []
+	for st in LS.CRK.steps:
+		src += ids(st)
+	src += ids(LS.CRK.X)
+	for o in src:
+		var d: Node3D = o.duplicate()
+		o.get_parent().add_child(d)
+		d.transform = o.transform
+		if o.has_meta("y0"):
+			d.position.y = o.get_meta("y0")
+		if o.has_meta("s0"):
+			d.scale = Vector3.ONE * float(o.get_meta("s0"))
+		d.visible = true
+		var ms: Array = d.find_children("*", "MeshInstance3D", true, false)
+		if d is MeshInstance3D:
+			ms.append(d)
+		for m in ms:
+			m.material_override = _ghost_mat
+			m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_ghost.append(d)
+	sparkle(V(L.SITE.crk) + Vector3(0, 3, 0), 40, 5)
+	_ghost_tw = create_tween()
+	_ghost_tw.tween_method(func(v: float): _ghost_mat.set_shader_parameter("a", v), 0.0, 1.0, 1.4)
+	_ghost_tw.tween_method(func(v: float): _ghost_mat.set_shader_parameter("a", v), 1.0, 0.65, 1.0).set_trans(Tween.TRANS_SINE)
+	_ghost_tw.tween_method(func(v: float): _ghost_mat.set_shader_parameter("a", v), 0.65, 1.0, 1.0).set_trans(Tween.TRANS_SINE)
+
 func glide_to(v: Dictionary) -> float:
 	CAMID += 1
 	var id := CAMID
