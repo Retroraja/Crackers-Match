@@ -51,7 +51,8 @@ jobs:
               --resolution 360x780 -- --t=$t --wait=1 --quit=1 --shots=$PWD/../shot-$t > ../log-$t.txt 2>&1 || true
             echo "== $t"; grep -E -A2 "SCRIPT ERROR|Parse Error|Invalid|Nonexistent" ../log-$t.txt | grep -v "imported" | head -40 || true
           done
-      - uses: actions/upload-artifact@v4
-        with:
-          name: shots
-          path: shot-*.png
+      - name: Push screenshots to the ci-shots branch
+        run: |
+          mkdir -p /tmp/sh && cp shot-*.png /tmp/sh/ || true
+          git config user.name ci && git config user.email ci@example.com
+          git checkout --orphan ci-shots && git rm -rfq . && cp /tmp/sh/* . && git add *.png && git commit -qm shots && git push -f origin ci-shots
