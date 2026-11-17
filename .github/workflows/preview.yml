@@ -42,22 +42,12 @@ jobs:
           ../godot-bin --headless --editor --quit --path . > /dev/null 2>&1 || true
           ../godot-bin --headless --editor --quit --path . 2>&1 | grep -i "error" | grep -v "imported\|Make sure\|at: " | head -30 || true
           ls .godot/imported | wc -l
-      - name: Record
+      - name: Check scripts
         run: |
           cd godot
           export LIBGL_ALWAYS_SOFTWARE=1
-          IFS=',' read -ra TS <<< "$T"
-          for t in "${TS[@]}"; do
-            timeout $SECS xvfb-run -a -s "-screen 0 1280x1800x24" ../godot-bin --path . \
-              --rendering-driver opengl3 --resolution 720x1560 --fixed-fps 30 --write-movie ../out-$t.avi \
-              -- --t=$t --wait=1 --quit=1 2>&1 | grep -v "imported\|resource_\|Make sure\|at: \(load\|_load\)" | tail -60 || true
-            ffmpeg -y -loglevel error -i ../out-$t.avi -vf "scale=720:-2" -c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p \
-              -c:a aac -b:a 160k -movflags +faststart ../$t.mp4 || true
+          for t in areaend area2; do
+            timeout 240 xvfb-run -a -s "-screen 0 1280x1800x24" ../godot-bin --path . --rendering-driver opengl3 \
+              --resolution 360x780 -- --t=$t --wait=1 --quit=1 > ../log-$t.txt 2>&1 || true
+            echo "== $t"; grep -E -A2 "SCRIPT ERROR|Parse Error|Invalid|Nonexistent" ../log-$t.txt | grep -v "imported" | head -40 || true
           done
-          ls -la ../*.mp4
-      - name: Publish
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release view preview-video >/dev/null 2>&1 || gh release create preview-video --title "Preview videos" --prerelease --notes "Scene recordings (no APK)."
-          gh release upload preview-video *.mp4 --clobber

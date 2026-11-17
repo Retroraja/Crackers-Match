@@ -263,7 +263,7 @@ func _garland(a: Vector3, b: Vector3, sag: float) -> Node3D:
 	var my := StandardMaterial3D.new()
 	my.albedo_color = Color("#FFD23F")
 	for i in n + 1:
-		var t := float(i) / maxf(1, n)
+		var t: float = float(i) / maxf(1, n)
 		var m := MeshInstance3D.new()
 		m.mesh = sm
 		m.material_override = my if i % 3 == 0 else mo
@@ -276,15 +276,15 @@ func _web_tex() -> Texture2D:
 	img.fill(Color(0, 0, 0, 0))
 	var c := Vector2(0, 0)
 	for k in 7:
-		var a := k * PI / 12.0
+		var a: float = k * PI / 12.0
 		for r in 64:
-			var p := c + Vector2(cos(a), sin(a)) * r
+			var p: Vector2 = c + Vector2(cos(a), sin(a)) * float(r)
 			if p.x < 64 and p.y < 64:
 				img.set_pixelv(p, Color(0.9, 0.9, 0.9, 0.7))
 	for ring in [14, 26, 38, 50]:
 		for s in 90:
-			var a2 := s / 90.0 * PI / 2.0
-			var p2 := c + Vector2(cos(a2), sin(a2)) * ring
+			var a2: float = s / 90.0 * PI / 2.0
+			var p2: Vector2 = c + Vector2(cos(a2), sin(a2)) * float(ring)
 			if p2.x < 64 and p2.y < 64:
 				img.set_pixelv(p2, Color(0.9, 0.9, 0.9, 0.55))
 	return ImageTexture.create_from_image(img)
@@ -374,7 +374,7 @@ func run(name: String) -> void:
 					st.tween(0.5, func(k: float): rb.position.y = 1.4 - k * 1.3, 1.45)
 			for i in people.size():
 				var p: Node3D = people[i]
-				var x0 := -1.5 + i * 1.0
+				var x0: float = -1.5 + i * 1.0
 				var to := Vector3(-2.5 + i * 1.7, 0, -2.6 - (i % 2) * 0.8)
 				st.tween(1.8, func(k: float):
 					p.visible = true

@@ -207,7 +207,7 @@ func _make_truck() -> void:
 	_place(0.0)
 
 func _paint(mi: MeshInstance3D) -> void:
-	var src := mi.get_active_material(0)
+	var src = mi.get_active_material(0)
 	var tex: Texture2D = src.albedo_texture if src is BaseMaterial3D else null
 	if tex == null:
 		return
