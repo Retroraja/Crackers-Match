@@ -27,7 +27,24 @@ func _road() -> void:
 	plen = PackedFloat32Array([0.0, 1.0])
 
 # park the truck at a spot, facing a direction (radians around Y; 0 = +z)
+var t2d: TextureRect
+# the truck is a flat picture laid over the still shot (the 3D truck never showed on screen)
+func _truck2d(pos: Vector2, w: float, flip := false) -> void:
+	if t2d == null:
+		t2d = TextureRect.new()
+		t2d.texture = load("res://art/truck2d.png")
+		t2d.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		t2d.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
+		t2d.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(t2d)
+		move_child(t2d, dim.get_index())
+	t2d.size = Vector2(w, w * 300.0 / 520.0)
+	t2d.position = pos
+	t2d.flip_h = flip
+	t2d.visible = true
+
 func _park(p: Vector3, rot: float, s: float) -> void:
+	return
 	_make_truck()
 	if truck == null:
 		return
@@ -37,12 +54,6 @@ func _park(p: Vector3, rot: float, s: float) -> void:
 	truck.global_position = p
 	truck.rotation.y = rot
 	(truck.get_child(0) as Node3D).scale = Vector3.ONE * s
-	await get_tree().process_frame
-	var cnt := 0
-	for c in truck.find_children("*", "MeshInstance3D", true, false):
-		if (c as MeshInstance3D).is_visible_in_tree():
-			cnt += 1
-	print("DBG TRUCK pos=", truck.global_position, " vis=", truck.is_visible_in_tree(), " meshes_vis=", cnt, " scale=", truck.get_child(0).scale, " par=", truck.get_parent().name, " par_vis=", (truck.get_parent() as Node3D).visible, " cam=", street.cam.global_position, " layers=", (truck.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D).layers, " cammask=", street.cam.cull_mask)
 	var b: Node3D = truck.get_child(0).get_node_or_null("box4")
 	if b:
 		b.visible = true
@@ -65,7 +76,7 @@ func _fade(id: int, f: Callable) -> void:
 func _at_factory(id: int) -> void:
 	if street:
 		street.night(0.35)
-		_park(Vector3(2.5, 0, -44.0), 0.0, 1.6)
+		_truck2d(Vector2(60, H - BOT - 230), 270)
 		_still(Vector3(-5.5, 5.8, -27.0), Vector3(0.5, 2.6, -50.0))
 	_later(0.5, id, func(): say("The first load of crackers\nis ready!", id, 3.0))
 	_later(3.8, id, func(): _shot(2))
@@ -74,14 +85,14 @@ func _in_chennai(id: int) -> void:
 	if street:
 		street.night(0.0)
 		street.set_area(2)
-		_park(Vector3(-16.0, 0, 4.4), PI / 2, 2.2)
+		_truck2d(Vector2(30, H - BOT - 250), 300)
 		_still(Vector3(-24.0, 5.5, 24.0), Vector3(-15.0, 2.2, 3.0))
 	_later(0.6, id, func(): say("Chennai.  Bunder Street,\nwhere the big city buys its crackers.", id, 3.2))
 	_later(4.2, id, func(): _shot(3))
 
 func _at_shop(id: int) -> void:
 	if street:
-		_park(Vector3(-3.5, 0, 4.4), PI / 2, 2.2)
+		_truck2d(Vector2(-60, H - BOT - 210), 300)
 		_still(Vector3(0, 6.5, 30), Vector3(0, 4.4, -2))
 	man.mood("smile", 99)
 	man.base = "idle"
@@ -94,6 +105,11 @@ func _at_shop(id: int) -> void:
 
 func _process(_dt: float) -> void:
 	pass
+
+func _title(id: int) -> void:
+	if t2d:
+		t2d.visible = false
+	super._title(id)
 
 func _cleanup() -> void:
 	if is_instance_valid(truck):
