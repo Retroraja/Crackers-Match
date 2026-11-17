@@ -498,7 +498,7 @@ func build_all() -> void:
 var _ghost: Array = []
 var _ghost_mat: ShaderMaterial
 var _ghost_tw: Tween
-func ghost(on: bool) -> void:
+func ghost(on: bool, scan := false) -> void:
 	if not on:
 		if _ghost_tw:
 			_ghost_tw.kill()
@@ -552,11 +552,17 @@ void fragment() {
 			m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_ghost.append(d)
 	sparkle(V(L.SITE.crk) + Vector3(0, 3, 0), 40, 5)
-	# traced from the ground up like a blueprint coming alive, then it breathes
-	_ghost_mat.set_shader_parameter("a", 1.0)
 	_ghost_tw = create_tween()
-	_ghost_tw.tween_method(func(v: float): _ghost_mat.set_shader_parameter("h", v), -0.5, 14.0, 2.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	_ghost_tw.tween_callback(func(): sparkle(V(L.SITE.crk) + Vector3(0, 6, 0), 50, 6))
+	if scan:
+		# v2: traced from the ground up like a blueprint coming alive
+		_ghost_mat.set_shader_parameter("a", 1.0)
+		_ghost_tw.tween_method(func(v: float): _ghost_mat.set_shader_parameter("h", v), -0.5, 14.0, 2.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_ghost_tw.tween_callback(func(): sparkle(V(L.SITE.crk) + Vector3(0, 6, 0), 50, 6))
+		return
+	# v1 (chosen): fades in, then gently breathes
+	_ghost_tw.tween_method(func(v: float): _ghost_mat.set_shader_parameter("a", v), 0.0, 1.0, 1.4)
+	_ghost_tw.tween_method(func(v: float): _ghost_mat.set_shader_parameter("a", v), 1.0, 0.65, 1.0).set_trans(Tween.TRANS_SINE)
+	_ghost_tw.tween_method(func(v: float): _ghost_mat.set_shader_parameter("a", v), 0.65, 1.0, 1.0).set_trans(Tween.TRANS_SINE)
 	_ghost_tw.tween_method(func(v: float): _ghost_mat.set_shader_parameter("a", v), 1.0, 0.65, 1.0).set_trans(Tween.TRANS_SINE)
 	_ghost_tw.tween_method(func(v: float): _ghost_mat.set_shader_parameter("a", v), 0.65, 1.0, 1.0).set_trans(Tween.TRANS_SINE)
 

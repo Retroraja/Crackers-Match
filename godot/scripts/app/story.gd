@@ -1,11 +1,6 @@
-# First-open story, "Grandpa's Dream" v2 (17 Nov). Plays once after the title, before level 1, over the live 3D street.
-# v1 is kept in previews/ (story-v1-*). Shots are cut on the music's bars (72 bpm, a bar = 3.33 s):
-#   0.0  1 the street at night, the camera sinks in
-#   6.7  2 he walks in, looks along the street, sighs
-#  13.3  3 Grandpa's notebook: cover opens, pages fan, the pen writes his line
-#  20.0  4 the promise: diyas light up along the path, the factory is traced in gold
-#  26.7  5 title card "Area 1 · Sivakasi Street", then a warm flash into level 1
-# Background blur stands in for depth of field; film grain and a dusk grade give one look. Tap = next shot, Skip = level 1.
+# First-open story, "Grandpa's Dream" (17 Nov). Plays once after the title, before level 1, over the live 3D street.
+# 1 the dark street   2 he comes home   3 Grandpa's notebook   4 the promise (golden dream of the factory)
+# Letterbox bars, a dusk grade and serif captions keep it cinematic. Tap = next shot, Skip = straight to level 1.
 extends Control
 class_name StoryScene
 
@@ -16,10 +11,9 @@ var street
 var shot := 0
 var sid := 0
 var done := false
+var dim: ColorRect
 var grade: ColorRect
-var blur: ColorRect
 var vig: TextureRect
-var back_glow: TextureRect
 var top_bar: ColorRect
 var bot_bar: ColorRect
 var cap: Label
@@ -27,20 +21,16 @@ var skip: Label
 var man: CMFace
 var book: StoryBook
 var motes: Motes
-var dim: ColorRect
-var grain: ColorRect
-var card: Control
 var flash: ColorRect
 var music: AudioStreamPlayer
 var amb: AudioStreamPlayer
 var H := 844.0
-var walk := 0.0      # 0..1 how much he is walking (bob + sway)
-var wt := 0.0
 
 const BAR := 74.0
-const BOT := 134.0
+const BOT := 134.0   # captions sit inside the bottom bar
 const CREAM := Color("#F6E7C8")
 const GOLD := Color("#E9C27A")
+var card: Control
 
 static func font_var(path: String, w: int) -> Font:
 	var f := FontVariation.new()
@@ -48,81 +38,55 @@ static func font_var(path: String, w: int) -> Font:
 	f.variation_opentype = {TextServerManager.get_primary_interface().name_to_tag("wght"): w}
 	return f
 
-static func shader_rect(code: String) -> ColorRect:
-	var r := ColorRect.new()
-	var sh := Shader.new()
-	sh.code = code
-	var m := ShaderMaterial.new()
-	m.shader = sh
-	r.material = m
-	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return r
-
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	grade = _rect(Color(0.05, 0.05, 0.2, 0.0))
-	# soft background blur (depth of field stand-in): 13 taps on the screen's mipmaps
-	blur = shader_rect("""
-shader_type canvas_item;
-uniform sampler2D scr : hint_screen_texture, filter_linear_mipmap;
-uniform float amt = 0.0;
-void fragment() {
-	vec2 px = SCREEN_PIXEL_SIZE * amt * 3.0;
-	float lod = amt * 0.9;
-	vec4 c = textureLod(scr, SCREEN_UV, lod) * 0.2;
-	for (int i = 0; i < 12; i++) {
-		float a = float(i) * 0.5236;
-		c += textureLod(scr, SCREEN_UV + vec2(cos(a), sin(a)) * px * (i % 2 == 0 ? 1.0 : 1.8), lod) * (0.8 / 12.0);
-	}
-	COLOR = vec4(c.rgb, 1.0);
-	COLOR.a = clamp(amt * 2.0, 0.0, 1.0);
-}
-""")
-	add_child(blur)
+	size = Vector2(390, H)
+	grade = _rect(Color(0.06, 0.05, 0.22, 0.0))
 	vig = TextureRect.new()
-	vig.texture = AppFx.grad_tex([0.0, 0.55, 1.0], [Color(0, 0, 0, 0), Color(0, 0, 0, 0.2), Color(0.02, 0.0, 0.06, 0.82)], true)
+	vig.texture = AppFx.grad_tex([0.0, 0.55, 1.0], [Color(0, 0, 0, 0), Color(0, 0, 0, 0.18), Color(0.02, 0.0, 0.05, 0.78)], true)
 	vig.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	vig.stretch_mode = TextureRect.STRETCH_SCALE
+	vig.size = Vector2(390 * 1.5, H * 1.25)
+	vig.position = Vector2(-390 * 0.25, -H * 0.125)
 	vig.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vig.modulate.a = 0.0
 	add_child(vig)
 	motes = Motes.new()
+	motes.size = Vector2(390, H)
 	add_child(motes)
-	# warm light behind him so he sits in the scene
-	back_glow = TextureRect.new()
-	back_glow.texture = AppFx.grad_tex([0.0, 1.0], [Color(1, 0.72, 0.4, 0.38), Color(1, 0.6, 0.3, 0)], true)
-	back_glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	back_glow.stretch_mode = TextureRect.STRETCH_SCALE
-	back_glow.size = Vector2(360, 360)
-	back_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	back_glow.modulate.a = 0.0
-	add_child(back_glow)
 	man = CMFace.new()
 	man.size = Vector2(196, 307)
-	man.position = Vector2(-260, H)
-	man.breathe = 1.0
+	man.position = Vector2(97, H)
 	add_child(man)
-	dim = _rect(Color(0.02, 0.01, 0.05, 0.0))
+	dim = _rect(Color(0.03, 0.02, 0.06, 0.0))
 	book = StoryBook.new()
 	book.size = Vector2(340, 240)
 	book.pivot_offset = book.size / 2
 	book.base_x = 25
+	book.position = Vector2(25, H / 2 - 150)
 	book.visible = false
 	add_child(book)
 	card = _title_card()
 	top_bar = _rect(Color.BLACK)
+	top_bar.size = Vector2(390, BAR)
+	top_bar.position.y = -BAR
 	bot_bar = _rect(Color.BLACK)
+	bot_bar.size = Vector2(390, BOT + 40)
+	bot_bar.position.y = H
 	cap = Label.new()
 	var ls := LabelSettings.new()
 	ls.font = font_var("res://art/fonts/CormorantItalic.ttf", 600)
 	ls.font_size = 26
 	ls.font_color = CREAM
 	ls.line_spacing = -2
+	ls.shadow_size = 6
+	ls.shadow_color = Color(0, 0, 0, 0.55)
 	cap.label_settings = ls
 	cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	cap.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cap.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	cap.size = Vector2(350, 100)
+	cap.position = Vector2(20, H - BOT + 22)
 	cap.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cap.modulate.a = 0.0
 	add_child(cap)
@@ -130,22 +94,13 @@ void fragment() {
 	var sl := LabelSettings.new()
 	sl.font = WebLayout.font("Sora-700")
 	sl.font_size = 13
-	sl.font_color = Color(1, 1, 1, 0.6)
+	sl.font_color = Color(1, 1, 1, 0.62)
 	skip.label_settings = sl
 	skip.text = "Skip  ›"
-	skip.position = Vector2(312, 28)
+	skip.position = Vector2(312, 26)
 	skip.modulate.a = 0.0
 	add_child(skip)
-	grain = shader_rect("""
-shader_type canvas_item;
-float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
-void fragment() {
-	float n = h(floor(FRAGCOORD.xy / 1.5) + floor(TIME * 24.0) * 1.37);
-	COLOR = vec4(vec3(n), 0.045);
-}
-""")
-	add_child(grain)
-	flash = _rect(Color(1, 0.95, 0.84, 0.0))
+	flash = _rect(Color(1, 0.96, 0.86, 0.0))
 	music = AudioStreamPlayer.new()
 	add_child(music)
 	amb = AudioStreamPlayer.new()
@@ -154,6 +109,7 @@ void fragment() {
 func _rect(c: Color) -> ColorRect:
 	var r := ColorRect.new()
 	r.color = c
+	r.size = Vector2(390, H)
 	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(r)
 	return r
@@ -239,30 +195,19 @@ func _stream(n: String) -> AudioStream:
 func _tw() -> Tween:
 	return create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
-func _blur(to: float, d: float) -> void:
-	var m: ShaderMaterial = blur.material
-	create_tween().tween_method(func(v: float): m.set_shader_parameter("amt", v), float(m.get_shader_parameter("amt")), to, d).set_trans(Tween.TRANS_SINE)
-
-# ------------------------------------------------------------------ start
+# ------------------------------------------------------------------ start / shots
 func play(height: float) -> void:
 	H = height
 	size = Vector2(390, H)
-	for r in [grade, blur, dim, grain, flash]:
+	for r in [grade, dim, flash]:
 		r.size = Vector2(390, H)
-	(blur.material as ShaderMaterial).set_shader_parameter("amt", 0.0)
 	vig.size = Vector2(390 * 1.5, H * 1.25)
 	vig.position = Vector2(-390 * 0.25, -H * 0.125)
-	motes.size = Vector2(390, H)
-	top_bar.size = Vector2(390, BAR)
-	top_bar.position.y = -BAR
-	bot_bar.size = Vector2(390, BOT + 40)
 	bot_bar.position.y = H
-	cap.position = Vector2(20, H - BOT + 22)
-	man.position.y = H - BOT - 236
+	cap.position.y = H - BOT + 22
+	man.position.y = H
 	book.position.y = H / 2 - 170
 	card.position.y = H / 2 - 120
-	if street:
-		street.night(1.0)
 	if app and app.sfx:
 		app.sfx.duck(0.0)
 	var on: bool = app == null or app.sfx == null or app.sfx.mus_on
@@ -270,24 +215,15 @@ func play(height: float) -> void:
 	music.volume_db = linear_to_db(0.9) if on else -80.0
 	music.play()
 	amb.stream = _stream("story_wind")
-	amb.volume_db = linear_to_db(0.55) if on else -80.0
+	amb.volume_db = linear_to_db(0.5) if on else -80.0
 	amb.play()
 	var t := _tw()
-	t.parallel().tween_property(top_bar, "position:y", 0.0, 1.2)
-	t.parallel().tween_property(bot_bar, "position:y", H - BOT, 1.2)
-	t.parallel().tween_property(vig, "modulate:a", 1.0, 1.4)
-	t.parallel().tween_property(grade, "color:a", 0.3, 1.4)
-	t.parallel().tween_property(skip, "modulate:a", 1.0, 1.0).set_delay(1.2)
+	t.parallel().tween_property(top_bar, "position:y", 0.0, 1.0)
+	t.parallel().tween_property(bot_bar, "position:y", H - BOT, 1.0)
+	t.parallel().tween_property(vig, "modulate:a", 1.0, 1.2)
+	t.parallel().tween_property(grade, "color:a", 0.42, 1.2)
+	t.parallel().tween_property(skip, "modulate:a", 1.0, 1.0).set_delay(1.0)
 	_shot(1)
-
-func _process(dt: float) -> void:
-	wt += dt
-	# walking: a step every 0.55 s, head and shoulders bob, the body sways a little
-	var ph := wt * TAU / 0.55
-	man.bob = absf(sin(ph)) * 7.0 * walk
-	man.sway = sin(ph) * 0.018 * walk
-	back_glow.position = man.position + Vector2(man.size.x / 2 - 180, man.size.y * 0.42 - 180)
-	back_glow.modulate.a = man.modulate.a * (0.0 if man.position.y > H - BOT - 60 else 1.0)
 
 func _shot(n: int) -> void:
 	shot = n
@@ -316,116 +252,86 @@ func say(text: String, id: int, hold: float) -> void:
 	t.parallel().tween_property(cap, "position:y", H - BOT + 22, 0.9)
 	_later(hold, id, func(): _tw().tween_property(cap, "modulate:a", 0.0, 0.5))
 
-# 1. night: the camera sinks slowly into the empty, dark street
+# 1. the dark street: the camera sinks slowly into the empty street at dusk
 func _dark_street(id: int) -> void:
 	if street:
-		street.camP = Vector3(0, 26, 88)
+		street.camP = Vector3(0, 24, 84)
 		street.camL = Vector3(0, 0, 30)
-		street.cam_to(Vector3(-1, 7.2, 55), Vector3(-2, 2.2, 26), 6.6)
-	motes.rate = 5.0
-	_later(0.8, id, func(): say("Sivakasi.  The town that lights up every Diwali.", id, 2.7))
-	_later(3.8, id, func(): say("But Grandpa's old street had gone dark.", id, 2.6))
-	_later(6.67, id, func(): _shot(2))
+		street.cam_to(Vector3(-1, 7.5, 54), Vector3(-2, 2.2, 26), 6.8)
+	motes.rate = 6.0
+	_later(0.9, id, func(): say("Sivakasi.  The town that lights up every Diwali.", id, 2.7))
+	_later(3.9, id, func(): say("But Grandpa's old street had gone dark.", id, 2.6))
+	_later(6.9, id, func(): _shot(2))
 
-# 2. he walks in from the left while the camera trucks with him, stops, looks along the street, sighs
+# 2. he comes home
 func _home(id: int) -> void:
 	if street:
-		street.cam_to(Vector3(1.2, 6.8, 50), Vector3(-0.5, 2.3, 22), 5.5)
-	_blur(0.9, 1.6)
+		street.cam_to(Vector3(-1.4, 7.0, 51), Vector3(-2, 2.4, 22), 4.5)
 	man.mood("worried", 99)
 	man.base = "worried"
-	man.position.x = -230
-	man.turn = 0.6
-	walk = 1.0
 	var t := _tw()
-	t.tween_property(man, "position:x", 97.0, 2.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	t.parallel().tween_property(self, "walk", 0.0, 0.8).set_delay(1.9)
-	for i in 4:
-		_sfx("story_step", 0.5, randf_range(0.92, 1.05), 0.1 + i * 0.55)
-	t.tween_property(man, "turn", -0.85, 0.7)
-	t.tween_interval(0.5)
-	t.tween_property(man, "turn", 0.8, 0.9)
-	t.tween_interval(0.4)
-	t.tween_property(man, "turn", 0.0, 0.6)
-	t.tween_property(man, "shrug", 1.0, 0.5)
-	t.tween_property(man, "shrug", 0.0, 0.9)
-	_later(3.0, id, func(): say("“I'm home, Grandpa.”", id, 3.2))
-	_later(5.2, id, func(): _sfx("story_sigh", 0.5))
-	_later(6.67, id, func(): _shot(3))
+	t.tween_property(man, "position:y", H - BOT - 250, 1.3).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_sfx("swoosh", 0.25, 0.8)
+	_later(0.7, id, func(): say("“I'm home, Grandpa.”", id, 3.0))
+	_later(4.4, id, func(): _shot(3))
 
 # 3. Grandpa's notebook
 func _notebook(id: int) -> void:
-	walk = 0.0
 	var t := _tw()
-	t.tween_property(man, "position:y", H + 40, 0.6).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
-	t.parallel().tween_property(dim, "color:a", 0.5, 0.8)
-	_blur(1.6, 1.0)
+	t.tween_property(man, "position:y", H, 0.7).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	t.parallel().tween_property(dim, "color:a", 0.62, 0.8)
 	_tw().tween_property(cap, "modulate:a", 0.0, 0.3)
 	book.reset()
 	book.visible = true
-	book.scale = Vector2.ONE * 0.5
-	book.rotation = -0.18
+	book.scale = Vector2.ONE * 0.35
+	book.rotation = -0.5
 	book.modulate.a = 0.0
-	book.position.y = H / 2 - 120
-	var b := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	b.tween_property(book, "scale", Vector2.ONE, 0.8).set_delay(0.25)
-	b.parallel().tween_property(book, "rotation", 0.0, 0.8).set_delay(0.25)
-	b.parallel().tween_property(book, "modulate:a", 1.0, 0.4).set_delay(0.25)
-	b.parallel().tween_property(book, "position:y", H / 2 - 170, 0.8).set_delay(0.25)
-	_sfx("swoosh", 0.3, 0.7, 0.25)
-	_later(1.0, id, func():
+	var b := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	b.tween_property(book, "scale", Vector2.ONE, 0.75).set_delay(0.3)
+	b.parallel().tween_property(book, "rotation", 0.0, 0.75).set_delay(0.3)
+	b.parallel().tween_property(book, "modulate:a", 1.0, 0.4).set_delay(0.3)
+	_sfx("swoosh", 0.35, 0.7, 0.3)
+	_later(1.2, id, func():
 		_sfx("story_page", 1.0)
-		_tw().tween_property(book, "open", 1.0, 0.9).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT))
-	_later(1.8, id, func():
-		_sfx("story_page", 0.55, 1.2)
-		book.fan_pages(0.7))
-	_later(2.5, id, func(): book.shine_photo(1.0))
-	_later(2.7, id, func(): book.write(3.0, app))
+		_tw().tween_property(book, "open", 1.0, 0.75).set_trans(Tween.TRANS_CUBIC))
+	_later(2.1, id, func(): book.write(3.4, app))
 	_later(5.8, id, func():
 		book.sign_off()
 		_sfx("story_chime", 0.8))
-	_later(6.1, id, func(): motes.burst(Vector2(290, H / 2 - 70), 26))
-	_later(6.67, id, func(): _shot(4))
+	_later(6.3, id, func(): motes.burst(Vector2(280, H / 2 - 60), 26))
+	_later(7.6, id, func(): _shot(4))
 
-# 4. the promise: the notebook closes, diyas light up along the path, the factory is traced in gold
+# 4. the promise: the notebook closes, the street brightens, the factory glows like a dream
 func _promise(id: int) -> void:
 	var t := _tw()
 	t.tween_property(book, "open", 0.0, 0.45)
-	t.tween_property(book, "scale", Vector2.ONE * 0.3, 0.35)
+	t.tween_property(book, "scale", Vector2.ONE * 0.2, 0.35)
 	t.parallel().tween_property(book, "modulate:a", 0.0, 0.35)
 	t.tween_callback(func(): book.visible = false)
 	_sfx("story_page", 0.6, 1.15)
-	_tw().tween_property(dim, "color:a", 0.0, 0.9).set_delay(0.4)
-	_blur(0.0, 1.0)
+	_tw().tween_property(dim, "color:a", 0.0, 1.0).set_delay(0.4)
+	_tw().tween_property(grade, "color:a", 0.18, 3.0).set_delay(0.6)
 	if street:
-		street.cam_to(Vector3(0, 9.0, -20), Vector3(0, 4.4, -57), 3.0)
-		var k := [0]
-		street.story_diyas(2.6, func():
-			_sfx("story_ting", 0.35, 1.0 + k[0] * 0.04)
-			k[0] += 1)
-		_later(2.5, id, func():
+		street.cam_to(Vector3(0, 9.5, -24), Vector3(0, 4.6, -57), 2.6)
+		_later(0.9, id, func():
 			street.ghost(true)
 			_sfx("story_dream", 0.9))
-	_tw().tween_property(grade, "color:a", 0.12, 3.0).set_delay(0.8)
-	motes.rate = 12.0
+	motes.rate = 14.0
 	man.base = "idle"
 	man.mood("smile", 99)
-	man.turn = -0.3
-	man.position = Vector2(-10, H)
+	man.position.x = 2
 	var m := _tw()
-	m.tween_property(man, "position:y", H - BOT - 236, 1.0).set_delay(3.2).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	m.tween_property(man, "turn", 0.0, 0.6)
-	_later(4.5, id, func(): man.mood("cheer", 1.4))
-	_later(3.4, id, func(): say("“I'll finish what you started…\none diya at a time.”", id, 3.0))
-	_later(6.67, id, func(): _shot(5))
+	m.tween_property(man, "position:y", H - BOT - 236, 1.0).set_delay(2.0).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_later(2.6, id, func(): man.mood("cheer", 1.2))
+	_later(2.3, id, func(): say("“I'll finish what you started…\none diya at a time.”", id, 3.6))
+	_later(6.6, id, func(): _shot(5))
 
-# 5. title card
+# 5. title card (from v2): "AREA 1", gold lines, "Sivakasi Street" with a light sweep
 func _title(id: int) -> void:
 	var t := _tw()
 	t.tween_property(man, "position:y", H + 40, 0.6).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
-	t.parallel().tween_property(dim, "color:a", 0.45, 0.8)
+	t.parallel().tween_property(dim, "color:a", 0.5, 0.8)
 	t.parallel().tween_property(cap, "modulate:a", 0.0, 0.3)
-	_blur(1.1, 1.0)
 	var c := card
 	c.modulate.a = 0.0
 	c.get_node("t").position.y = 52
@@ -437,6 +343,7 @@ func _title(id: int) -> void:
 	var sh: Control = c.get_node("t/sh")
 	sh.position.x = -120
 	_tw().tween_property(sh, "position:x", 420.0, 1.1).set_delay(1.2)
+	_sfx("story_chime", 0.6, 1.0, 0.5)
 	_later(3.3, id, func(): _shot(6))
 
 func _finish() -> void:
@@ -446,13 +353,12 @@ func _finish() -> void:
 	sid += 1
 	_sfx("story_rise", 1.0)
 	var t := _tw()
-	t.tween_property(flash, "color:a", 1.0, 0.5)
-	t.parallel().tween_property(music, "volume_db", -40.0, 1.0)
+	t.tween_property(flash, "color:a", 1.0, 0.45)
+	t.parallel().tween_property(music, "volume_db", -40.0, 0.9)
 	t.parallel().tween_property(amb, "volume_db", -60.0, 0.6)
 	t.tween_callback(func():
 		if street:
 			street.ghost(false)
-			street.story_clear()
 		finished.emit())
 	t.tween_property(flash, "color:a", 0.0, 0.5)
 	t.tween_callback(queue_free)
@@ -485,7 +391,7 @@ class Motes extends Control:
 		acc += dt * rate
 		while acc > 1.0:
 			acc -= 1.0
-			P.append({"p": Vector2(randf() * size.x, size.y * (0.5 + randf() * 0.4)), "v": Vector2(randf_range(-6, 6), -14 - randf() * 22), "t": 0.0, "d": 3.0 + randf() * 3.0, "r": 1.0 + randf() * 2.0})
+			P.append({"p": Vector2(randf() * size.x, size.y * (0.55 + randf() * 0.4)), "v": Vector2(randf_range(-6, 6), -14 - randf() * 22), "t": 0.0, "d": 3.0 + randf() * 3.0, "r": 1.0 + randf() * 2.2})
 		var keep: Array = []
 		for o in P:
 			o.t += dt
@@ -499,5 +405,5 @@ class Motes extends Control:
 		for o in P:
 			var k: float = o.t / o.d
 			var a: float = sin(k * PI) * 0.8
-			draw_circle(o.p, o.r * 3.0, Color(1, 0.75, 0.3, a * 0.16))
+			draw_circle(o.p, o.r * 3.0, Color(1, 0.75, 0.3, a * 0.18))
 			draw_circle(o.p, o.r, Color(1, 0.9, 0.6, a))
