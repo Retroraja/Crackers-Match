@@ -94,7 +94,7 @@ func build() -> void:
 		var nb := box(Vector3(14, 6.5, 16), Vector3(s * (RW + 7.4), 3.25, -8), Color("#C9A27A") if s < 0 else Color("#9FB3C8"))
 		box(Vector3(10, 3.2, 0.2), Vector3(0, -1.4, 8.05), Color("#5a4636") if s < 0 else Color("#3d4a57"), nb)
 		box(Vector3(11, 1.0, 0.25), Vector3(0, 1.0, 8.1), Color("#E85D3B") if s < 0 else Color("#2E86DE"), nb)
-	box(Vector3(2 * RW + 0.6, 2.6, 16), Vector3(0, RH + 1.3, -7.5), Color("#B5826A"))   # upstairs block, seen from outside
+	facade.append(box(Vector3(2 * RW + 0.6, 2.6, 0.4), Vector3(0, RH + 1.3, 0.1), Color("#B5826A")))   # upper front, outside only
 	# floor
 	var fl := box(Vector3(2 * RW, 0.2, RD), Vector3(0, -0.05, -RD / 2), Color("#6f6458"))
 	floor_m = fl.material_override

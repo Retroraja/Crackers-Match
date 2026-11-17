@@ -476,7 +476,7 @@ func tutorial() -> void:
 	tdim.visible = true
 	var pill: Control = LH.nodes[11]
 	_lift(pill)
-	app.set_t(tip, ("You earned 1 diya! Use diyas to build your street." if st.diyas == 1 else "You earned %d diyas! Use them to build your street." % st.diyas))
+	app.set_t(tip, ("You earned 1 diya! Use diyas to build your %s." % ("street" if st.area == 1 else "shop") if st.diyas == 1 else "You earned %d diyas! Use them to build your %s." % [st.diyas, "street" if st.area == 1 else "shop"]))
 	_fit_tip()
 	tip.visible = true
 	tip.position.y = pill.get_global_rect().end.y - global_position.y + 18

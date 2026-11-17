@@ -3219,6 +3219,7 @@ func _dev(a: Dictionary) -> void:
 		S.end1 = 1
 		S.end2 = 0
 		S.lv = 25
+		S.tut = 1
 		var bst := {}
 		for i in 25:
 			bst[str(i)] = 2 if levels[i].get("ltype", "n") == "h" else 1
