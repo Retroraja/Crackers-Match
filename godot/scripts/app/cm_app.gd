@@ -13,7 +13,7 @@ const SL := ["hammer", "sparkler", "flowerpot", "skyshot", "snake", "rail", "wal
 const LBL := {"matchbox": "Colour Matchbox", "rocket": "Rocket", "flowerpot": "Flowerpot", "chakra": "Ground Chakra", "skyshot": "Sky Shot", "sparkler": "Sparkler", "rail": "Rail Cracker", "wala": "1000-Wala", "atom": "Bomb", "hammer": "Lakshmi Vedi Hammer", "seven": "Seven Shot", "snake": "Snake Tablet"}
 const PRICE := {"matchbox": 600, "rocket": 100, "flowerpot": 900, "sparkler": 700, "chakra": 200, "rail": 1400, "skyshot": 1600, "wala": 1300, "atom": 300, "hammer": 500, "seven": 1800, "snake": 1100}
 const UNL := {"hammer": 5, "sparkler": 10, "flowerpot": 15, "skyshot": 20, "snake": 25, "rail": 30, "wala": 35, "seven": 40}
-const SB := ["rocket", "chakra", "atom", "matchbox"]
+const SB := ["rocket", "matchbox", "chakra", "atom"]   # in unlock order (Lv 2, 3, 5, 8)
 const SBU := {"rocket": 2, "matchbox": 3, "chakra": 5, "atom": 8}
 const PACK := {"rocket": 900, "chakra": 1200, "atom": 1500, "matchbox": 1900}
 const SBD := {"rocket": "Start the level with a Rocket on the board!", "chakra": "Start the level with a Ground Chakra on the board!", "atom": "Start the level with a Bomb on the board!", "matchbox": "Start the level with a Colour Matchbox on the board!"}
@@ -931,6 +931,7 @@ func slots() -> void:
 		if locked(k):
 			c = sub(G, 57, sl)
 			set_t(c.get_child(c.get_child_count() - 1), "Lv %d" % UNL[k])
+			_grey_locked(c, kid(c, "img"), kid(c, "i"))
 		else:
 			c = sub(G, 54, sl)
 			var pr: Control = c.get_child(c.get_child_count() - 1)
@@ -1189,10 +1190,10 @@ func _build_overlays() -> void:
 			open_modal(L.root, false)
 			_card_closed())
 		tap(L.node("lPlay"), _card_play)
-		# 30px taller card: room for the wide Golden Matchbox slot under the boosters
+		# 52px taller card: room (and air above) for the wide Golden Matchbox slot under the boosters
 		for ix in [2, 3, 4, 5]:
-			resize_box(L.nodes[ix], L.nodes[ix].size + Vector2(0, 30))
-		L.node("lPlay").position.y += 30
+			resize_box(L.nodes[ix], L.nodes[ix].size + Vector2(0, 52))
+		L.node("lPlay").position.y += 52
 		tap(L.node("lAd"), _card_ad)
 		ad_pad(L.node("lAd"))
 	# lose / failed / win / bonus end are full screens
@@ -1658,6 +1659,18 @@ func open_card(i: int) -> void:
 			for dx in [-7, 7, -4, 0]:
 				tw.tween_property(hang, "position:x", x0 + dx, 0.095))
 
+# a locked booster: its cracker shows in clear grey, a small gold lock sits in the top-left corner
+func _grey_locked(c: Control, im: Control, lk: Control) -> void:
+	if im:
+		var it := img_of(im)
+		if it:
+			WebLayout.apply_filter(it, "grayscale(1) brightness(1.05)")
+		im.modulate.a = 0.9
+	if lk:
+		lk.scale = Vector2.ONE * 0.62
+		lk.pivot_offset = Vector2.ZERO
+		lk.position = Vector2(3, 3)
+
 func sb_locked(k: String) -> bool:
 	return int(S.lv) < SBU[k]
 
@@ -1697,14 +1710,12 @@ func boosters(C: WebLayout, tapped := "") -> void:
 			if kid(em, "img"):
 				kid(em, "img").visible = false
 			set_bg(em, Color("#D92B3A"))
-			var im: Control = kid(c, "img")
-			var it := img_of(im)
-			if it:
-				WebLayout.apply_filter(it, "grayscale(1) brightness(.55)")
-			im.modulate.a = 0.8
 			var lk := sub(G, 59, c)
-			lk.position = Vector2(33 - 17, 66 * 0.44 - 17)
-			tap(c, func(): sfx.play("nope"))
+			_grey_locked(c, kid(c, "img"), lk)
+			var kl := k
+			tap(c, func():
+				sfx.play("nope")
+				toast28("%s unlocks at Level %d" % [LBL[kl], SBU[kl]]))
 		elif n > 0:
 			c = sub(C, t_have, lb)
 			set_t(kid(c, "b"), str(n))
@@ -1739,7 +1750,7 @@ func boosters(C: WebLayout, tapped := "") -> void:
 			c.scale = Vector2.ONE * 0.86
 			create_tween().tween_property(c, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	# golden matchbox, locked until level 100: its own wide, shiny slot so it is noticed
-	var gold := _gold_slot(lb, first, Vector2(1, 80))
+	var gold := _gold_slot(lb, first, Vector2(1, 96))
 	tap(gold, func():
 		sfx.play("nope")
 		toast28("The Golden Matchbox unlocks at Level 100!"))
@@ -1747,96 +1758,112 @@ func boosters(C: WebLayout, tapped := "") -> void:
 	a.visible = not sb_locked("rocket") and S.ads.get("card", "") != today()
 
 func _gold_slot(parent: Control, pop: bool, at: Vector2) -> Control:
+	# Golden Matchbox, locked until Lv 100: a dark royal card with a gold frame, turning light rays behind the
+	# matchbox, a "LEGENDARY" tag, a shine sweep and twinkles, so it stands apart from the cream card.
 	var W := 298.0
-	var H := 58.0
+	var H := 66.0
 	var root := Control.new()
 	root.size = Vector2(W, H)
 	root.position = at
 	parent.add_child(root)
-	# soft gold glow behind, breathing
 	var glow := TextureRect.new()
-	glow.texture = AppFx.grad_tex([0.0, 0.6, 1.0], [Color(1, 0.85, 0.3, 0.75), Color(1, 0.7, 0.1, 0.25), Color(1, 0.6, 0, 0)], true)
+	glow.texture = AppFx.grad_tex([0.0, 0.6, 1.0], [Color(1, 0.8, 0.25, 0.7), Color(1, 0.6, 0.1, 0.22), Color(1, 0.5, 0, 0)], true)
 	glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	glow.stretch_mode = TextureRect.STRETCH_SCALE
-	glow.size = Vector2(W + 60, H + 46)
-	glow.position = Vector2(-30, -23)
+	glow.size = Vector2(W + 70, H + 56)
+	glow.position = Vector2(-35, -28)
 	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(glow)
 	var gt := glow.create_tween().set_loops()
-	gt.tween_property(glow, "modulate:a", 0.45, 0.9).set_trans(Tween.TRANS_SINE)
+	gt.tween_property(glow, "modulate:a", 0.4, 0.9).set_trans(Tween.TRANS_SINE)
 	gt.tween_property(glow, "modulate:a", 1.0, 0.9).set_trans(Tween.TRANS_SINE)
-	var bx := WebLayout.box({"bg": [UISkin.lin([[0, "#FFF7C9"], [0.35, "#FFD84A"], [0.7, "#F5A623"], [1, "#D98200"]])], "rad": [20, 20, 20, 20],
-		"bw": [3, 3, 3, 3], "bcol": UISkin.rgba("#7A3B00"), "sh": [UISkin.sh(0, -4, 0, "#B86200", true), UISkin.sh(0, 4, 0, "#5A2A00"), UISkin.sh(0, 0, 14, "#FFD84A")]}, Vector2(W, H))
+	var bx := WebLayout.box({"bg": [UISkin.lin([[0, "#5A1468"], [0.55, "#3A0B4A"], [1, "#22062E"]])], "rad": [18, 18, 18, 18],
+		"bw": [3, 3, 3, 3], "bcol": UISkin.rgba("#FFD23F"), "sh": [UISkin.sh(0, 0, 0, "#8A5A00", false), UISkin.sh(0, 4, 0, "#2A0A12"), UISkin.sh(0, 0, 16, "#FFC83F")]}, Vector2(W, H))
 	bx.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(bx)
-	# shine sweeping across
 	var clip := Control.new()
 	clip.clip_contents = true
-	clip.size = Vector2(W - 8, H - 8)
-	clip.position = Vector2(4, 4)
+	clip.size = Vector2(W - 6, H - 6)
+	clip.position = Vector2(3, 3)
 	clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(clip)
+	var rays := AppFx.Rays.new()
+	rays.size = Vector2(120, 120)
+	rays.position = Vector2(-22, -30)
+	rays.col = Color(1, 0.78, 0.3, 0.32)
+	clip.add_child(rays)
 	var shine := TextureRect.new()
-	shine.texture = AppFx.grad_tex([0.0, 0.5, 1.0], [Color(1, 1, 1, 0), Color(1, 1, 1, 0.75), Color(1, 1, 1, 0)], false, Vector2(0, 0.5), Vector2(1, 0.5))
+	shine.texture = AppFx.grad_tex([0.0, 0.5, 1.0], [Color(1, 1, 1, 0), Color(1, 0.95, 0.8, 0.5), Color(1, 1, 1, 0)], false, Vector2(0, 0.5), Vector2(1, 0.5))
 	shine.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	shine.size = Vector2(44, H * 1.8)
+	shine.size = Vector2(40, H * 1.9)
 	shine.rotation = 0.35
-	shine.position = Vector2(-80, -H * 0.4)
+	shine.position = Vector2(-80, -H * 0.45)
 	shine.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	clip.add_child(shine)
 	var st := shine.create_tween().set_loops()
-	st.tween_property(shine, "position:x", W + 40, 0.9).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	st.tween_interval(1.4)
+	st.tween_property(shine, "position:x", W + 40, 1.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	st.tween_interval(1.6)
 	st.tween_callback(func(): shine.position.x = -80)
-	# the golden matchbox, gently bobbing
 	var ic := TextureRect.new()
 	ic.texture = WebLayout.tex("crk:b14")
 	ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	ic.size = Vector2(54, 54)
-	ic.position = Vector2(8, 2)
-	ic.pivot_offset = Vector2(28, 28)
+	ic.size = Vector2(60, 60)
+	ic.position = Vector2(8, 3)
+	ic.pivot_offset = Vector2(30, 30)
 	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(ic)
 	var it := ic.create_tween().set_loops()
-	it.tween_property(ic, "rotation", 0.12, 0.8).set_trans(Tween.TRANS_SINE)
-	it.tween_property(ic, "rotation", -0.12, 0.8).set_trans(Tween.TRANS_SINE)
-	# twinkles
-	for p in [Vector2(56, 4), Vector2(10, 40), Vector2(W - 30, 6)]:
+	it.tween_property(ic, "scale", Vector2.ONE * 1.08, 0.8).set_trans(Tween.TRANS_SINE)
+	it.tween_property(ic, "scale", Vector2.ONE, 0.8).set_trans(Tween.TRANS_SINE)
+	for p in [Vector2(58, 2), Vector2(4, 46), Vector2(W - 22, 40), Vector2(W - 64, 4)]:
 		var tw := Label.new()
-		tw.text = "✦"
+		tw.text = "\u2726"
 		var ls := LabelSettings.new()
-		ls.font_size = 14
-		ls.font_color = Color(1, 1, 1)
+		ls.font_size = 13
+		ls.font_color = Color(1, 0.92, 0.6)
 		tw.label_settings = ls
 		tw.position = p
+		tw.pivot_offset = Vector2(6, 9)
 		tw.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		root.add_child(tw)
-		tw.pivot_offset = Vector2(6, 9)
 		var t2 := tw.create_tween().set_loops()
-		t2.tween_interval(randf() * 0.8)
-		t2.tween_property(tw, "scale", Vector2.ONE * 1.4, 0.4)
+		t2.tween_interval(randf() * 0.9)
+		t2.tween_property(tw, "scale", Vector2.ONE * 1.5, 0.45)
 		t2.tween_property(tw, "scale", Vector2.ONE * 0.3, 0.6)
 	var t := Label.new()
 	t.text = "Golden Matchbox"
 	var tl := LabelSettings.new()
 	tl.font = WebLayout.font("TitanOne")
 	tl.font_size = 21
-	tl.font_color = Color("#6B2A00")
-	tl.outline_size = 5
-	tl.outline_color = Color("#FFF6D0")
+	tl.font_color = Color("#FFD23F")
+	tl.outline_size = 6
+	tl.outline_color = Color("#5A2A00")
 	t.label_settings = tl
-	t.position = Vector2(72, 3)
+	t.position = Vector2(76, 6)
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(t)
-	var pill := AppFx.badge("Unlocks at Level 100", Color("#C8102E"), Vector2(170, 22), WebLayout.font("Sora-700"), 12, 11, 2)
-	pill.position = Vector2(96, 31)
-	pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(pill)
+	var sub_l := Label.new()
+	sub_l.text = "Legendary cracker  \u00b7  Level 100"
+	var sl := LabelSettings.new()
+	sl.font = WebLayout.font("Sora-700")
+	sl.font_size = 11
+	sl.font_color = Color(1, 0.93, 0.8, 0.9)
+	sub_l.label_settings = sl
+	sub_l.position = Vector2(98, 38)
+	sub_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(sub_l)
 	var lk := sub(G, 59, root)
-	lk.scale = Vector2.ONE * 0.62
-	lk.position = Vector2(74, 29)
+	lk.scale = Vector2.ONE * 0.55
+	lk.pivot_offset = Vector2.ZERO
+	lk.position = Vector2(77, 36)
 	lk.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# LEGENDARY tag on the corner
+	var tag := AppFx.badge("LEGENDARY", Color("#E8123C"), Vector2(78, 18), WebLayout.font("Sora-800"), 9, 9, 2)
+	tag.position = Vector2(W - 70, -9)
+	tag.rotation = 0.08
+	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(tag)
 	if pop:
 		Anim.play(root, "pin2", 0.4, 0.2, "cubic-bezier(.3,1.6,.5,1)")
 	return root

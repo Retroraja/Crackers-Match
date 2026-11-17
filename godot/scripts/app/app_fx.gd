@@ -169,6 +169,30 @@ class Chakra extends Control:
 
 
 # ---------------------------------------------------------------- small fireworks (winBurst / winFx)
+# slowly turning light rays (sunburst) behind an icon
+class Rays extends Control:
+	var n := 12
+	var col := Color(1, 0.85, 0.4, 0.5)
+	var spin := 0.5
+	var a := 0.0
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var m := CanvasItemMaterial.new()
+		m.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		material = m
+	func _process(dt: float) -> void:
+		a += dt * spin
+		queue_redraw()
+	func _draw() -> void:
+		var c := size / 2
+		var r := minf(size.x, size.y) / 2
+		for i in n:
+			var t := a + TAU * i / n
+			var w := PI / n * 0.55
+			draw_colored_polygon(PackedVector2Array([c, c + Vector2(cos(t - w), sin(t - w)) * r, c + Vector2(cos(t + w), sin(t + w)) * r]),
+				col, PackedVector2Array(), null)
+		draw_circle(c, r * 0.42, Color(col.r, col.g, col.b, col.a * 0.5))
+
 # win screen: the man shows only above the line y = top and inside the ring (web winguy mask)
 class RingMask extends Control:
 	var top := 430.0

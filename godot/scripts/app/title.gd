@@ -96,9 +96,21 @@ func _reveal() -> void:
 		get_tree().create_timer(0.9).timeout.connect(_show_tap))
 
 func _show_tap() -> void:
+	# "Tap to Play" stays and blinks (with a soft pulse) until the player taps.
+	# (Anim's st_tap kept the hidden opacity it captured, so the prompt vanished.)
 	var tp: Control = LT.nodes[16]
-	create_tween().tween_property(tp, "modulate:a", 1.0, 0.5)
-	Anim.play(tp, "st_tap", 1.6, 0.0, "ease-in-out", -1)
+	Anim.stop(tp)
+	tp.remove_meta("base")
+	tp.pivot_offset = tp.size / 2.0
+	tp.modulate.a = 0.0
+	var t := create_tween()
+	t.tween_property(tp, "modulate:a", 1.0, 0.5)
+	t.tween_callback(func():
+		var b := tp.create_tween().set_loops().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		b.tween_property(tp, "modulate:a", 0.3, 0.6)
+		b.parallel().tween_property(tp, "scale", Vector2.ONE * 1.06, 0.6)
+		b.tween_property(tp, "modulate:a", 1.0, 0.6)
+		b.parallel().tween_property(tp, "scale", Vector2.ONE, 0.6))
 	busyT = false
 
 func _side_rockets() -> void:
