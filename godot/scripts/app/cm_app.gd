@@ -2826,8 +2826,7 @@ func enter_area2() -> void:
 	S.step1 = int(S.get("step", 0))
 	S.step = 0
 	save()
-	street.set_area(2)
-	home_ui.sync_in()
+	# the start scene opens on the Area 1 street (truck at the factory) and switches the world to the shop itself
 	home_ui.home.visible = false
 	var cl := CanvasLayer.new()
 	cl.layer = 60
@@ -2838,7 +2837,10 @@ func enter_area2() -> void:
 	street.sky_node = sky_layer.get_child(0)
 	cl.add_child(st)
 	st.play(get_viewport().get_visible_rect().size.y)
-	st.finished.connect(func(): home_ui.show_home())
+	st.finished.connect(func():
+		street.set_area(2)
+		home_ui.sync_in()
+		home_ui.show_home())
 	st.tree_exited.connect(cl.queue_free)
 
 # first open: "Grandpa's Dream" over the live street, then level 1
@@ -3230,7 +3232,8 @@ func _dev(a: Dictionary) -> void:
 		await get_tree().create_timer(1.0).timeout
 		enter_area2()
 		if a.has("shots"):
-			get_tree().create_timer(3.8).timeout.connect(func(): get_viewport().get_texture().get_image().save_png(a.shots + "-0-truck.png"))
+			for k in [2.6, 7.0, 11.4, 14.6]:
+				get_tree().create_timer(k).timeout.connect(func(): get_viewport().get_texture().get_image().save_png("%s-0-story-%04.1f.png" % [a.shots, k]))
 		await get_tree().create_timer(15.0).timeout
 		if a.has("shots"):
 			get_viewport().get_texture().get_image().save_png(a.shots + "-1-outside.png")
