@@ -37,6 +37,12 @@ func _park(p: Vector3, rot: float, s: float) -> void:
 	truck.global_position = p
 	truck.rotation.y = rot
 	(truck.get_child(0) as Node3D).scale = Vector3.ONE * s
+	await get_tree().process_frame
+	var cnt := 0
+	for c in truck.find_children("*", "MeshInstance3D", true, false):
+		if (c as MeshInstance3D).is_visible_in_tree():
+			cnt += 1
+	print("DBG TRUCK pos=", truck.global_position, " vis=", truck.is_visible_in_tree(), " meshes_vis=", cnt, " scale=", truck.get_child(0).scale, " par=", truck.get_parent().name, " par_vis=", (truck.get_parent() as Node3D).visible, " cam=", street.cam.global_position, " layers=", (truck.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D).layers, " cammask=", street.cam.cull_mask)
 	var b: Node3D = truck.get_child(0).get_node_or_null("box4")
 	if b:
 		b.visible = true

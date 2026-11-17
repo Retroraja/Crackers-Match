@@ -49,7 +49,7 @@ jobs:
           for t in area2; do
             timeout 420 xvfb-run -a -s "-screen 0 1280x1800x24" ../godot-bin --path . --rendering-driver opengl3 \
               --resolution 360x780 -- --t=$t --wait=1 --quit=1 --shots=$PWD/../shot-$t > ../log-$t.txt 2>&1 || true
-            echo "== $t"; grep -E -A2 "SCRIPT ERROR|Parse Error|Invalid|Nonexistent" ../log-$t.txt | grep -v "imported" | head -40 || true
+            echo "== $t"; grep -E "DBG" ../log-$t.txt | head; grep -E -A2 "SCRIPT ERROR|Parse Error|Invalid|Nonexistent" ../log-$t.txt | grep -v "imported" | head -40 || true
           done
       - name: Push screenshots to the ci-shots branch
         run: |
