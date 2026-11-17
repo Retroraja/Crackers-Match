@@ -5,7 +5,7 @@ class_name Sfx
 const NAMES := ["blastnew", "rocket", "chakra", "atom", "matchbox", "sparkler", "blast", "swap", "nope", "pop", "tick",
 	"thud", "swoosh", "win", "lose", "fanfare", "finale", "paper", "music", "lakshmi", "wala", "rail", "flowerpot", "skyshot", "brand",
 	"chime0", "chime1", "chime2", "coin0", "coin1", "coin2", "coin3", "coin4", "coin5", "coin6", "coin7", "coin8",
-	"bk_stone", "bk_knock", "bk_saw", "bk_plank", "bk_hum", "bk_rustle", "bk_dirt", "bk_cloth", "bk_done", "z_crackle", "z_zap"]
+	"bk_stone", "bk_knock", "bk_saw", "bk_plank", "bk_hum", "bk_rustle", "bk_dirt", "bk_cloth", "bk_done", "bk_hammer", "bk_thud", "bk_rise", "bk_tada", "z_crackle", "z_zap"]
 var mus_on := true
 var fx_on := true
 var _duck := 0.3
@@ -43,6 +43,17 @@ func _ready() -> void:
 # b30.js build sounds, matched to what is built (kind, length in seconds)
 func build_sound(kind: String, dur: float) -> void:
 	dur = clampf(dur, 0.8, 5.0)
+	# every build: a rising whoosh, then hammer blows with a heavy thud now and then (17 Nov: builds sounded too quiet)
+	play("bk_rise", 0.9, 1.0, 0.0)
+	var h := 0.18
+	var i := 0
+	while h < dur * 0.9:
+		if i % 4 == 3:
+			play("bk_thud", 1.0, randf_range(0.9, 1.1), h)
+		else:
+			play("bk_hammer", 0.85, randf_range(0.92, 1.12), h)
+		h += randf_range(0.2, 0.3)
+		i += 1
 	var t := 0.1
 	match kind:
 		"stone":

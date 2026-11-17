@@ -1189,6 +1189,10 @@ func _build_overlays() -> void:
 			open_modal(L.root, false)
 			_card_closed())
 		tap(L.node("lPlay"), _card_play)
+		# 30px taller card: room for the wide Golden Matchbox slot under the boosters
+		for ix in [2, 3, 4, 5]:
+			resize_box(L.nodes[ix], L.nodes[ix].size + Vector2(0, 30))
+		L.node("lPlay").position.y += 30
 		tap(L.node("lAd"), _card_ad)
 		ad_pad(L.node("lAd"))
 	# lose / failed / win / bonus end are full screens
@@ -1268,7 +1272,7 @@ func _build_overlays() -> void:
 	L_be.node("wfx").add_child(fw)
 	tap(L_be.node("beNext"), func():
 		fw.run(false)
-		home())
+		next_level())
 	# bonus card
 	L_bc = WebLayout.new()
 	L_bc.build("res://ui/bc30.json", stage)
@@ -1577,6 +1581,15 @@ func open_card(i: int) -> void:
 	set_t(hb.get_child(hb.get_child_count() - 1), str(i + 1))
 	if hard:
 		set_t(C.node("lName"), "Super Hard" if L.ltype == "s" else "Hard")
+		var hn := lbl(C.node("lName"))
+		if hn:
+			hn.position.x = 0
+			hn.size.x = C.node("lName").size.x
+			hn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			for ch in hn.get_children():
+				if ch is Label:
+					ch.size.x = hn.size.x
+					ch.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	else:
 		fit_pill(C.node("lName"), String(lvd.name))
 	set_t(C.node("lMoves"), "%d moves" % int(lvd.moves))
@@ -1660,7 +1673,9 @@ func gift_sb() -> void:
 	if ch:
 		save()
 
-func boosters(C: WebLayout) -> void:
+# tapped: "" = the card just opened (every booster pops in); otherwise only that booster reacts
+func boosters(C: WebLayout, tapped := "") -> void:
+	var first := tapped == ""
 	gift_sb()
 	set_t(C.node("lCoins"), str(S.coins))
 	var lb: Control = C.node("lBoost")
@@ -1702,7 +1717,7 @@ func boosters(C: WebLayout) -> void:
 				else:
 					pick[kk] = true
 				sfx.play("tick", 0.5)
-				boosters(C))
+				boosters(C, kk))
 		else:
 			c = sub(C, t_buy, lb)
 			var em2: Control = kid(c, "em")
@@ -1713,17 +1728,118 @@ func boosters(C: WebLayout) -> void:
 				add_inv(kk, 3)
 				pick[kk] = true
 				save()
-				boosters(C)
+				boosters(C, kk)
 			tap(c, func(): show_buy({"img": "crk:b%d" % IDX[kk], "title": LBL[kk] + " ×3", "text": SBD[kk], "price": PACK[kk], "ad": null, "buy": buy_f}))
 		c.position = Vector2(xs[i], 0)
 		set_img(kid(c, "img"), "crk:b%d" % IDX[k])
-		Anim.play(c, "pin2", 0.4, 0.0, "cubic-bezier(.3,1.6,.5,1)")
-	# golden matchbox, locked until level 100
-	var gold := sub(C, 49 if hard else 40, lb)
-	gold.position = Vector2(1, 86)
-	tap(gold, func(): sfx.play("nope"))
+		if first:
+			Anim.play(c, "pin2", 0.4, 0.0, "cubic-bezier(.3,1.6,.5,1)")
+		elif k == tapped:
+			c.pivot_offset = c.size / 2
+			c.scale = Vector2.ONE * 0.86
+			create_tween().tween_property(c, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	# golden matchbox, locked until level 100: its own wide, shiny slot so it is noticed
+	var gold := _gold_slot(lb, first, Vector2(1, 80))
+	tap(gold, func():
+		sfx.play("nope")
+		toast28("The Golden Matchbox unlocks at Level 100!"))
 	var a: Control = C.node("lAd")
 	a.visible = not sb_locked("rocket") and S.ads.get("card", "") != today()
+
+func _gold_slot(parent: Control, pop: bool, at: Vector2) -> Control:
+	var W := 298.0
+	var H := 58.0
+	var root := Control.new()
+	root.size = Vector2(W, H)
+	root.position = at
+	parent.add_child(root)
+	# soft gold glow behind, breathing
+	var glow := TextureRect.new()
+	glow.texture = AppFx.grad_tex([0.0, 0.6, 1.0], [Color(1, 0.85, 0.3, 0.75), Color(1, 0.7, 0.1, 0.25), Color(1, 0.6, 0, 0)], true)
+	glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	glow.stretch_mode = TextureRect.STRETCH_SCALE
+	glow.size = Vector2(W + 60, H + 46)
+	glow.position = Vector2(-30, -23)
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(glow)
+	var gt := glow.create_tween().set_loops()
+	gt.tween_property(glow, "modulate:a", 0.45, 0.9).set_trans(Tween.TRANS_SINE)
+	gt.tween_property(glow, "modulate:a", 1.0, 0.9).set_trans(Tween.TRANS_SINE)
+	var bx := WebLayout.box({"bg": [UISkin.lin([[0, "#FFF7C9"], [0.35, "#FFD84A"], [0.7, "#F5A623"], [1, "#D98200"]])], "rad": [20, 20, 20, 20],
+		"bw": [3, 3, 3, 3], "bcol": UISkin.rgba("#7A3B00"), "sh": [UISkin.sh(0, -4, 0, "#B86200", true), UISkin.sh(0, 4, 0, "#5A2A00"), UISkin.sh(0, 0, 14, "#FFD84A")]}, Vector2(W, H))
+	bx.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(bx)
+	# shine sweeping across
+	var clip := Control.new()
+	clip.clip_contents = true
+	clip.size = Vector2(W - 8, H - 8)
+	clip.position = Vector2(4, 4)
+	clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(clip)
+	var shine := TextureRect.new()
+	shine.texture = AppFx.grad_tex([0.0, 0.5, 1.0], [Color(1, 1, 1, 0), Color(1, 1, 1, 0.75), Color(1, 1, 1, 0)], false, Vector2(0, 0.5), Vector2(1, 0.5))
+	shine.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	shine.size = Vector2(44, H * 1.8)
+	shine.rotation = 0.35
+	shine.position = Vector2(-80, -H * 0.4)
+	shine.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	clip.add_child(shine)
+	var st := shine.create_tween().set_loops()
+	st.tween_property(shine, "position:x", W + 40, 0.9).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	st.tween_interval(1.4)
+	st.tween_callback(func(): shine.position.x = -80)
+	# the golden matchbox, gently bobbing
+	var ic := TextureRect.new()
+	ic.texture = WebLayout.tex("crk:b14")
+	ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	ic.size = Vector2(54, 54)
+	ic.position = Vector2(8, 2)
+	ic.pivot_offset = Vector2(28, 28)
+	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(ic)
+	var it := ic.create_tween().set_loops()
+	it.tween_property(ic, "rotation", 0.12, 0.8).set_trans(Tween.TRANS_SINE)
+	it.tween_property(ic, "rotation", -0.12, 0.8).set_trans(Tween.TRANS_SINE)
+	# twinkles
+	for p in [Vector2(56, 4), Vector2(10, 40), Vector2(W - 30, 6)]:
+		var tw := Label.new()
+		tw.text = "✦"
+		var ls := LabelSettings.new()
+		ls.font_size = 14
+		ls.font_color = Color(1, 1, 1)
+		tw.label_settings = ls
+		tw.position = p
+		tw.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(tw)
+		tw.pivot_offset = Vector2(6, 9)
+		var t2 := tw.create_tween().set_loops()
+		t2.tween_interval(randf() * 0.8)
+		t2.tween_property(tw, "scale", Vector2.ONE * 1.4, 0.4)
+		t2.tween_property(tw, "scale", Vector2.ONE * 0.3, 0.6)
+	var t := Label.new()
+	t.text = "Golden Matchbox"
+	var tl := LabelSettings.new()
+	tl.font = WebLayout.font("TitanOne")
+	tl.font_size = 21
+	tl.font_color = Color("#6B2A00")
+	tl.outline_size = 5
+	tl.outline_color = Color("#FFF6D0")
+	t.label_settings = tl
+	t.position = Vector2(72, 3)
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(t)
+	var pill := AppFx.badge("Unlocks at Level 100", Color("#C8102E"), Vector2(170, 22), WebLayout.font("Sora-700"), 12, 11, 2)
+	pill.position = Vector2(96, 31)
+	pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(pill)
+	var lk := sub(G, 59, root)
+	lk.scale = Vector2.ONE * 0.62
+	lk.position = Vector2(74, 29)
+	lk.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if pop:
+		Anim.play(root, "pin2", 0.4, 0.2, "cubic-bezier(.3,1.6,.5,1)")
+	return root
 
 func _pick_mark(c: Control) -> void:
 	var ring := Panel.new()
@@ -1779,8 +1895,9 @@ func _card_play() -> void:
 		pick = {})
 
 func _card_closed() -> void:
-	# stage 1: there is no street yet; a tap on the screen opens the card again
-	toast28("Tap to choose a level")
+	# the card's X goes home (from the street it simply closes)
+	if not screens.street.visible:
+		home()
 
 # ================================================================== banners
 func banner(k: String, cb) -> void:
@@ -1907,7 +2024,8 @@ func hide_hand() -> void:
 
 var _tick_t := 0.0
 func _ticker() -> void:
-	if game == null or game.b.is_empty() or game.stopped or game.busy or game.over or not screens.game.visible or L_ban.root.visible or ending:
+	# resting(): no cracker moving and nothing queued (busy can stay up while a glow effect plays out)
+	if game == null or game.b.is_empty() or game.stopped or not game.resting() or game.over or not screens.game.visible or L_ban.root.visible or ending:
 		return
 	if new_sp():
 		hide_hand()
@@ -2283,7 +2401,24 @@ func _win_next() -> void:
 	if (win_prev == 4 or win_prev == 9) and not S.bdone.has(str(n)):
 		bonus_card(n)
 		return
-	home()
+	next_level()
+
+# Next: straight to the next level's card. Only the very first win goes home once, for the Bakery lesson;
+# the Level 2 card then opens by itself when the Bakery is built.
+var card_after_build := false
+func next_level() -> void:
+	if win_prev == 0 and not S.get("tut", false):
+		card_after_build = true
+		home()
+		return
+	if int(S.lv) >= levels.size():
+		home()
+		return
+	deb.clear()
+	hide_hand()
+	game.stopped = true
+	show_screen("game")
+	open_card(int(S.lv))
 
 func _win_x2() -> void:
 	if wonC <= 0:
@@ -2319,7 +2454,7 @@ func bonus_level(n: int) -> Dictionary:
 	for i in 2:
 		pre.append([strip[i][0], strip[i][1], pk[i]])
 	return {"name": "Coin Blast", "bonus": n, "after": n * 5, "moves": 10, "colors": [0, 1, 2, 5], "goal": {"coin": cs.size()}, "val": 5,
-		"shape": sh, "ob": {"coin": cs}, "big": [], "hide": [], "pre": pre, "luck": 0.5, "teach": null, "idx": 0, "combo": null, "intro": [], "ltype": "n", "reward": null, "diyas": 1}
+		"shape": sh, "ob": {"coin": cs}, "big": [], "hide": [], "pre": pre, "luck": 0.5, "teach": null, "idx": 10, "combo": null, "intro": [], "ltype": "n", "reward": null, "diyas": 1}
 
 func bonus_card(n: int) -> void:
 	open_modal(L_bc.root, true)
@@ -2604,6 +2739,7 @@ func street_sfx(n: String) -> void:
 			sfx.chime(0)
 		"build": sfx.play("swoosh", 0.45)
 		"done":
+			sfx.play("bk_tada", 1.0)
 			sfx.play("pop", 0.5)
 			for i in 3:
 				sfx.play("chime%d" % i, 0.6, 1.0, 0.12 + i * 0.11)

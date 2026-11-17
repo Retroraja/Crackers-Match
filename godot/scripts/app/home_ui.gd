@@ -192,7 +192,8 @@ func show_home() -> void:
 		get_tree().create_timer(0.9).timeout.connect(func():
 			app.S.notif28 = 1
 			app.save()
-			notif.visible = true)
+			# only Android's own permission question, once (our card before it felt like asking twice)
+			app.ask_notify())
 
 func hide_home() -> void:
 	home.visible = false
@@ -310,12 +311,25 @@ func panel() -> void:
 		r.position.y = y
 		app.set_img(app.kid(r, "img"), "art/task-%d.webp" % (i + 1))
 		app.set_t(app.kid(r, "span"), T.n)
+		_wrap(app.kid(r, "span"), 128.0)
 		if first:
 			var bbs: Control = app.kid(r, "div")
 			var bdo: Control = app.kid(bbs, "button")
 			var ball: Control = app.kid(bbs, "button", 1)
 			if can:
 				app.set_t(bdo, "Build %d" % int(T.c))
+				# text in the left part, the diya on the right: no overlap
+				var bl: Label = app.lbl(bdo)
+				if bl:
+					bl.position.x = 4
+					bl.size.x = bdo.size.x - 34
+					bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+					for ch in bl.get_children():
+						if ch is Label:
+							ch.size.x = bl.size.x
+							ch.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+				if app.kid(bdo, "img"):
+					app.kid(bdo, "img").position.x = bdo.size.x - 32
 				ball.visible = nAll >= 2
 				app.set_t(ball, "Build All ×%d" % nAll)
 				app.tap(ball, func():
@@ -376,6 +390,9 @@ func _task_done(last: bool) -> void:
 		_area_won()
 	else:
 		get_tree().create_timer(0.25).timeout.connect(show_home)
+		if app.card_after_build:
+			app.card_after_build = false
+			get_tree().create_timer(0.9).timeout.connect(app.street_play)
 
 func _area_won() -> void:
 	get_tree().create_timer(1.6).timeout.connect(func():
@@ -521,3 +538,21 @@ func _fit_tip() -> void:
 			ch.size = l.size
 			ch.horizontal_alignment = l.horizontal_alignment
 			ch.vertical_alignment = l.vertical_alignment
+
+# a row title wraps inside its column and stays vertically centred on the picture
+func _wrap(c: Control, w: float) -> void:
+	var l: Label = app.lbl(c)
+	if l == null:
+		return
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.position.x = 0
+	l.size = Vector2(w, 10)
+	var h := float(maxi(1, l.get_line_count()) * l.get_line_height())
+	var cy := c.position.y + c.size.y / 2.0
+	c.size = Vector2(w, h)
+	c.position.y = cy - h / 2.0
+	l.size = Vector2(w, h)
+	for ch in l.get_children():
+		if ch is Label:
+			ch.autowrap_mode = l.autowrap_mode
+			ch.size = l.size

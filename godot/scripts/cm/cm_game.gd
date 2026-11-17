@@ -1119,6 +1119,20 @@ func calm(r: int, c: int, e: Dictionary) -> void:
 	if makes(r, c):
 		e.k = kk
 
+func resting() -> bool:
+	if not ev.is_empty():
+		return false
+	for r in R:
+		for c in C:
+			var e = b[r][c]
+			if e == null:
+				if not hole(r, c):
+					return false
+				continue
+			if e.fy > 0 or e.get("dead", false) or e.get("firing", false) or e.get("swp", false) or e.get("top", false):
+				return false
+	return true
+
 func settled() -> bool:
 	if not ev.is_empty():
 		return false
