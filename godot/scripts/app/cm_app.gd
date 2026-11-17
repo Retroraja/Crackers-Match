@@ -880,7 +880,7 @@ func _on_meter(n: int) -> void:
 		if not S.seen.has("b_meter"):
 			S.seen["b_meter"] = 1
 			save()
-			_after(0.7, func(): banner("meter", Callable()))
+			_after(0.7, func(): banner("meter", func(): _after(0.35, meter_demo)))
 
 func mk28() -> String:
 	var n: int = (int(cur) if not is_bonus() else S.lv) + 1
@@ -1007,7 +1007,16 @@ func drop(k: String) -> void:
 func drag_demo(k: String) -> void:
 	if not slot_nodes.has(k):
 		return
-	var sl: Control = slot_nodes[k]
+	_drag_demo_from(slot_nodes[k], k)
+
+# first full Cracker Meter: after the banner, the hand picks the cracker in the meter and drags it onto the board
+func meter_demo() -> void:
+	if mRew == null or drag != null or demo or game == null or game.over or ending:
+		return
+	toast28("Drag the cracker onto the board!")
+	_drag_demo_from(G.node("mRew"), mRew)
+
+func _drag_demo_from(sl: Control, k: String) -> void:
 	var a := sl.get_global_rect().get_center() - stage.global_position
 	var bpos := Vector2(195, game.cy(4) + 120)
 	ghost.texture = WebLayout.tex("crk:b%d" % IDX[k])

@@ -30,17 +30,26 @@ static func col(a) -> Color:
 	return Color(a[0], a[1], a[2], a[3])
 
 # SVG text by path ("svg/x.svg"). In the APK the raw .svg files are not packed (Godot imports them as textures),
-# so all of them are also kept in ui/svgs.json (made by tools: python, see build notes). File first, then the json.
+# so all of them are kept in ui/svgs.json (made by tools/pack_svgs.py). The json wins; the file is the fallback.
 static var _svgs = null
 static func svg_text(path: String) -> String:
-	var s := FileAccess.get_file_as_string("res://ui/" + path)
-	if s != "":
-		return s
 	if _svgs == null:
 		_svgs = JSON.parse_string(FileAccess.get_file_as_string("res://ui/svgs.json"))
 		if _svgs == null:
 			_svgs = {}
-	return _svgs.get(path, "")
+	if _svgs.has(path):
+		return _svgs[path]
+	return FileAccess.get_file_as_string("res://ui/" + path)
+
+# picture from svg_text(): SVG text, or "png:<base64>" for art that was drawn outside (soft shading)
+static func svg_img(s: String, sc: float) -> Image:
+	var img := Image.new()
+	var err: int
+	if s.begins_with("png:"):
+		err = img.load_png_from_buffer(Marshalls.base64_to_raw(s.substr(4)))
+	else:
+		err = img.load_svg_from_string(s, sc)
+	return img if err == OK else null
 
 static func tex(src: String) -> Texture2D:
 	if _tex.has(src):
@@ -49,8 +58,8 @@ static func tex(src: String) -> Texture2D:
 	if src.begins_with("ui:"):
 		var p0 := "res://ui/" + src.substr(3)
 		if p0.ends_with(".svg"):
-			var img := Image.new()
-			if img.load_svg_from_string(svg_text(src.substr(3)), 3.0) == OK:
+			var img := svg_img(svg_text(src.substr(3)), 3.0)
+			if img:
 				t = ImageTexture.create_from_image(img)
 		elif ResourceLoader.exists(p0):
 			t = load(p0)
@@ -72,15 +81,14 @@ static func svg_tex(path: String, w: float, h: float) -> Texture2D:
 	if _svg.has(key):
 		return _svg[key]
 	var s := svg_text(path)
-	var img := Image.new()
 	# render at 3x so it stays sharp on phones
 	var vb := 0.0
 	var m := RegEx.create_from_string("width=\"([0-9.]+)\"").search(s)
 	if m:
 		vb = float(m.get_string(1))
 	var sc := 3.0 * (w / vb if vb > 0.0 else 1.0)
-	var err := img.load_svg_from_string(s, clampf(sc, 0.5, 12.0))
-	var t: Texture2D = ImageTexture.create_from_image(img) if err == OK else null
+	var img := svg_img(s, clampf(sc, 0.5, 12.0))
+	var t: Texture2D = ImageTexture.create_from_image(img) if img else null
 	_svg[key] = t
 	return t
 
