@@ -29,6 +29,19 @@ static func col(a) -> Color:
 		return Color(0, 0, 0, 0)
 	return Color(a[0], a[1], a[2], a[3])
 
+# SVG text by path ("svg/x.svg"). In the APK the raw .svg files are not packed (Godot imports them as textures),
+# so all of them are also kept in ui/svgs.json (made by tools: python, see build notes). File first, then the json.
+static var _svgs = null
+static func svg_text(path: String) -> String:
+	var s := FileAccess.get_file_as_string("res://ui/" + path)
+	if s != "":
+		return s
+	if _svgs == null:
+		_svgs = JSON.parse_string(FileAccess.get_file_as_string("res://ui/svgs.json"))
+		if _svgs == null:
+			_svgs = {}
+	return _svgs.get(path, "")
+
 static func tex(src: String) -> Texture2D:
 	if _tex.has(src):
 		return _tex[src]
@@ -37,7 +50,7 @@ static func tex(src: String) -> Texture2D:
 		var p0 := "res://ui/" + src.substr(3)
 		if p0.ends_with(".svg"):
 			var img := Image.new()
-			if img.load_svg_from_string(FileAccess.get_file_as_string(p0), 3.0) == OK:
+			if img.load_svg_from_string(svg_text(src.substr(3)), 3.0) == OK:
 				t = ImageTexture.create_from_image(img)
 		elif ResourceLoader.exists(p0):
 			t = load(p0)
@@ -58,7 +71,7 @@ static func svg_tex(path: String, w: float, h: float) -> Texture2D:
 	var key := "%s@%d" % [path, int(w * 3)]
 	if _svg.has(key):
 		return _svg[key]
-	var s := FileAccess.get_file_as_string("res://ui/" + path)
+	var s := svg_text(path)
 	var img := Image.new()
 	# render at 3x so it stays sharp on phones
 	var vb := 0.0
