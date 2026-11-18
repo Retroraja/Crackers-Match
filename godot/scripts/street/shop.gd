@@ -101,7 +101,7 @@ func label(text: String, pos: Vector3, size: int, col: Color, par: Node3D = self
 	return l
 
 # a flat signboard: coloured board, gold frame, text
-func sign(text: String, w: float, h: float, pos: Vector3, bg: Color, fg: Color, sub := "") -> Node3D:
+func signboard(text: String, w: float, h: float, pos: Vector3, bg: Color, fg: Color, sub := "") -> Node3D:
 	var g := Node3D.new()
 	g.position = pos
 	add_child(g)
@@ -191,7 +191,7 @@ func build() -> void:
 	# front: fascia, pillars, old blank board, rusty shutter, cracked step, old boxes
 	O.fascia = box(Vector3(8.5, 1.5, 0.4), Vector3(0, 4.65, -0.15), Color("#6b5444"))
 	O.pl = [box(Vector3(0.4, 3.95, 0.45), Vector3(-4.1, 1.97, -0.05), Color("#7b5a44")), box(Vector3(0.4, 3.95, 0.45), Vector3(4.1, 1.97, -0.05), Color("#7b5a44"))]
-	O.old_board = sign("", 7.6, 1.0, Vector3(0, 4.65, 0.08), Color("#5d4535"), Color.BLACK)
+	O.old_board = signboard("", 7.6, 1.0, Vector3(0, 4.65, 0.08), Color("#5d4535"), Color.BLACK)
 	var sh := MeshInstance3D.new()
 	var q := QuadMesh.new()
 	q.size = Vector2(7.8, 3.7)
@@ -219,7 +219,7 @@ func build() -> void:
 		box(Vector3(0.7, 0.9, 0.03), Vector3(-2.4 + i * 1.5, 8.0 - sin((i + 1) / 5.0 * PI) * 0.45, 0.4), cloth[i])
 	# left neighbour: textile shop
 	kit(CITY % "detail-awning-wide", Vector3(-8.9, 0, -0.4), 12.0, 0.0, Color("#E85D3B"), true)
-	sign("LAKSHMI TEXTILES", 7.6, 1.0, Vector3(-8.9, 4.7, 0.02), Color("#b3171e"), Color("#ffe9a8"))
+	signboard("LAKSHMI TEXTILES", 7.6, 1.0, Vector3(-8.9, 4.7, 0.02), Color("#b3171e"), Color("#ffe9a8"))
 	var cl := [Color("#E84A5F"), Color("#F6C453"), Color("#2E86DE"), Color("#7B3FBF"), Color("#2EAD5B"), Color("#FF7A1A")]
 	for i in 6:
 		var c := MeshInstance3D.new()
@@ -234,7 +234,7 @@ func build() -> void:
 	box(Vector3(4, 0.9, 1.2), Vector3(-7.4, 0.45, 1.0), Color("#8a5a3c"))
 	# right neighbour: steel vessels
 	kit(CITY % "detail-awning-wide", Vector3(8.9, 0, -0.4), 12.0, 0.0, Color("#2E86DE"), true)
-	sign("MURUGAN STORES", 7.6, 1.0, Vector3(8.9, 4.7, 0.02), Color("#1f4f9e"), Color("#fff1c4"), "STEEL · BRASS · VESSELS")
+	signboard("MURUGAN STORES", 7.6, 1.0, Vector3(8.9, 4.7, 0.02), Color("#1f4f9e"), Color("#fff1c4"), "STEEL · BRASS · VESSELS")
 	for i in 7:
 		var v := MeshInstance3D.new()
 		var vc := CylinderMesh.new()
@@ -245,8 +245,8 @@ func build() -> void:
 		v.material_override = mat(Color("#d9dde3"), 0.25, 0.9)
 		v.position = Vector3(6.4 + i * 0.72, 0.33, 1.1)
 		add_child(v)
-	sign("KAAPI BAR", 6.0, 1.0, Vector3(-20.5, 4.7, 0.02), Color("#2e7d4f"), Color("#fff3c4"))
-	sign("SRI GANESH SWEETS", 6.5, 1.0, Vector3(17.5, 4.7, 0.02), Color("#d35400"), Color("#fff3c4"))
+	signboard("KAAPI BAR", 6.0, 1.0, Vector3(-20.5, 4.7, 0.02), Color("#2e7d4f"), Color("#fff3c4"))
+	signboard("SRI GANESH SWEETS", 6.5, 1.0, Vector3(17.5, 4.7, 0.02), Color("#d35400"), Color("#fff3c4"))
 	for b in [[-11.8, Color("#E84A5F"), "SAREES"], [-6.6, Color("#F6C453"), "SILK"], [6.4, Color("#2E86DE"), "VESSELS"], [11.4, Color("#2EAD5B"), "KAAPI"]]:
 		var bn := box(Vector3(1.1, 4.4, 0.04), Vector3(b[0], 8.4, 0.35), b[1])
 		var t := ""
@@ -267,7 +267,7 @@ func build() -> void:
 
 # ---------------------------------------------------------------- build parts (hidden until built)
 func _build_parts() -> void:
-	O.sign = sign("GHILLI CRACKERS", 7.6, 1.05, Vector3(0, 4.65, 0.1), Color("#c0161f"), Color("#ffe27a"))
+	O.sign = signboard("GHILLI CRACKERS", 7.6, 1.05, Vector3(0, 4.65, 0.1), Color("#c0161f"), Color("#ffe27a"))
 	var tm := StandardMaterial3D.new()
 	tm.albedo_texture = tex_tiles()
 	tm.uv1_triplanar = true
