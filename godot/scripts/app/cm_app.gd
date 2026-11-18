@@ -3244,6 +3244,8 @@ func _dev(a: Dictionary) -> void:
 		await get_tree().create_timer(19.0).timeout
 		if a.has("shots"):
 			get_viewport().get_texture().get_image().save_png(a.shots + "-1-outside.png")
+			var fz: MeshInstance3D = street.shop.O.fascia
+			print("DBG fascia vis=", fz.is_visible_in_tree(), " pos=", fz.global_position, " mat=", fz.material_override, " col=", (fz.material_override as StandardMaterial3D).albedo_color, " transp=", (fz.material_override as StandardMaterial3D).transparency, " layers=", fz.layers, " par=", fz.get_parent().name, " par_vis=", (fz.get_parent() as Node3D).visible)
 			print("DBG area=", street.area, " step=", street.step, " camP=", street.camP, " camL=", street.camL, " cam=", street.cam.global_position, " shop=", street.shop.global_position if street.shop else null)
 		home_ui.hide_home()
 		street.do_task(true)

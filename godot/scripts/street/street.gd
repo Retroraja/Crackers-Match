@@ -395,7 +395,7 @@ func set_area(a: int) -> void:
 	busy = false
 	step = 0
 	# indoors: crisper edges (2x MSAA), warm ambient light, no distance fog
-	get_viewport().msaa_3d = Viewport.MSAA_2X
+	# (MSAA left off: with it, code-made boxes vanished in tests)
 	env.fog_enabled = false
 	env.ambient_light_color = Color("#ffe2c4")
 	env.ambient_light_energy = 0.6
