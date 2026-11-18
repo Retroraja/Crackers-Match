@@ -199,7 +199,8 @@ func _world() -> void:
 	sun = DirectionalLight3D.new()
 	sun.light_color = Color("#ffb070")
 	sun.light_energy = 1.3
-	sun.shadow_enabled = not lite
+	# no real-time shadows on phones (they draw the whole street a second time)
+	sun.shadow_enabled = not lite and not OS.has_feature("mobile")
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
 	sun.directional_shadow_max_distance = 70
 	sun.shadow_bias = 0.05
@@ -322,7 +323,10 @@ func _inst() -> void:
 		done[key] = true
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.mesh = load("res://street/kit/%s.res" % it.piece)
+		# lighter copies of the trees, stones and flowers (street/kit_lo, made with Godot's simplifier, 18 Nov):
+		# the village had 2.75 M triangles in these, now 0.89 M
+		var lo := "res://street/kit_lo/%s.res" % it.piece
+		mm.mesh = load(lo if ResourceLoader.exists(lo) else "res://street/kit/%s.res" % it.piece)
 		mm.instance_count = it.list.size()
 		for i in it.list.size():
 			mm.set_instance_transform(i, M(it.list[i]))
@@ -383,7 +387,6 @@ func set_area(a: int) -> void:
 		shop = ShopArea.new()
 		shop.st = self
 		add_child(shop)
-		shop.build()
 		# option A (18 Nov): the street view made of .glb models; the old code-made shop stays hidden for now
 		bazaar = Bazaar.new()
 		bazaar.st = self

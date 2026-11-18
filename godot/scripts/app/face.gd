@@ -70,9 +70,19 @@ func _process(dt: float) -> void:
 	look += (lk - look) * minf(1.0, dt * 6)
 	if bounce > 0:
 		bounce = maxf(0.0, bounce - dt * 2.2)
-	queue_redraw()
+	# redraw ~20 times a second (it was every frame: the biggest script cost in levels and the story)
+	_rd += dt
+	if _rd >= 0.05 or bl > 0:
+		_rd = 0.0
+		queue_redraw()
 
+var _rd := 0.0
 func _draw() -> void:
+	var _t0 := Time.get_ticks_usec()
+	_draw_f()
+	CMGame.perf_add("face", Time.get_ticks_usec() - _t0)
+
+func _draw_f() -> void:
 	if pen == null:
 		return
 	var c := pen

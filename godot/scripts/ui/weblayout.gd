@@ -5,6 +5,83 @@ extends RefCounted
 class_name WebLayout
 
 const BOX := preload("res://scripts/ui/box.gdshader")
+const BAKED := preload("res://scripts/ui/baked.gdshader")
+
+# ---------------------------------------------------------------- painted once (18 Nov speed fix)
+# The CSS box shader (rounded corners, gradients, borders, soft shadows) is heavy per pixel. A level had 68 of
+# them covering 4.3 screens, every frame. Now each box is painted ONCE into a picture in a hidden SubViewport,
+# then shown with a plain picture shader. resize_box / set_bg / reskin call bake() again after a change.
+const BAKE_SCALE := 2.0
+static var _bk: Node
+static var _bq: Array = []
+static func bake(cr: ColorRect) -> void:
+	if OS.get_cmdline_user_args().has("--nobake=1"):
+		return
+	if cr == null or not is_instance_valid(cr) or not (cr.material is ShaderMaterial):
+		return
+	var m: ShaderMaterial = cr.material
+	m.shader = BOX
+	if not _bq.has(cr):
+		_bq.append(cr)
+	if _bk == null or not is_instance_valid(_bk):
+		_bk = Node.new()
+		_bk.name = "BoxBaker"
+		(Engine.get_main_loop() as SceneTree).root.add_child.call_deferred(_bk)
+		_bake_loop.call_deferred()
+
+static func _bake_loop() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	while true:
+		await tree.process_frame
+		if _bq.is_empty() or not _bk.is_inside_tree():
+			continue
+		# only boxes that are on screen now are painted (hidden screens wait), 12 per frame
+		var batch: Array = []
+		var rest: Array = []
+		for cr in _bq:
+			if not is_instance_valid(cr):
+				continue
+			if batch.size() < 12 and cr.is_visible_in_tree():
+				batch.append(cr)
+			else:
+				rest.append(cr)
+		_bq = rest
+		var jobs := []
+		for cr in batch:
+			if cr.size.x < 1 or cr.size.y < 1:
+				continue
+			var k := minf(BAKE_SCALE, 2048.0 / maxf(cr.size.x, cr.size.y))
+			var vp := SubViewport.new()
+			vp.transparent_bg = true
+			vp.disable_3d = true
+			vp.size = Vector2i(ceili(cr.size.x * k), ceili(cr.size.y * k))
+			vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+			var c2 := ColorRect.new()
+			c2.size = cr.size
+			c2.scale = Vector2(k, k)
+			var m2: ShaderMaterial = (cr.material as ShaderMaterial).duplicate()
+			m2.shader = BOX
+			c2.material = m2
+			vp.add_child(c2)
+			_bk.add_child(vp)
+			jobs.append([cr, vp, cr.size])
+		if jobs.is_empty():
+			continue
+		await RenderingServer.frame_post_draw
+		await RenderingServer.frame_post_draw
+		for j in jobs:
+			var cr: ColorRect = j[0]
+			var vp: SubViewport = j[1]
+			if is_instance_valid(cr) and cr.size == j[2] and not _bq.has(cr):
+				var img := vp.get_texture().get_image()
+				# an empty picture means the viewport did not draw yet: try again later, keep the live shader
+				if img and img.is_invisible():
+					_bq.append(cr)
+				elif img:
+					var m: ShaderMaterial = cr.material
+					m.shader = BAKED
+					m.set_shader_parameter("baked", ImageTexture.create_from_image(img))
+			vp.queue_free()
 const TGRAD := preload("res://scripts/ui/textgrad.gdshader")
 static var _fonts := {}
 static var _svg := {}
@@ -216,6 +293,7 @@ static func box(b: Dictionary, sz: Vector2) -> ColorRect:
 	cr.size = sz + Vector2(m * 2, m * 2)
 	var mat := ShaderMaterial.new()
 	mat.shader = BOX
+	cr.ready.connect(func(): bake(cr), CONNECT_ONE_SHOT)
 	mat.set_shader_parameter("size", sz)
 	mat.set_shader_parameter("margin", m)
 	var rad: Array = b.get("rad", [0, 0, 0, 0])

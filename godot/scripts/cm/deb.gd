@@ -121,14 +121,29 @@ func _draw() -> void:
 	_draw2()
 	CMGame.perf_add("deb", Time.get_ticks_usec() - _t0)
 
+# goal done (18 Nov): pieces still flying fade out quickly, so the win text comes on a clean board
+var fade_t := -1.0
+func fade_all() -> void:
+	if not P.is_empty() or not SM.is_empty():
+		fade_t = 0.0
+
 func _draw2() -> void:
-	var dt := minf(get_process_delta_time(), 0.04)
+	var dt := minf(get_process_delta_time(), 0.1)
+	var fa := 1.0
+	if fade_t >= 0.0:
+		fade_t += dt
+		fa = clampf(1.0 - fade_t / 0.35, 0.0, 1.0)
+		if fa <= 0.0:
+			P.clear()
+			SM.clear()
+			fade_t = -1.0
+			return
 	var t := Time.get_ticks_msec() / 1000.0
 	var keep: Array = []
 	for p in P:
-		p.vy += p.g * dt
+		p.vy += p.g * dt * 1.5
 		p.age += dt
-		if p.age > 3.0:
+		if p.age > 1.8:
 			continue
 		var drag: float = p.get("drag", 0.0)
 		if drag > 0.0:
@@ -143,7 +158,7 @@ func _draw2() -> void:
 		if p.y > 904.0:
 			continue
 		keep.append(p)
-		var al := clampf((1.1 - p.age) / 0.4, 0.0, 1.0) if drag > 0.0 else 1.0
+		var al := (clampf((1.1 - p.age) / 0.4, 0.0, 1.0) if drag > 0.0 else clampf((1.8 - p.age) / 0.3, 0.0, 1.0)) * fa
 		draw_set_transform(Vector2(p.x, p.y), p.rot, Vector2.ONE)
 		if p.has("img"):
 			draw_colored_polygon(p.pts, Color(1, 1, 1, al), p.uvs, p.img)
@@ -172,7 +187,7 @@ func _draw2() -> void:
 		var f: float = p.age / p.life
 		keep2.append(p)
 		draw_set_transform(Vector2(p.x, p.y), p.rot, Vector2.ONE)
-		draw_colored_polygon(p.pts, Color(1, 1, 1, 1.0 - f * f), p.uvs, p.img)
+		draw_colored_polygon(p.pts, Color(1, 1, 1, (1.0 - f * f) * fa), p.uvs, p.img)
 	SM = keep2
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 

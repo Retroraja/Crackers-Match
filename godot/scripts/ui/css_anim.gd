@@ -75,6 +75,11 @@ func stop(c: CanvasItem, reset := false) -> void:
 		c.modulate.a = b[3]
 
 func _process(dt: float) -> void:
+	var _t0 := Time.get_ticks_usec()
+	_process_a(dt)
+	CMGame.perf_add("css_anim", Time.get_ticks_usec() - _t0)
+
+func _process_a(dt: float) -> void:
 	if live.is_empty():
 		return
 	for a in live.duplicate():

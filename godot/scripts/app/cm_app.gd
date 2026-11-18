@@ -288,7 +288,8 @@ func set_perf_step(n: int) -> void:
 		street.lite = lite
 		if street.sun:
 			street.sun.shadow_enabled = perf_step == 0 and not lite
-	get_viewport().scaling_3d_scale = [1.0, 0.8, 0.65][perf_step]
+	# slow phones: steady 30 fps (less heat, even frames); the game clock keeps real time
+	Engine.max_fps = 30 if perf_step >= 1 else 0
 	if street and street.bazaar:
 		street.bazaar.set_busy(perf_step < 2)
 
@@ -392,6 +393,7 @@ static func resize_box(c: Control, sz: Vector2) -> void:
 		var m := -b.position.x
 		b.size = sz + Vector2(m * 2, m * 2)
 		b.material.set_shader_parameter("size", sz)
+		WebLayout.bake(b)
 
 func set_img(c: Control, src: String) -> void:
 	var t := img_of(c)
@@ -410,6 +412,7 @@ func set_bg(c: Control, col: Color) -> void:
 		b.material.set_shader_parameter("bgc", col)
 		b.material.set_shader_parameter("g0_type", 0)
 		b.material.set_shader_parameter("g1_type", 0)
+		WebLayout.bake(b)
 
 # build data[idx] and everything under it as a new copy under `parent`
 func sub(lay: WebLayout, idx: int, parent: Control) -> Control:
@@ -2296,6 +2299,8 @@ func level_done(mv: int) -> void:
 	endMv = mv
 	ending = true
 	end_t0 = now()
+	if deb:
+		deb.fade_all()
 	game.no_match = true
 	hide_hand()
 	sfx.play("fanfare", 0.85)
@@ -3057,12 +3062,41 @@ func ask_notify() -> void:
 # ================================================================== frame
 var _pf_t := 0.0
 var _pf_n := 0
+var _pf_f0 := 0
 func _process(dt: float) -> void:
 	if OS.get_cmdline_user_args().has("--perf=1"):
 		_pf_t += dt
 		if _pf_t > 2.0:
 			_pf_t = 0.0
 			_pf_n += 1
+			var ks := CMGame.PERF.keys()
+			var out := []
+			for k in ks:
+				var a: Array = CMGame.PERF[k]
+				out.append("%s=%.1fms/f(x%d)" % [k, a[0] / 1000.0 / maxf(1, Engine.get_frames_drawn() - _pf_f0), a[1]])
+			var nb := 0
+			var area := 0.0
+			var nf := 0
+			for n in get_tree().root.find_children("*", "CanvasItem", true, false):
+				var ci := n as CanvasItem
+				if ci.material is ShaderMaterial and ci.is_visible_in_tree():
+					nb += 1
+					if ci is Control:
+						area += (ci as Control).size.x * (ci as Control).size.y * (ci as Control).get_global_transform().get_scale().x * (ci as Control).get_global_transform().get_scale().y
+			if OS.get_cmdline_user_args().has("--bigbox=1"):
+				var big := []
+				for n in get_tree().root.find_children("*", "Control", true, false):
+					var c := n as Control
+					if c.material is ShaderMaterial and c.is_visible_in_tree():
+						var sc := c.get_global_transform().get_scale()
+						big.append([c.size.x * c.size.y * sc.x * sc.y / (390.0 * 844.0), str(c.get_path()).right(70), c.modulate.a * c.get_parent().modulate.a])
+				big.sort_custom(func(x, y): return x[0] > y[0])
+				for e in big.slice(0, 12):
+					print("BIG %.2f a=%.2f %s" % [e[0], e[2], e[1]])
+			print("SHADERS visible=%d screen_area=%.1f screens" % [nb, area / (390.0 * 844.0)])
+			print("CPU ", " ".join(out), " frames=", Engine.get_frames_drawn() - _pf_f0)
+			CMGame.PERF.clear()
+			_pf_f0 = Engine.get_frames_drawn()
 			print("PERF proc=%.1fms draws=%d objs=%d prims=%d tex=%dMB" % [Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME), Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576])
 	_auto_lite(dt)
 	_later_tick(dt)
@@ -3254,6 +3288,8 @@ func _dev(a: Dictionary) -> void:
 		get_viewport().get_texture().get_image().save_png(a.shots + "-3.png")
 		get_tree().quit()
 	elif t == "auto":
+		if a.has("maxfps"):
+			Engine.max_fps = int(a.maxfps)
 		# plays levels by itself: hint moves until the level ends, then Next / Try again, for N levels
 		var n_lv := int(a.get("n", 2))
 		open_modal(L_card.root, false)

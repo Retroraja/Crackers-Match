@@ -53,26 +53,27 @@ func light() -> void:
 	# the photo sky lights the scene too (ambient from the sky), with a warm late-afternoon sun
 	var sky := Sky.new()
 	var pm := PanoramaSkyMaterial.new()
-	pm.panorama = load("res://art/a2/sky/kloofendal_48d_partly_cloudy_puresky_1k.hdr")
-	pm.energy_multiplier = 1.25
+	# a plain sky picture (18 Nov): the photo sky turned into a normal jpg, no HDR work on phones
+	pm.panorama = load("res://art/a2/sky/sky_ldr.jpg")
+	pm.energy_multiplier = 1.0
 	sky.sky_material = pm
 	var env: Environment = st.env
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.sky_rotation = Vector3(0, deg_to_rad(SKYR), 0)
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.9
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.tonemap_exposure = 1.05
-	env.tonemap_white = 6.0
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color("#c8d4ea")
+	env.ambient_light_energy = 0.85
+	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+	env.tonemap_exposure = 1.0
 	env.fog_enabled = true
 	env.fog_light_color = Color("#cfe0f0")
 	env.fog_depth_begin = 60
 	env.fog_depth_end = 220
 	var sun: DirectionalLight3D = st.sun
 	sun.light_color = Color("#fff0d8")
-	sun.light_energy = 1.6
-	sun.shadow_enabled = not st.lite
+	sun.light_energy = 1.15
+	sun.shadow_enabled = not st.lite and not OS.has_feature("mobile")
 	sun.directional_shadow_max_distance = 80
 	sun.rotation = Vector3(deg_to_rad(-42), deg_to_rad(-35), 0)
 
@@ -125,6 +126,9 @@ func build() -> void:
 	person("male-b", Vector3(-2, 0.18, 17.2), -PI / 2, "walk", -1.2)
 	person("female-e", Vector3(6, 0.18, 17.6), PI / 2, "walk", 1.0)
 	parts()
+	merge_static()
+	if OS.has_feature("mobile"):
+		set_busy(false)
 
 # ---------------------------------------------------------------- builds
 var O := {}
@@ -351,6 +355,51 @@ func _firework(at: Vector3) -> void:
 
 func fx_part(at: Vector3, v: Vector3, col: Color) -> void:
 	st.fx.part(false, at, {"s0": 0.9, "s1": 0.6, "col": col, "add": true, "v": v, "g": 2.0, "d": 1.8})
+
+# glue every part that never moves (road, shops, poles, wires, trees, parked cars...) into one mesh per
+# material: the street went from ~620 drawing steps per frame to ~150 (18 Nov speed fix)
+func merge_static() -> void:
+	var skip := {}
+	for k in O:
+		var v = O[k]
+		for o in (v if v is Array else [v]):
+			if o is Node:
+				skip[o] = true
+	for w in walkers:
+		skip[w.o] = true
+	for m in movers:
+		skip[m.o] = true
+	var groups := {}
+	var olds := []
+	for c in get_children():
+		if not (c is Node3D) or skip.has(c) or not (c as Node3D).visible:
+			continue
+		var mis := c.find_children("*", "MeshInstance3D", true, false)
+		if c is MeshInstance3D:
+			mis.append(c)
+		if mis.is_empty() or not c.find_children("*", "Skeleton3D", true, false).is_empty():
+			continue
+		for mi in mis:
+			var m3 := mi as MeshInstance3D
+			if m3.mesh == null or not m3.is_visible_in_tree():
+				continue
+			for si in m3.mesh.get_surface_count():
+				var mat := m3.get_active_material(si)
+				if not groups.has(mat):
+					groups[mat] = SurfaceTool.new()
+				(groups[mat] as SurfaceTool).append_from(m3.mesh, si, m3.global_transform)
+		olds.append(c)
+	var am := ArrayMesh.new()
+	for mat in groups:
+		var stl: SurfaceTool = groups[mat]
+		am = stl.commit(am)
+		am.surface_set_material(am.get_surface_count() - 1, mat)
+	var big := MeshInstance3D.new()
+	big.name = "merged"
+	big.mesh = am
+	add_child(big)
+	for c in olds:
+		c.queue_free()
 
 var busy_on := true
 # fewer moving people and cars on slow phones (quality step 2)
