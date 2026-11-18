@@ -53,7 +53,7 @@ func light() -> void:
 	# the photo sky lights the scene too (ambient from the sky), with a warm late-afternoon sun
 	var sky := Sky.new()
 	var pm := PanoramaSkyMaterial.new()
-	pm.panorama = load("res://art/a2/sky/kloofendal_48d_partly_cloudy_puresky_2k.hdr")
+	pm.panorama = load("res://art/a2/sky/kloofendal_48d_partly_cloudy_puresky_1k.hdr")
 	pm.energy_multiplier = 1.25
 	sky.sky_material = pm
 	var env: Environment = st.env
@@ -72,7 +72,7 @@ func light() -> void:
 	var sun: DirectionalLight3D = st.sun
 	sun.light_color = Color("#fff0d8")
 	sun.light_energy = 1.6
-	sun.shadow_enabled = true
+	sun.shadow_enabled = not st.lite
 	sun.directional_shadow_max_distance = 80
 	sun.rotation = Vector3(deg_to_rad(-42), deg_to_rad(-35), 0)
 
@@ -351,6 +351,15 @@ func _firework(at: Vector3) -> void:
 
 func fx_part(at: Vector3, v: Vector3, col: Color) -> void:
 	st.fx.part(false, at, {"s0": 0.9, "s1": 0.6, "col": col, "add": true, "v": v, "g": 2.0, "d": 1.8})
+
+var busy_on := true
+# fewer moving people and cars on slow phones (quality step 2)
+func set_busy(on: bool) -> void:
+	busy_on = on
+	for i in walkers.size():
+		(walkers[i].o as Node3D).visible = on or i == 0
+	for i in movers.size():
+		(movers[i].o as Node3D).visible = on or i == 0
 
 func _process(dt: float) -> void:
 	if fan_on and O.has("fan"):

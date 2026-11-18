@@ -1428,7 +1428,15 @@ func _is_hole(r: int, c: int) -> bool:
 # ------------------------------------------------------------------ frame
 func _process(delta: float) -> void:
 	var _t0 := Time.get_ticks_usec()
-	_process2(delta)
+	# real time on every phone (18 Nov): a slow frame is split into small steps instead of being cut,
+	# so swaps, falls and blasts take the same time at 15 fps as at 60 fps (no slow motion)
+	var d := minf(delta, 0.12)
+	var n := maxi(1, ceili(d / 0.034))
+	var fd := 0.0
+	for i in n:
+		_process2(d / n)
+		fd += frame_dt
+	frame_dt = fd
 	perf_add("logic", Time.get_ticks_usec() - _t0)
 
 func _process2(delta: float) -> void:

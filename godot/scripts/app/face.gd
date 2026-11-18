@@ -47,7 +47,7 @@ func calm() -> void:
 	base = "idle"
 
 func _process(dt: float) -> void:
-	dt = minf(dt, 0.05)
+	dt = minf(dt, 0.12)
 	t += dt
 	if mt > 0:
 		mt -= dt

@@ -16,7 +16,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func _process(dt: float) -> void:
-	_dt = minf(dt, 0.04)
+	_dt = minf(dt, 0.12)
 	t += _dt
 	queue_redraw()
 

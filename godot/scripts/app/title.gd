@@ -186,7 +186,7 @@ class SceneFx extends Control:
 	func _process(dt: float) -> void:
 		if not run or not is_visible_in_tree():
 			return
-		dt = minf(dt, 0.05)
+		dt = minf(dt, 0.12)
 		t += dt
 		var W := size.x
 		var H := size.y

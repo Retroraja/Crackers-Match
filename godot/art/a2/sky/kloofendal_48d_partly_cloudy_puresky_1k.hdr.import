@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cebbw0dkulx0"
-path="res://.godot/imported/kloofendal_48d_partly_cloudy_puresky_2k.hdr-da9d69f134f75db332eaa2e2b55dfafa.ctex"
+uid="uid://cawbw81o748dr"
+path="res://.godot/imported/kloofendal_48d_partly_cloudy_puresky_1k.hdr-251eee04f511ec4d69b3d088f38fb7d4.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/a2/sky/kloofendal_48d_partly_cloudy_puresky_2k.hdr"
-dest_files=["res://.godot/imported/kloofendal_48d_partly_cloudy_puresky_2k.hdr-da9d69f134f75db332eaa2e2b55dfafa.ctex"]
+source_file="res://art/a2/sky/kloofendal_48d_partly_cloudy_puresky_1k.hdr"
+dest_files=["res://.godot/imported/kloofendal_48d_partly_cloudy_puresky_1k.hdr-251eee04f511ec4d69b3d088f38fb7d4.ctex"]
 
 [params]
 

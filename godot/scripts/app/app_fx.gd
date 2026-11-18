@@ -80,7 +80,7 @@ class Chakra extends Control:
 	func _process(dt: float) -> void:
 		if not on:
 			return
-		dt = minf(dt, 0.04)
+		dt = minf(dt, 0.12)
 		rot += dt * 0.9
 		var cs := ["#FFE27A", "#FFFFFF", "#FFB020", "#FF7AD8"]
 		for i in 4:
@@ -238,7 +238,7 @@ class Fireworks extends Control:
 	func _process(dt: float) -> void:
 		if not is_visible_in_tree():
 			return
-		dt = minf(dt, 0.04)
+		dt = minf(dt, 0.12)
 		if auto:
 			nx -= dt
 			if nx <= 0:

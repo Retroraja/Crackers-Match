@@ -149,6 +149,10 @@ func _ready() -> void:
 	levels = Levels.all()
 	load_save()
 	lite = _weak_phone()
+	if FileAccess.file_exists("user://perf"):
+		perf_step = int(FileAccess.get_file_as_string("user://perf"))
+	elif lite:
+		perf_step = 1
 	sfx = Sfx.new()
 	add_child(sfx)
 	_ads_init()
@@ -175,21 +179,27 @@ func _ready() -> void:
 	sky.stretch_mode = TextureRect.STRETCH_SCALE
 	sky.set_anchors_preset(Control.PRESET_FULL_RECT)
 	sky_layer.add_child(sky)
+	if OS.get_cmdline_user_args().has("--perf=1"): print("TEXMEM before_street %d MB" % (Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576))
 	street = Street.new()
 	street.lite = lite
 	add_child(street)
+	if OS.get_cmdline_user_args().has("--perf=1"): print("TEXMEM after_street %d MB" % (Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576))
 	# Area 1 build costs for 30 levels (35 diyas): rising from 1 to 6
 	for i in mini(A1_COST.size(), street.TASKS.size()):
 		street.TASKS[i].c = A1_COST[i]
 	if int(S.get("area", 1)) == 2:
 		street.set_area(2)
 	_build_game()
+	call_deferred("set_perf_step", perf_step)
+	if OS.get_cmdline_user_args().has("--perf=1"): print("TEXMEM after_game %d MB" % (Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576))
 	home_ui = HomeUI.new()
 	stage.add_child(home_ui)
 	home_ui.build(self, street)
 	screens["street"] = home_ui
 	fly_layer = _layer("fly")
+	if OS.get_cmdline_user_args().has("--perf=1"): print("TEXMEM after_home %d MB" % (Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576))
 	_build_overlays()
+	if OS.get_cmdline_user_args().has("--perf=1"): print("TEXMEM after_overlays %d MB" % (Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576))
 	top_layer = _layer("top")
 	ghost = TextureRect.new()
 	ghost.size = Vector2(90, 110)
@@ -240,25 +250,47 @@ func _weak_phone() -> bool:
 			return true
 	return false
 
+# self-adjusting quality (18 Nov): on EVERY screen the game watches its own frame time. If any phone averages
+# slower than ~40 fps for 3 s it steps down (remembered in user://perf):
+#   step 1: light effects (fewer pieces, no glow), no 3D shadows, 3D street drawn at 75% resolution
+#   step 2: 3D street at 55% resolution, fewer people and cars moving
+# No phone list is needed: the phone's own speed decides.
+var perf_step := 0
 var _ft_n := 0
 var _ft_t := 0.0
 func _auto_lite(dt: float) -> void:
-	if lite or not game.visible or game.stopped:
+	if perf_step >= 2 or dt > 0.5:
 		return
-	if dt < 0.2:
-		_ft_n += 1
-		_ft_t += dt
-	if _ft_n >= 150:
-		if _ft_t / _ft_n > 0.024:
-			lite = true
+	_ft_n += 1
+	_ft_t += dt
+	if _ft_t < 3.0:
+		return
+	var avg := _ft_t / _ft_n
+	_ft_n = 0
+	_ft_t = 0.0
+	if avg > 0.025:
+		set_perf_step(perf_step + 1)
+		var f := FileAccess.open("user://perf", FileAccess.WRITE)
+		if f:
+			f.store_string(str(perf_step))
+
+func set_perf_step(n: int) -> void:
+	perf_step = clampi(n, 0, 2)
+	if perf_step >= 1:
+		lite = true
+		if game:
 			game.lite = true
+		if deb:
 			deb.lite = true
+		if f3:
 			f3.lite = true
-			var f := FileAccess.open("user://lite", FileAccess.WRITE)
-			if f:
-				f.store_string("1")
-		_ft_n = 0
-		_ft_t = 0.0
+	if street:
+		street.lite = lite
+		if street.sun:
+			street.sun.shadow_enabled = perf_step == 0 and not lite
+	get_viewport().scaling_3d_scale = [1.0, 0.8, 0.65][perf_step]
+	if street and street.bazaar:
+		street.bazaar.set_busy(perf_step < 2)
 
 # ================================================================== save
 func load_save() -> void:
@@ -3023,7 +3055,15 @@ func ask_notify() -> void:
 		OS.request_permission("android.permission.POST_NOTIFICATIONS")
 
 # ================================================================== frame
+var _pf_t := 0.0
+var _pf_n := 0
 func _process(dt: float) -> void:
+	if OS.get_cmdline_user_args().has("--perf=1"):
+		_pf_t += dt
+		if _pf_t > 2.0:
+			_pf_t = 0.0
+			_pf_n += 1
+			print("PERF proc=%.1fms draws=%d objs=%d prims=%d tex=%dMB" % [Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME), Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576])
 	_auto_lite(dt)
 	_later_tick(dt)
 	_flyers(dt)

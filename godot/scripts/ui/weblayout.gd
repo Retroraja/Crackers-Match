@@ -84,13 +84,26 @@ static func svg_tex(path: String, w: float, h: float) -> Texture2D:
 		return _svg[key]
 	var s := svg_text(path)
 	# render at 3x so it stays sharp on phones
+	# the picture's own width: the <svg> tag's width="" (not stroke-width), else its viewBox
+	# (18 Nov: reading stroke-width here made the win title 4680x10128 = 181 MB and slowed every phone)
 	var vb := 0.0
-	var m := RegEx.create_from_string("width=\"([0-9.]+)\"").search(s)
+	var tag := s.substr(0, s.find(">"))
+	var m := RegEx.create_from_string("\\swidth=\"([0-9.]+)").search(tag)
 	if m:
 		vb = float(m.get_string(1))
+	else:
+		var v := RegEx.create_from_string("viewBox=\"[-0-9.]+[ ,]+[-0-9.]+[ ,]+([0-9.]+)").search(tag)
+		if v:
+			vb = float(v.get_string(1))
 	var sc := 3.0 * (w / vb if vb > 0.0 else 1.0)
+	# never bigger than 2048 px on the long side (phones), about 3x the screen is plenty
 	var img := svg_img(s, clampf(sc, 0.5, 12.0))
+	if img and maxi(img.get_width(), img.get_height()) > 2048:
+		var k := 2048.0 / maxi(img.get_width(), img.get_height())
+		img = svg_img(s, clampf(sc * k, 0.1, 12.0))
 	var t: Texture2D = ImageTexture.create_from_image(img) if img else null
+	if img and OS.get_cmdline_user_args().has("--svglog=1"):
+		print("SVGTEX %dx%d %.1fMB %s" % [img.get_width(), img.get_height(), img.get_width() * img.get_height() * 4 / 1048576.0, key])
 	_svg[key] = t
 	return t
 

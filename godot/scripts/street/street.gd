@@ -395,11 +395,14 @@ func set_area(a: int) -> void:
 		shop.VW = bazaar.views()
 		cam.keep_aspect = Camera3D.KEEP_WIDTH
 		cam.fov = 50
+	# Area 1's village is never shown again: free it (its models and pictures leave memory)
 	for c in get_children():
 		if c == cam or c == fx or c == sun or c == shop or c == bazaar or c is WorldEnvironment:
 			continue
 		if c is Node3D:
 			(c as Node3D).visible = false
+			c.queue_free()
+	N.clear()
 	fx.clear()
 	EM.clear()
 	SHOW = false

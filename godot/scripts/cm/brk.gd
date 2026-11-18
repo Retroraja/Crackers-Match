@@ -352,7 +352,7 @@ func _process(delta: float) -> void:
 	if P.is_empty() and A.is_empty() and F.is_empty() and held.is_empty():
 		shake = 0.0
 		return
-	var dt := minf(delta, 0.04) * (g.gspeed if g else 1.0)
+	var dt := minf(delta, 0.12) * (g.gspeed if g else 1.0)
 	shake = maxf(0.0, shake - dt * 3.0)
 	for L in [P, A]:
 		for p in L:
