@@ -108,9 +108,9 @@ func signboard(text: String, w: float, h: float, pos: Vector3, bg: Color, fg: Co
 	box(Vector3(w + 0.14, h + 0.14, 0.05), Vector3(0, 0, -0.03), Color("#f5c542"), g)
 	box(Vector3(w, h, 0.06), Vector3.ZERO, bg, g)
 	if text != "":
-		label(text, Vector3(0, 0.08 if sub != "" else 0.0, 0.04), int(h * 62), fg, g)
+		label(text, Vector3(0, 0.1 if sub != "" else 0.0, 0.04), int(h * (120 if sub != "" else 150)), fg, g)
 		if sub != "":
-			label(sub, Vector3(0, -h * 0.3, 0.04), int(h * 26), fg, g)
+			label(sub, Vector3(0, -h * 0.3, 0.04), int(h * 50), fg, g)
 	return g
 
 func tex_shutter() -> Texture2D:
@@ -175,11 +175,12 @@ func build() -> void:
 	for x in range(-100, 100, 6):
 		box(Vector3(3, 0.02, 0.22), Vector3(x, 0.01, 10), Color("#f2e6c8"))
 	for b in [["building-e", -20.5, Color("#FFC93C")], ["building-g", -9.2, Color("#FF8FB1")], ["building-f", 0.0, Color("#FFB25C")], ["building-c", 8.9, Color("#5FD3C6")], ["building-d", 17.5, Color("#B79BFF")]]:
-		kit(CITY % b[0], Vector3(b[1], 0, -9.6 if b[0] == "building-f" else -6.6), 12.0, 0.0, b[2])
+		kit(CITY % b[0], Vector3(b[1], 0, -11.2 if b[0] == "building-f" else -6.6), 12.0, 0.0, b[2])
 	# the shop room behind the shutter (dark and dusty until painted)
 	O.room = [box(Vector3(7.8, 0.1, 3.3), Vector3(0, 0.02, -1.65), Color("#5a4c40")), box(Vector3(7.8, 3.9, 0.1), Vector3(0, 1.95, -3.3), Color("#4a4038")),
 		box(Vector3(0.1, 3.9, 3.3), Vector3(-3.9, 1.95, -1.65), Color("#463c34")), box(Vector3(0.1, 3.9, 3.3), Vector3(3.9, 1.95, -1.65), Color("#463c34")),
 		box(Vector3(7.8, 0.1, 3.3), Vector3(0, 3.9, -1.65), Color("#3a322c"))]
+	box(Vector3(8.6, 2.2, 1.6), Vector3(0, 5.0, -4.1), Color("#c9773a"))   # the building's lower front, behind the fascia
 	O.room_to = [Color("#d98a3a"), Color("#FFD23F"), Color("#2EC4B6"), Color("#2EC4B6"), Color("#FF6B6B")]
 	var lt := OmniLight3D.new()
 	lt.light_color = Color("#ffe2b0")
@@ -252,7 +253,7 @@ func build() -> void:
 		var t := ""
 		for ch in String(b[2]):
 			t += ch + "\n"
-		label(t.strip_edges(), Vector3(0, 0, 0.03), 70, Color("#fff7d6"), bn)
+		label(t.strip_edges(), Vector3(0, 0, 0.03), 120, Color("#fff7d6"), bn)
 	for x in [-14.6, 4.6]:
 		box(Vector3(0.25, 7.5, 0.25), Vector3(x, 3.75, 3.1), Color("#4a4a4a"))
 		box(Vector3(1.4, 0.18, 0.18), Vector3(x + 0.5, 7.3, 3.1), Color("#4a4a4a"))
