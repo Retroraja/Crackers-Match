@@ -622,10 +622,14 @@ func night(k: float) -> void:
 		water_mat.emission = Color("#0a2236").lerp(Color("#03070f"), k)
 	if sky_node:
 		sky_node.modulate = Color.WHITE.lerp(Color(0.22, 0.24, 0.48), k)
-	env.glow_enabled = k > 0.01
-	env.glow_intensity = 1.1
-	env.glow_bloom = 0.15
-	env.glow_hdr_threshold = 0.9
+	# (glow is NOT switched on here: on GL Compatibility, turning glow on and then off again left the street
+	#  drawn as a flat green ground with only the windows showing - the "Area Completed" bug, 18 Nov)
+	if k <= 0.0:
+		sun.light_energy = _night0.se
+		sun.light_color = _night0.sc
+		env.ambient_light_color = _night0.ac
+		env.ambient_light_energy = _night0.ae
+		env.fog_light_color = _night0.fc
 
 var _diyas: Array = []
 func story_diyas(dur: float, on_each: Callable) -> void:

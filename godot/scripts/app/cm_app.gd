@@ -3034,7 +3034,7 @@ func _enter_tree() -> void:
 	elif a.has("flow"):
 		# whole-app checks: -- --flow=1 --s_lv=3 --s_diyas=2 --s_step=1 --s_agreed=1 --tap=6 --act=panel|tut|build|shop|daily|bag|set --shot=png --wait=S
 		save_path = "user://save_dev.json"
-		var d := {"agreed": int(a.get("s_agreed", 0)), "lv": int(a.get("s_lv", 0)), "diyas": int(a.get("s_diyas", 0)), "step": int(a.get("s_step", 0)), "coins": int(a.get("s_coins", 300)), "tut": int(a.get("s_tut", 0))}
+		var d := {"agreed": int(a.get("s_agreed", 0)), "lv": int(a.get("s_lv", 0)), "diyas": int(a.get("s_diyas", 0)), "step": int(a.get("s_step", 0)), "coins": int(a.get("s_coins", 300)), "tut": int(a.get("s_tut", 0)), "area": int(a.get("s_area", 1)), "story": 1, "end1": int(a.get("s_area", 1)) - 1}
 		# diyas are worked out from the levels won (best) minus the builds done
 		var bst := {}
 		var lvs := Levels.all()
@@ -3260,6 +3260,34 @@ func _dev(a: Dictionary) -> void:
 		await get_tree().create_timer(7.5).timeout
 		if a.has("quit"):
 			get_tree().quit()
+	elif t == "nightt":
+		open_modal(L_card.root, false)
+		open_modal(L_hard.root, false)
+		title_s.visible = false
+		S.step = 99
+		show_screen("street")
+		home_ui.sync_in()
+		home_ui.home.visible = false
+		street.cam_home(true)
+		await get_tree().create_timer(1.5).timeout
+		get_viewport().get_texture().get_image().save_png(a.shots + "-n0.png")
+		var mode := String(a.get("m", "night"))
+		if mode == "night":
+			street.night(0.8)
+			await get_tree().create_timer(0.5).timeout
+			street.night(0.0)
+		elif mode == "fx":
+			for i in 9: street.firework()
+			await get_tree().create_timer(1.0).timeout
+			street.fx.clear()
+		elif mode == "both":
+			street.night(0.8)
+			for i in 9: street.firework()
+			await get_tree().create_timer(1.0).timeout
+			street.story_clear()
+		await get_tree().create_timer(1.5).timeout
+		get_viewport().get_texture().get_image().save_png(a.shots + "-n1-" + mode + ".png")
+		get_tree().quit()
 	elif t == "areaend":
 		# dev / preview video: Area 1 fully built, then the end scene, then quit
 		open_modal(L_card.root, false)
@@ -3278,7 +3306,13 @@ func _dev(a: Dictionary) -> void:
 			for k in [3.0, 10.5, 13.0]:
 				get_tree().create_timer(k).timeout.connect(func(): get_viewport().get_texture().get_image().save_png("%s-%04.1f.png" % [a.shots, k]))
 		play_area_end(func():
-			await get_tree().create_timer(1.2).timeout
+			home_ui._area_won_show()
+			if a.has("shots"):
+				for k in [0.3, 1.5, 3.0, 5.0]:
+					get_tree().create_timer(k).timeout.connect(func(): get_viewport().get_texture().get_image().save_png("%s-end-%03.1f.png" % [a.shots, k]))
+			await get_tree().create_timer(float(a.get("after", 6.0))).timeout
+			if a.has("shots"):
+				get_viewport().get_texture().get_image().save_png(a.shots + "-after.png")
 			if a.has("quit"):
 				get_tree().quit())
 	if a.has("shot"):
