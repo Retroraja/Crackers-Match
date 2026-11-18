@@ -588,6 +588,7 @@ func start(i) -> void:
 	midAd = false
 	REW = null
 	mRew = null
+	mFills = 0
 	G.node("cheer").modulate.a = 0
 	lastW = now()
 	lastAct = now()
@@ -892,28 +893,42 @@ func word(i: int) -> void:
 
 # ---------------------------------------------------------------- cracker meter
 func _on_meter(n: int) -> void:
-	if mRew != null or ending:
+	if mRew != null or ending or mFills >= 2:
 		return
 	meter_ui(n)
-	if n >= MMAX:
+	if n >= m_need():
 		game.mN = 0
+		mFills += 1
 		mRew = mk28()
-		meter_ui(MMAX)
+		meter_ui(m_need())
 		sfx.play("swoosh", 0.4, 1.6)
 		if not S.seen.has("meter_done"):
 			_meter_rep = false
 			_after(0.7, meter_demo)
 
+# 18 Nov: the meter gave rewards too often. Each fill in a level needs 50% more than the last, at most 2 rewards
+# per level, and mostly Rocket / Bomb; Chakra and Colour Matchbox are rare.
+var mFills := 0
+func m_need() -> int:
+	return int(round(MMAX * (1.0 + 0.5 * mFills)))
+
 func mk28() -> String:
 	var n: int = (int(cur) if not is_bonus() else S.lv) + 1
-	var L := ["rocket"]
-	if n >= 3: L.append("matchbox")
-	if n >= 5: L.append("chakra")
-	if n >= 8: L.append("atom")
-	return L[randi() % L.size()]
+	var W := {"rocket": 50.0}
+	if n >= 8: W["atom"] = 35.0
+	if n >= 3: W["matchbox"] = 7.0
+	if n >= 5: W["chakra"] = 8.0
+	var tot := 0.0
+	for k in W: tot += W[k]
+	var x := randf() * tot
+	for k in W:
+		x -= W[k]
+		if x <= 0.0:
+			return k
+	return "rocket"
 
 func meter_ui(n: int) -> void:
-	var f := 1.0 if mRew != null else minf(float(n) / MMAX, 1.0)
+	var f := 1.0 if mRew != null else minf(float(n) / m_need(), 1.0)
 	var fill: Control = G.node("mFill")
 	resize_box(fill, Vector2(118.0 * f, fill.size.y))
 	var mi: Control = G.node("mImg")
@@ -1580,14 +1595,25 @@ func toast28(m: String) -> void:
 	var d: Array = JSON.parse_string(FileAccess.get_file_as_string("res://ui/t28.json"))
 	var n: Dictionary = d[0]
 	var f := WebLayout.font(n.txt.font)
-	var w := f.get_string_size(m, HORIZONTAL_ALIGNMENT_LEFT, -1, int(n.txt.fs)).x + 40.0
-	w = minf(w, 380.0)
-	n.r = [195.0 - w / 2.0, 150.0, w, n.r[3]]
+	# 18 Nov: always centred on the screen, text centred in the box, long text wraps to 2 lines
+	var w := f.get_string_size(m, HORIZONTAL_ALIGNMENT_LEFT, -1, int(n.txt.fs)).x + 48.0
+	var two := w > 360.0
+	w = minf(w, 360.0)
+	var h: float = n.r[3] + (int(n.txt.fs) * 1.25 if two else 0.0)
+	n.r = [195.0 - w / 2.0, 150.0, w, h]
 	n.erase("tf")
 	n.txt.s = m
+	n.txt.ta = "center"
 	var lay := WebLayout.new()
 	var c := lay.make(n, Vector2.ZERO)
 	toast.add_child(c)
+	for l in c.find_children("*", "Label", true, false):
+		var lb := l as Label
+		lb.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lb.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if two else TextServer.AUTOWRAP_OFF
+		lb.position = Vector2(12, 0)
+		lb.size = Vector2(w - 24, h)
 	toast_t = 2.6
 	toast.position.y = -10
 	var tw := create_tween().set_parallel()
@@ -3131,6 +3157,28 @@ func _dev(a: Dictionary) -> void:
 			wordMv = null
 			lastW = -99
 			word(2)
+	elif t == "spt":
+		# dev: fire each special that used to be a plain swap, with screenshots
+		open_modal(L_card.root, false)
+		open_modal(L_hard.root, false)
+		start(lv)
+		game.moves = 99
+		await get_tree().create_timer(1.0).timeout
+		var ks: Array = String(a.get("ks", "7,9,12,13,18,19")).split(",")
+		for kq in ks:
+			var kk := int(kq)
+			while game.busy:
+				await get_tree().create_timer(0.2).timeout
+			var e = game.at2(1, 3)
+			if e == null or e.has("ob"):
+				continue
+			e.k = kk
+			game.use(1, 3, 0, 0)
+			for tq in [0.35, 0.6, 0.6]:
+				await get_tree().create_timer(tq).timeout
+				get_viewport().get_texture().get_image().save_png("%s-k%d-%.2f.png" % [a.shots, kk, tq])
+			await get_tree().create_timer(1.5).timeout
+		get_tree().quit()
 	elif t == "brkt":
 		# dev: a level with breakables; hit them all, then a bomb in the middle, with screenshots
 		open_modal(L_card.root, false)

@@ -202,6 +202,9 @@ func chunks(tex: Texture2D, x: float, y: float, s: float, cols: int, rows: int, 
 					hits += 1
 				if hits < 2:
 					continue
+				var ar: float = absf((t[1] - t[0]).cross(t[2] - t[0]))
+				if ar < 4.0:
+					continue
 				var a := atan2(c.y, c.x)
 				var sp: float = o.get("sp", 1.0) * s * (1.3 + randf() * 1.6) * pw
 				var pts := PackedVector2Array()
