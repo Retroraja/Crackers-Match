@@ -20,8 +20,13 @@ var mN := 0
 const COL := ["#E8123C", "#1E5BFF", "#0DB865", "#2B3FBF", "#8A2BE2", "#FF6A00"]  # fx.js COL (big smash)
 const COLS := {0: "#E8343B", 1: "#2F6FE0", 2: "#3DBB4A", 3: "#FFD24A", 4: "#8B5CF6", 5: "#FF8A1A"}  # b27 COLS (small pieces)
 const ID := {"rocket": 6, "flowerpot": 7, "chakra": 8, "skyshot": 9, "atom": 10, "sparkler": 11, "wala": 12, "rail": 13, "matchbox": 14}
-const OT := {"coin": {"hp": 1, "k": "b"}, "crate": {"hp": 1, "k": "b"}, "steel": {"hp": 2, "k": "b"}, "gold": {"hp": 1, "k": "f"}, "hole": {"hp": 999, "k": "b"}, "big": {"hp": 999, "k": "b"}}
-const FIX := {"big": 1, "crate": 1, "steel": 1, "hole": 1}
+const OT := {"coin": {"hp": 1, "k": "b"}, "crate": {"hp": 1, "k": "b"}, "steel": {"hp": 2, "k": "b"}, "gold": {"hp": 1, "k": "f"}, "hole": {"hp": 999, "k": "b"}, "big": {"hp": 999, "k": "b"},
+	# 18 Nov breakables (approved preview v3.1): 1 cell each, stay in place like a crate
+	"pot": {"hp": 1, "k": "b"}, "soda": {"hp": 1, "k": "b"}, "coco": {"hp": 2, "k": "b"}, "match": {"hp": 3, "k": "b"},
+	"news": {"hp": 2, "k": "b"}, "bangle": {"hp": 1, "k": "b"}, "gift": {"hp": 2, "k": "b"}, "dstack": {"hp": 1, "k": "b"}}
+const FIX := {"big": 1, "crate": 1, "steel": 1, "hole": 1, "pot": 1, "soda": 1, "coco": 1, "match": 1, "news": 1, "bangle": 1, "gift": 1, "dstack": 1}
+# map letters for the breakables (levels.gd rows)
+const BRK_CH := {"p": "pot", "s": "soda", "n": "coco", "m": "match", "e": "news", "b": "bangle", "f": "gift", "d": "dstack"}
 const GRAV := 1200.0   # web 1500; 20% slower fall (Rajarajan, 17 Nov)
 const VMAX := 432.0    # web 540
 const SWAP := 0.13
@@ -77,8 +82,11 @@ static func perf_add(k: String, us: int) -> void:
 var T: Array = []          # tile pictures by kind (CRK.t)
 var B: Array = []          # bare special pictures (CRK.b), used for flying specials
 var IC := {}               # obstacle pictures
+var PAINT := {}            # painted item pictures on the cabinet doors (18 Nov)
 var GLOW: Texture2D
 var deb: CMDeb
+var brk: CMBrk
+var blast_src = null      # centre of the blast that is hitting now (breakable pieces fly away from it)
 var fly3d: CMFly
 var sfx: Sfx
 var lite := false
@@ -102,6 +110,8 @@ func _init() -> void:
 			for part in ["base", "items", "door"]:
 				IC["cab-%s-%s" % [v, part]] = load("res://art/cab-%s-%s.webp" % [v, part])
 	IC["crate2_top"] = _top_half(IC["crate2"])
+	PAINT = {"": load("res://ui/img/8ac48ac9b449.png"), "bottles": load("res://art/brk/goal_bottles.png"),
+		"cups": load("res://art/brk/goal_cups.png"), "kaapi": load("res://art/brk/goal_kaapi.png")}
 	var g := Gradient.new()
 	g.offsets = PackedFloat32Array([0.0, 0.42, 0.7, 1.0])
 	g.colors = PackedColorArray([Color(1, 0.784, 0.235, 0.95), Color(1, 0.667, 0.078, 0.55), Color(1, 0.55, 0, 0.18), Color(1, 0.47, 0, 0)])
@@ -156,6 +166,7 @@ static func make_level(o: Dictionary, idx: int) -> Dictionary:
 			elif ch == "X":
 				_add(ob, "steel", r, c)
 				_add(ob, "gold", r, c)
+			elif BRK_CH.has(ch): _add(ob, BRK_CH[ch], r, c)
 			elif ch == "o": hide.append([r, c])
 			elif ch == "K": big.append({"t": "cab", "r": r, "c": c, "w": 2, "h": 2, "n": 6, "v": ""})
 			elif CAB_V.has(ch): big.append({"t": "cab", "r": r, "c": c, "w": 2, "h": 2, "n": 6, "v": CAB_V[ch]})
@@ -167,8 +178,11 @@ static func make_level(o: Dictionary, idx: int) -> Dictionary:
 		"diyas": 2 if o.get("ltype", "n") == "h" else (3 if o.get("ltype", "n") == "s" else 1)}
 	for k in o.get("goal", {}):
 		L.goal[k] = o.goal[k]
+	# 18 Nov: each cabinet kind is its own goal (bottles / cups / kaapi / sweets) with its own icon
 	for bb in big:
-		L.goal[bb.t] = L.goal.get(bb.t, 0) + bb.n
+		var gk: String = "cab" if String(bb.get("v", "")) == "" else "cab_" + String(bb.v)
+		bb["gk"] = gk
+		L.goal[gk] = L.goal.get(gk, 0) + bb.n
 	for k in ob:
 		L.goal[k] = ob[k].size()
 	return L
@@ -204,6 +218,12 @@ func start(level: Dictionary) -> void:
 	arm = null
 	if deb:
 		deb.clear()
+	if brk == null:
+		brk = CMBrk.new()
+		brk.g = self
+		brk.lite = lite
+		add_child(brk)
+	brk.clear()
 	fresh()
 	if floor_node:
 		floor_node.queue_free()
@@ -316,7 +336,7 @@ func fresh() -> void:
 		nudge(all, true)
 	# fx.js fresh1: big obstacles over several cells
 	for d in lv.big:
-		var BB := {"t": d.t, "v": d.get("v", ""), "r": d.r, "c": d.c, "w": d.w, "h": d.h, "n": d.n, "max": d.n, "sq": 0.0, "safe": 0.0, "door": 1, "done": {}, "hits": 0, "cracks": []}
+		var BB := {"t": d.t, "gk": d.get("gk", d.t), "v": d.get("v", ""), "r": d.r, "c": d.c, "w": d.w, "h": d.h, "n": d.n, "max": d.n, "sq": 0.0, "safe": 0.0, "door": 1, "done": {}, "hits": 0, "cracks": []}
 		for r in range(d.r, d.r + d.h):
 			for c in range(d.c, d.c + d.w):
 				var e = at2(r, c)
@@ -708,7 +728,14 @@ func hit(r: int, c: int, o: Dictionary = {}) -> void:
 	if e.get("dead", false) or e.get("diya", false) or e.get("safe", 0.0) > clock:
 		return
 	if e.has("ob"):
+		if o.has("src"):
+			blast_src = o.src
+		elif o.has("dx") or o.has("dy"):
+			blast_src = Vector2(cx(c), cy(r)) - Vector2(o.get("dx", 0.0), o.get("dy", 0.0)).normalized() * U
+		else:
+			blast_src = null
 		hit_ob(e, [r, c], true)
+		blast_src = null
 		return
 	if e.k >= 6 and not e.get("firing", false):
 		e.queued = true
@@ -772,7 +799,10 @@ func hit_ob(e: Dictionary, p: Array, blast_: bool) -> void:
 	if t == "big":
 		hit_big(o.B, blast_)
 		return
-	if e.get("safe", 0.0) > clock:
+	if e.get("safe", 0.0) > clock or o.get("dying", false):
+		return
+	if CMBrk.is_brk(t):
+		_hit_brk(e, p, blast_)
 		return
 	var x := cx(p[1])
 	var y := cy(p[0])
@@ -805,6 +835,39 @@ func hit_ob(e: Dictionary, p: Array, blast_: bool) -> void:
 	if dead:
 		e.erase("ob")
 		sync()
+
+# one hit on a breakable: its own sound and effect (CMBrk); cracks / flames play before the cell is free
+const BRK_SND := {"pot": ["ob_pot", "ob_pot"], "soda": ["ob_soda", "ob_soda"], "coco": ["ob_coco_knock", "ob_coco_split"],
+	"match": ["ob_match_flick", "ob_match_spark"], "news": ["ob_news_loose", "ob_news_burst"], "bangle": ["ob_bangle", "ob_bangle"],
+	"gift": ["ob_gift_tear", "ob_gift_open"], "dstack": ["ob_diya", "ob_diya"]}
+func _hit_brk(e: Dictionary, p: Array, blast_: bool) -> void:
+	var o: Dictionary = e.ob
+	var t: String = o.t
+	var x := cx(p[1])
+	var y := cy(p[0])
+	o.hp -= 1
+	o.sq = 1.0
+	o.fl = 0.6
+	var dead: bool = o.hp <= 0
+	e.safe = clock + 0.3
+	if sfx:
+		var nm: String = BRK_SND[t][1 if dead else 0]
+		sfx.play(nm, 1.8 if t == "bangle" else 1.0, randf_range(0.96, 1.05))
+	var src = blast_src
+	if blast_ and src != null:
+		brk.boom(x, y, U * 0.98)
+	var d: float = brk.hit(t, o.hp, x, y, U * 0.98, src)
+	if dead:
+		if d > 0.0:
+			o.dying = true
+			e.safe = clock + d + 0.05
+			at(d, func():
+				if e.has("ob") and e.ob.get("dying", false):
+					e.erase("ob")
+					sync())
+		else:
+			e.erase("ob")
+			sync()
 
 func hit_fl(r: int, c: int) -> void:
 	var key := "%d,%d" % [r, c]
@@ -1537,7 +1600,9 @@ func _draw2() -> void:
 				var py := y + (u - sz) / 2.0
 				if y + u < OY - 14:
 					continue
-				if e.k >= 6 and e.k < T.size():
+				if e.has("ob") and CMBrk.is_brk(e.ob.t):
+					pass   # breakables are see-through at the edges: no cracker under them
+				elif e.k >= 6 and e.k < T.size():
 					_draw_special(e, r, k, px, py, sz)
 				elif e.k >= 0 and e.k < T.size() and T[e.k] != null:
 					draw_texture_rect(T[e.k], Rect2(px + 0.5, py + 0.5, sz - 1, sz - 1), false)
@@ -1676,7 +1741,10 @@ func _draw_over(e: Dictionary, x: float, y: float, s: float) -> void:
 		o.sq = maxf(0.0, o.sq - 0.07)
 		var tr := Transform2D(0.0, Vector2(x + s / 2 + sin(clock * 60.0) * o.sq * 3.0, y + s / 2)) * Transform2D(0.0, Vector2(k, 2.0 - k), 0.0, Vector2.ZERO) * Transform2D(0.0, Vector2(-x - s / 2, -y - s / 2))
 		draw_set_transform_matrix(tr)
-	if t == "crate" or t == "steel":
+	if CMBrk.is_brk(t):
+		if not o.get("dying", false) and brk != null:
+			CMBrk.draw_ob(self, brk.tex_for(o), x + s / 2, y + s / 2, s)
+	elif t == "crate" or t == "steel":
 		var im: Texture2D = IC.crate2 if (t == "steel" and o.hp > 1) else IC.crate
 		draw_texture_rect(im, Rect2(x - 2, y - 2, s + 4, s + 4), false)
 	elif t == "coin":
@@ -1877,7 +1945,7 @@ func bomb3(r: int, c: int) -> void:
 				var rr = r + a
 				var cc = c + bb
 				if rr >= 0 and rr < R and cc >= 0 and cc < C and (a != 0 or bb != 0):
-					hit(rr, cc, {"d": 0.02 + 0.02 * (absi(a) + absi(bb)), "pw": 1.3}))
+					hit(rr, cc, {"d": 0.02 + 0.02 * (absi(a) + absi(bb)), "pw": 1.3, "src": Vector2(x, y)}))
 	finish(0.95)
 
 # ---- goal-first cell lists (fx.js gpick, combos cCells, specials2 cellsList)
@@ -2197,10 +2265,13 @@ func combo(r1: int, c1: int, r2: int, c2: int) -> void:
 		var T = combo_run(a.k, bb.k, r2, c2)
 		finish(T))
 
-func _hits(L: Array, d: float, pw: float = 1.3) -> void:
+func _hits(L: Array, d: float, pw: float = 1.3, src = null) -> void:
 	for p in L:
 		if at2(p[0], p[1]) != null:
-			hit(p[0], p[1], {"d": d + (p[2] if p.size() > 2 else 0.0), "pw": pw})
+			var o := {"d": d + (p[2] if p.size() > 2 else 0.0), "pw": pw}
+			if src != null:
+				o["src"] = src
+			hit(p[0], p[1], o)
 
 func boom(r: int, c: int, rad: int, d: float = 0.0) -> void:
 	var u = float(U)
@@ -2215,7 +2286,7 @@ func boom(r: int, c: int, rad: int, d: float = 0.0) -> void:
 		for a in range(-rad, rad + 1):
 			for bb in range(-rad, rad + 1):
 				L.append([r + a, c + bb, 0.04 * maxi(absi(a), absi(bb))])
-		_hits(L, 0.0, 1.4))
+		_hits(L, 0.0, 1.4, Vector2(x, y)))
 
 func c_fly(r: int, c: int, d: String, o: Dictionary = {}) -> void:
 	var DIR = {"U": [-1, 0], "D": [1, 0], "L": [0, -1], "R": [0, 1]}
@@ -2613,6 +2684,15 @@ func _draw_cab(BB: Dictionary, x: float, y: float, s: float) -> void:
 		draw_texture_rect_region(it, Rect2(ox + src.position.x * sc, oy + src.position.y * sc, src.size.x * sc, src.size.y * sc), Rect2(src.position * it.get_width() / 240.0, src.size * it.get_width() / 240.0))
 	if BB.door:
 		draw_texture_rect(_cab_tex(BB, "door"), Rect2(ox, oy, dw, dh), false)
+		# 18 Nov: a subtle painted picture of what is inside, on each closed door (no numbers)
+		var pv: String = BB.get("v", "")
+		var pt: Texture2D = PAINT.get(pv)
+		if pt != null:
+			var ps := dw * (0.3 if pv == "kaapi" else 0.24)
+			var pc := Color(1, 0.96, 0.88, 0.34)
+			var spots: Array = [[0.5, 0.5]] if pv == "kaapi" else [[0.285, 0.47], [0.715, 0.47]]
+			for q in spots:
+				draw_texture_rect(pt, Rect2(ox + dw * q[0] - ps / 2, oy + dh * q[1] - ps / 2, ps, ps), false, pc)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 func _p2s(BB: Dictionary, px: float, py: float) -> Vector2:
@@ -2764,8 +2844,8 @@ func _break_plate(BB: Dictionary, d: float) -> void:
 		fly3d.spray(c.x, c.y, ["#FFFFFF", "#FFF4C8"], 8, "c", {"s0": 3.0, "s1": 5.0, "v0": 150.0, "v1": 380.0})
 		fly3d.spray(c.x, c.y, CR_BODY, 6, "s", {"s0": 7.0, "s1": 12.0, "v0": 120.0, "v1": 300.0})
 		deb.bits(c.x, c.y, 16, SC, 4, 1.3, {"shape": "tri"})
-		if goal.get(BB.t, 0) > 0:
-			goal[BB.t] -= 1
+		if goal.get(BB.gk, 0) > 0:
+			goal[BB.gk] -= 1
 			goal_changed.emit(goal))
 
 func _cab_down(BB: Dictionary) -> void:

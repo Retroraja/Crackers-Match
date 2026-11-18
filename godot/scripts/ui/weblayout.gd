@@ -67,6 +67,8 @@ static func tex(src: String) -> Texture2D:
 		var p := "res://art/crk/%s.webp" % src.substr(4)
 		if ResourceLoader.exists(p):
 			t = load(p)
+	elif src.begins_with("art/brk/") and ResourceLoader.exists("res://" + src):
+		t = load("res://" + src)
 	else:
 		var f := src.get_file()
 		for p in ["res://art/web/" + f, "res://art/" + f]:

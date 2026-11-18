@@ -51,6 +51,14 @@ const BAN := {
 	"cab": ["Sweet Shop Cabinet", "Match next to it. The first hit breaks the glass doors, then every hit blasts one sweet plate.", "art/cab-door.webp", null],
 	"meter": ["Cracker Meter full!", "Every match fills the meter. Drag the special from the meter onto any tile to fire it.", "art/ui-diya.webp", null],
 	"howto": ["How to play", "Swap two crackers to line up 3 or more. Line up 4, 5, a square or an L shape to make special crackers. Reach the target before your moves run out.", "art/ui-diya.webp", null],
+	"pot": ["Clay Pots", "Match next to a pot, or blast it. One hit and it shatters!", "art/brk/pot_1.png", null],
+	"soda": ["Goli Soda", "Match next to a bottle, or blast it. One hit: glass and fizz everywhere!", "art/brk/soda_1.png", null],
+	"coco": ["Coconuts", "2 hits. The first cracks it, the second splits it open.", "art/brk/coco_2.png", null],
+	"match": ["Matchbox Stacks", "3 hits. Each hit knocks off one box. The last one sparks!", "art/brk/match_3.png", null],
+	"news": ["Newspaper Bundles", "2 hits. The first snaps the string, the second blows the papers away.", "art/brk/news_2.png", null],
+	"bangle": ["Glass Bangles", "Match next to the stack, or blast it. One hit and the bangles fly!", "art/brk/bangle_1.png", null],
+	"gift": ["Gift Parcels", "2 hits. The first tears the paper, the second bursts it open.", "art/brk/gift_2.png", null],
+	"dstack": ["Diya Stacks", "Match next to the stack, or blast it. The lamps light up, then break!", "art/brk/diya_1.png", null],
 	"diya": ["Bring the Diya Down", "Clear the tiles below it. It must reach the bottom.", "diya", null]}
 
 var S := {}
@@ -412,18 +420,25 @@ func icon(k) -> String:
 		"steel": return "art/crate2.webp"
 		"gold": return "art/goldfloor.webp"
 		"cab": return "ui:img/8ac48ac9b449.png"
+		"cab_bottles": return "art/brk/goal_bottles.png"
+		"cab_cups": return "art/brk/goal_cups.png"
+		"cab_kaapi": return "art/brk/goal_kaapi.png"
 		"coin": return "art/ui-coin.webp"
 		"hole": return "art/crate.webp"
 		"wood": return "art/woodi.webp"
 		"diya": return "art/ui-diya.webp"
 		"dpot": return "art/claypot.webp"
+		"pot", "soda", "coco", "news", "bangle", "gift": return "art/brk/%s_%d.png" % [s, 2 if s in ["coco", "news", "gift"] else 1]
+		"match": return "art/brk/match_3.png"
+		"dstack": return "art/brk/diya_1.png"
 	return "crk:b0"
 
 func goal_name(k) -> String:
 	var s := str(k)
 	if s.is_valid_int():
 		return NAMES[int(s) % NAMES.size()]
-	return {"crate": "Crates", "steel": "Steel crates", "gold": "Gold floor", "cab": "Sweet plates", "coin": "Coins", "hole": "Holes", "wood": "Wooden crates", "dpot": "Clay pots", "diya": "Diyas"}.get(s, s)
+	return {"crate": "Crates", "steel": "Steel crates", "gold": "Gold floor", "cab": "Sweet plates", "cab_bottles": "Soda bottles", "cab_cups": "Tea cups", "cab_kaapi": "Kaapi sets", "coin": "Coins", "hole": "Holes", "wood": "Wooden crates", "dpot": "Clay pots", "diya": "Diyas",
+		"pot": "Clay pots", "soda": "Soda bottles", "coco": "Coconuts", "match": "Matchboxes", "news": "Newspapers", "bangle": "Bangles", "gift": "Gift parcels", "dstack": "Diya stacks"}.get(s, s)
 
 func LV() -> Dictionary:
 	return BL if str(cur) == "b" else levels[int(cur)]
@@ -3116,6 +3131,36 @@ func _dev(a: Dictionary) -> void:
 			wordMv = null
 			lastW = -99
 			word(2)
+	elif t == "brkt":
+		# dev: a level with breakables; hit them all, then a bomb in the middle, with screenshots
+		open_modal(L_card.root, false)
+		open_modal(L_hard.root, false)
+		start(lv)
+		await get_tree().create_timer(1.2).timeout
+		get_viewport().get_texture().get_image().save_png(a.shots + "-0.png")
+		var cells: Array = []
+		for r in game.R:
+			for c in game.C:
+				var e = game.at2(r, c)
+				if e != null and e.has("ob") and CMBrk.is_brk(e.ob.t):
+					cells.append([r, c])
+		var n := 0
+		for q in cells.slice(0, 6):
+			game.hit_ob(game.at2(q[0], q[1]), q, false)
+		for k in [0.06, 0.12, 0.2, 0.35]:
+			await get_tree().create_timer(k).timeout
+			n += 1
+			get_viewport().get_texture().get_image().save_png("%s-1-%d.png" % [a.shots, n])
+		await get_tree().create_timer(1.5).timeout
+		var mid: Array = cells[cells.size() / 2] if cells.size() > 0 else [4, 4]
+		game.boom(mid[0], mid[1], 1)
+		for k in [0.05, 0.1, 0.15, 0.3]:
+			await get_tree().create_timer(k).timeout
+			n += 1
+			get_viewport().get_texture().get_image().save_png("%s-2-%d.png" % [a.shots, n])
+		await get_tree().create_timer(2.0).timeout
+		get_viewport().get_texture().get_image().save_png(a.shots + "-3.png")
+		get_tree().quit()
 	elif t == "auto":
 		# plays levels by itself: hint moves until the level ends, then Next / Try again, for N levels
 		var n_lv := int(a.get("n", 2))
