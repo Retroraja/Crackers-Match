@@ -43,6 +43,7 @@ var _tint_cache := {}
 var lite := false
 var area := 1
 var shop: ShopArea
+var bazaar: Bazaar
 
 static func V(a: Array) -> Vector3:
 	return Vector3(a[0], a[1], a[2])
@@ -383,8 +384,19 @@ func set_area(a: int) -> void:
 		shop.st = self
 		add_child(shop)
 		shop.build()
+		# option A (18 Nov): the street view made of .glb models; the old code-made shop stays hidden for now
+		bazaar = Bazaar.new()
+		bazaar.st = self
+		add_child(bazaar)
+		bazaar.build()
+		shop.visible = false
+		shop.HOME = bazaar.HOME
+		shop.WIDE = bazaar.HOME
+		shop.VW = bazaar.views()
+		cam.keep_aspect = Camera3D.KEEP_WIDTH
+		cam.fov = 50
 	for c in get_children():
-		if c == cam or c == fx or c == sun or c == shop or c is WorldEnvironment:
+		if c == cam or c == fx or c == sun or c == shop or c == bazaar or c is WorldEnvironment:
 			continue
 		if c is Node3D:
 			(c as Node3D).visible = false
@@ -396,7 +408,8 @@ func set_area(a: int) -> void:
 	step = 0
 	# indoors: crisper edges (2x MSAA), warm ambient light, no distance fog
 	# (MSAA left off: with it, code-made boxes vanished in tests)
-	env.fog_enabled = false
+	if bazaar == null:
+		env.fog_enabled = false
 	env.ambient_light_color = Color("#ffe2c4")
 	env.ambient_light_energy = 0.6
 	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
@@ -404,12 +417,16 @@ func set_area(a: int) -> void:
 	sun.light_color = Color("#ffc690")
 	sun.light_energy = 1.45
 	sun.rotation = Vector3(deg_to_rad(-38), deg_to_rad(-40), 0)
+	if bazaar:
+		bazaar.light()
 	TASKS = ShopArea.TASKS.duplicate(true)
 	VW = shop.VW
 	cam_home(true)
 
 func run_task(name: String) -> void:
 	if area == 2:
+		if bazaar and bazaar.run(name):
+			return
 		shop.run(name)
 		return
 	var LS: Dictionary = L.lists
@@ -709,6 +726,9 @@ func wide() -> Dictionary:
 	return {"p": Vector3(0, 45, 75), "look": Vector3(0, 0, -5)}
 
 func cam_home(instant := false) -> void:
+	if bazaar and area == 2:
+		cam_to(bazaar.HOME.p, bazaar.HOME.look, 0.01 if instant else 1.2)
+		return
 	if step >= TASKS.size() and area == 2:
 		cam_to(shop.HOME.p, shop.HOME.look, 0.01 if instant else 1.6)
 		return

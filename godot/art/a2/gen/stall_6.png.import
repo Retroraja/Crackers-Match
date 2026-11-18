@@ -1,0 +1,37 @@
+[remap]
+
+importer="texture"
+type="CompressedTexture2D"
+uid="uid://ccefmnl21d8x5"
+path="res://.godot/imported/stall_6.png-47ba45fd86be1c7576eb46ac4d1f7c85.ctex"
+metadata={
+"vram_texture": false
+}
+generator_parameters={
+"md5": "34d0ba6425fe344c57dc46d311a9ecb8"
+}
+
+[deps]
+
+source_file="res://art/a2/gen/stall_6.png"
+dest_files=["res://.godot/imported/stall_6.png-47ba45fd86be1c7576eb46ac4d1f7c85.ctex"]
+
+[params]
+
+compress/mode=0
+compress/high_quality=false
+compress/lossy_quality=0.7
+compress/hdr_compression=1
+compress/normal_map=0
+compress/channel_pack=0
+mipmaps/generate=true
+mipmaps/limit=-1
+roughness/mode=0
+roughness/src_normal=""
+process/fix_alpha_border=true
+process/premult_alpha=false
+process/normal_map_invert_y=false
+process/hdr_as_srgb=false
+process/hdr_clamp_exposure=false
+process/size_limit=0
+detect_3d/compress_to=1

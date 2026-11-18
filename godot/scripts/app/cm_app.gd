@@ -457,7 +457,7 @@ func show_screen(id: String) -> void:
 		street.visible = st_on
 		street.process_mode = Node.PROCESS_MODE_INHERIT if st_on else Node.PROCESS_MODE_DISABLED
 		street.cam.current = st_on
-		sky_layer.visible = st_on
+		sky_layer.visible = st_on and street.bazaar == null
 		back.visible = not st_on
 	if LO and id != "game":
 		lose_hide()
@@ -2887,6 +2887,7 @@ func enter_area2() -> void:
 	st.play(get_viewport().get_visible_rect().size.y)
 	st.finished.connect(func():
 		street.set_area(2)
+		sky_layer.visible = false
 		home_ui.sync_in()
 		home_ui.show_home())
 	st.tree_exited.connect(cl.queue_free)
