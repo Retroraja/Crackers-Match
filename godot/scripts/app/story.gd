@@ -359,6 +359,10 @@ func _finish() -> void:
 	t.tween_callback(func():
 		if street:
 			street.ghost(false)
+		# behind the full flash: hide the card, picture and shade, so the flash fades straight onto the home screen
+		for c in get_children():
+			if c != flash and c is CanvasItem:
+				(c as CanvasItem).visible = false
 		finished.emit())
 	t.tween_property(flash, "color:a", 0.0, 0.5)
 	t.tween_callback(queue_free)

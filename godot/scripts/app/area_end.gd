@@ -30,8 +30,8 @@ func play(height: float) -> void:
 	book.end_mode = true
 	book.tick_i = area - 1
 	if area == 2:
-		t.text = "More towns to light up"
-		u.text = "Area 3 is coming soon"
+		t.text = "Busy Days at GHILLI"
+		u.text = "“Orders are coming in. Get the shop ready!”"
 
 func _shot(n: int) -> void:
 	shot = n

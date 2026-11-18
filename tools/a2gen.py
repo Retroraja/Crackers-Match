@@ -96,23 +96,25 @@ class Builder:
         print("wrote", name, sum(len(p[1]) for p in self.parts.values()), "tris")
 
 # ---------------------------------------------------------------- painted pictures
-def font(sz):
-    return ImageFont.truetype(FONT, sz)
+SORA = "/home/claude/repo/godot/fonts/Sora-800.ttf"   # clear G with a bar: used for every GHILLI text
+def font(sz, f=None):
+    return ImageFont.truetype(f or FONT, sz)
 
 def sign_img(text, bg, fg, sub="", w=1024, h=160, border=(245, 197, 66), old=0.0):
     im = Image.new("RGB", (w, h), bg)
     d = ImageDraw.Draw(im)
     d.rectangle([0, 0, w - 1, h - 1], outline=border, width=10)
     if text:
+        ff = SORA if "GHILLI" in text else None
         fs = int(h * (0.52 if sub else 0.66))
-        f = font(fs)
+        f = font(fs, ff)
         while d.textlength(text, font=f) > w * 0.9:
-            fs -= 4; f = font(fs)
+            fs -= 4; f = font(fs, ff)
         ty = h * (0.42 if sub else 0.5)
         d.text((w / 2 + 4, ty + 4), text, font=f, fill=(0, 0, 0), anchor="mm")
         d.text((w / 2, ty), text, font=f, fill=fg, anchor="mm")
         if sub:
-            d.text((w / 2, h * 0.82), sub, font=font(int(h * 0.2)), fill=fg, anchor="mm")
+            d.text((w / 2, h * 0.82), sub, font=font(int(h * 0.2), ff), fill=fg, anchor="mm")
     # weathering: plaster grain on top
     g = ph("painted_plaster_wall", size=w).crop((0, 0, w, h)).convert("L")
     im = Image.blend(im, Image.merge("RGB", [g] * 3), 0.10 + old)
@@ -310,7 +312,7 @@ def box_img(i):
     f = font(30)
     while d.textlength(name, font=f) > 170: f = font(f.size - 2)
     d.text((166, 40), name, font=f, fill=fg, anchor="mm")
-    d.text((166, 74), "GHILLI · SIVAKASI", font=font(14), fill=fg, anchor="mm")
+    d.text((166, 74), "GHILLI · SIVAKASI", font=font(15, SORA), fill=fg, anchor="mm")
     d.rectangle([0, 0, 255, 127], outline=(255, 255, 255), width=3)
     return im
 

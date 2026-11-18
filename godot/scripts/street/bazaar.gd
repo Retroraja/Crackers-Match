@@ -240,7 +240,7 @@ func run(name: String) -> bool:
 			st.after(1.0, func(): st.dust(Vector3(0, 0, 0.6), 12, 2.6))
 			for f in [[2.3, 0.7], [2.4, 0.0], [2.55, 0.9], [2.62, 0.1], [2.75, 1.0]]:
 				st.after(f[0], func():
-					O.light.light_energy = f[1] * 2.2
+					O.light.light_energy = f[1] * 1.1
 					glow(O.bulb_m, f[1] * 2.0))
 			done_fx(site, 3.0)
 		1:   # old boxes fly away, then a sweep of dust
@@ -286,7 +286,7 @@ func run(name: String) -> bool:
 				var on := 1.0 if k >= 1 or fmod(k * 9.0, 1.0) > 0.4 else 0.25
 				glow(O.tube_m, 2.5 * on)
 				O.light.light_color = Color("#ffd9a0").lerp(Color("#fff6e6"), on)
-				O.light.light_energy = 2.2 + 1.4 * on, 1.3)
+				O.light.light_energy = 1.1 + 0.9 * on, 1.3)
 			st.after(1.4, func(): fan_on = true)
 			done_fx(site, 2.3)
 		6:   # counter and cash box
@@ -335,7 +335,7 @@ func run(name: String) -> bool:
 				st.after(1.6 + j * 0.35, func(): st.sparkle(at, 40, hy))
 			for j in 4:
 				st.after(1.8 + j * 0.5, func(): _firework(Vector3(-8 + j * 5.5, 13 + (j % 2) * 3, -14)))
-			st.tween(0.8, func(k: float): O.light.light_energy = 3.6 + k * 1.2, 1.8)
+			st.tween(0.8, func(k: float): O.light.light_energy = 2.0 + k * 0.6, 1.8)
 			st.after(1.8, func(): st.ring(Vector3(0, 0, 1.2), Color("#ffd27a")))
 			st.after(4.2, func(): st.glide_to(HOME))
 	return true
