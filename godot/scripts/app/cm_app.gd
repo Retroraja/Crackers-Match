@@ -3241,9 +3241,10 @@ func _dev(a: Dictionary) -> void:
 		if a.has("shots"):
 			for k in [2.6, 7.0, 11.4, 14.6]:
 				get_tree().create_timer(k).timeout.connect(func(): get_viewport().get_texture().get_image().save_png("%s-0-story-%04.1f.png" % [a.shots, k]))
-		await get_tree().create_timer(15.0).timeout
+		await get_tree().create_timer(19.0).timeout
 		if a.has("shots"):
 			get_viewport().get_texture().get_image().save_png(a.shots + "-1-outside.png")
+			print("DBG area=", street.area, " step=", street.step, " camP=", street.camP, " camL=", street.camL, " cam=", street.cam.global_position, " shop=", street.shop.global_position if street.shop else null)
 		home_ui.hide_home()
 		street.do_task(true)
 		if a.has("shots"):

@@ -11,7 +11,7 @@ const CAPS := ["The first load of crackers\nis ready for Chennai!", "Chennai.  B
 func play(height: float) -> void:
 	# the picture must exist before super.play() starts shot 1
 	pic = TextureRect.new()
-	pic.set_anchors_preset(Control.PRESET_FULL_RECT)
+	pic.position = Vector2.ZERO
 	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -47,6 +47,8 @@ func _slide(id: int, n: int) -> void:
 		if id != sid:
 			return
 		pic.texture = load("res://art/story2/s%d.jpg" % n)
+		pic.size = Vector2(390, H)
+		pic.position = Vector2.ZERO
 		pic.pivot_offset = pic.size / 2.0
 		pic.scale = Vector2.ONE
 		create_tween().tween_property(pic, "scale", Vector2.ONE * 1.06, 4.2).set_trans(Tween.TRANS_SINE))
