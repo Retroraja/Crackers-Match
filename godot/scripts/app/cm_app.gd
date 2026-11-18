@@ -3185,6 +3185,9 @@ func _dev(a: Dictionary) -> void:
 		open_modal(L_hard.root, false)
 		start(lv)
 		await get_tree().create_timer(1.2).timeout
+		if a.has("toast"):
+			toast28(String(a.toast).replace("_", " "))
+			await get_tree().create_timer(0.4).timeout
 		get_viewport().get_texture().get_image().save_png(a.shots + "-0.png")
 		var cells: Array = []
 		for r in game.R:
