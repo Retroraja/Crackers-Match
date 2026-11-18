@@ -97,6 +97,10 @@ func _init() -> void:
 	IC["ui-coin"] = load("res://art/web/ui-coin.webp")
 	for n in ["crate", "crate2", "goldfloor", "cab-base", "cab-items", "cab-door"]:
 		IC[n] = load("res://art/%s.webp" % n)
+	for v in CAB_R:
+		if v != "":
+			for part in ["base", "items", "door"]:
+				IC["cab-%s-%s" % [v, part]] = load("res://art/cab-%s-%s.webp" % [v, part])
 	IC["crate2_top"] = _top_half(IC["crate2"])
 	var g := Gradient.new()
 	g.offsets = PackedFloat32Array([0.0, 0.42, 0.7, 1.0])
@@ -153,7 +157,8 @@ static func make_level(o: Dictionary, idx: int) -> Dictionary:
 				_add(ob, "steel", r, c)
 				_add(ob, "gold", r, c)
 			elif ch == "o": hide.append([r, c])
-			elif ch == "K": big.append({"t": "cab", "r": r, "c": c, "w": 2, "h": 2, "n": 6})
+			elif ch == "K": big.append({"t": "cab", "r": r, "c": c, "w": 2, "h": 2, "n": 6, "v": ""})
+			elif CAB_V.has(ch): big.append({"t": "cab", "r": r, "c": c, "w": 2, "h": 2, "n": 6, "v": CAB_V[ch]})
 			elif SPK.has(ch): pre.append([r, c, SPK[ch]])
 		shape.append(sh)
 	var L := {"name": o.name, "moves": o.moves, "colors": o.colors, "shape": shape, "ob": ob, "big": big, "goal": {}, "hide": hide,
@@ -311,7 +316,7 @@ func fresh() -> void:
 		nudge(all, true)
 	# fx.js fresh1: big obstacles over several cells
 	for d in lv.big:
-		var BB := {"t": d.t, "r": d.r, "c": d.c, "w": d.w, "h": d.h, "n": d.n, "max": d.n, "sq": 0.0, "safe": 0.0, "door": 1, "done": {}, "hits": 0, "cracks": []}
+		var BB := {"t": d.t, "v": d.get("v", ""), "r": d.r, "c": d.c, "w": d.w, "h": d.h, "n": d.n, "max": d.n, "sq": 0.0, "safe": 0.0, "door": 1, "done": {}, "hits": 0, "cracks": []}
 		for r in range(d.r, d.r + d.h):
 			for c in range(d.c, d.c + d.w):
 				var e = at2(r, c)
@@ -2557,6 +2562,15 @@ func _gold_carpet(u: float) -> void:
 
 # ================================================================== sweet-shop cabinet (cabinet.js)
 const CR_R := [[22, 65, 56, 56], [79, 69, 56, 52], [136, 65, 56, 56], [22, 152, 56, 52], [79, 148, 56, 56], [136, 148, 56, 56]]
+# cabinet kinds (cabinet.js): map letter -> art name; each 2x2 with 6 items, item rects per kind
+const CAB_V := {"B": "bottles", "U": "cups", "Q": "kaapi"}
+const CAB_R := {"": CR_R,
+	"kaapi": [[23, 61, 54, 58], [80, 61, 54, 58], [137, 61, 54, 58], [23, 144, 54, 58], [80, 144, 54, 58], [137, 144, 54, 58]],
+	"cups": [[23, 84, 54, 42], [80, 84, 54, 42], [137, 84, 54, 42], [23, 160, 54, 42], [80, 160, 54, 42], [137, 160, 54, 42]],
+	"bottles": [[23, 63, 54, 62], [80, 63, 54, 62], [137, 63, 54, 62], [23, 140, 54, 62], [80, 140, 54, 62], [137, 140, 54, 62]]}
+func _cab_tex(BB: Dictionary, part: String) -> Texture2D:
+	var v: String = BB.get("v", "")
+	return IC["cab-%s" % part] if v == "" else IC["cab-%s-%s" % [v, part]]
 const CR_K := [0, 1, 2, 1, 2, 0]
 const CR_C := [["#FF9E2A", "#FFC25A", "#E07B12", "#FFE3A0"], ["#FF8A00", "#FFB43A", "#D85E00", "#FFD06A"], ["#F7F1E0", "#E8DFC6", "#FFFFFF", "#C9CCD8"]]
 const CR_BODY := ["#D89050", "#B46A2C", "#8A4818"]
@@ -2579,7 +2593,7 @@ func _draw_cab(BB: Dictionary, x: float, y: float, s: float) -> void:
 	BB.geo = {"cx": x + Wd / 2, "cy": y + Hd / 2, "ox": ox, "oy": oy, "sc": sc}
 	var tr := Transform2D(0.0, Vector2(x + Wd / 2, y + Hd / 2 + Hd * 0.45)) * Transform2D(sin(BB.sq * 22.0) * BB.sq * 0.035, Vector2.ZERO) * Transform2D(0.0, Vector2(k, k), 0.0, Vector2.ZERO) * Transform2D(0.0, Vector2(0, -Hd * 0.45))
 	draw_set_transform_matrix(tr)
-	draw_texture_rect(IC["cab-base"], Rect2(ox, oy, dw, dh), false)
+	draw_texture_rect(_cab_tex(BB, "base"), Rect2(ox, oy, dw, dh), false)
 	for L in BB.cracks:
 		var p1 := PackedVector2Array()
 		var p2 := PackedVector2Array()
@@ -2588,16 +2602,17 @@ func _draw_cab(BB: Dictionary, x: float, y: float, s: float) -> void:
 			p2.append(Vector2(ox + q.x * sc, oy + q.y * sc))
 		draw_polyline(p1, Color(1, 236 / 255.0, 200 / 255.0, 0.55), 2 * sc, true)
 		draw_polyline(p2, Color(50 / 255.0, 18 / 255.0, 2 / 255.0, 0.85), 1.4 * sc, true)
-	var it: Texture2D = IC["cab-items"]
-	for j in CR_R.size():
+	var it: Texture2D = _cab_tex(BB, "items")
+	var RR: Array = CAB_R.get(BB.get("v", ""), CR_R)
+	for j in RR.size():
 		if BB.done.has(j):
 			continue
-		var r: Array = CR_R[j]
+		var r: Array = RR[j]
 		var ex := 0.06
 		var src := Rect2(r[0] - r[2] * ex, r[1] - r[3] * ex, r[2] * (1 + 2 * ex), r[3] * (1 + 2 * ex)).intersection(Rect2(0, 0, 240, 240))
 		draw_texture_rect_region(it, Rect2(ox + src.position.x * sc, oy + src.position.y * sc, src.size.x * sc, src.size.y * sc), Rect2(src.position * it.get_width() / 240.0, src.size * it.get_width() / 240.0))
 	if BB.door:
-		draw_texture_rect(IC["cab-door"], Rect2(ox, oy, dw, dh), false)
+		draw_texture_rect(_cab_tex(BB, "door"), Rect2(ox, oy, dw, dh), false)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 func _p2s(BB: Dictionary, px: float, py: float) -> Vector2:
@@ -2700,13 +2715,14 @@ func _break_cover(BB: Dictionary) -> void:
 
 func _break_plate(BB: Dictionary, d: float) -> void:
 	var left: Array = []
-	for j in CR_R.size():
+	var RR: Array = CAB_R.get(BB.get("v", ""), CR_R)
+	for j in RR.size():
 		if not BB.done.has(j):
 			left.append(j)
 	if left.is_empty():
 		return
 	var j: int = left[randi() % left.size()]
-	var r: Array = CR_R[j]
+	var r: Array = RR[j]
 	var kind: int = CR_K[j]
 	BB.done[j] = 1
 	at(d, func():
@@ -2716,7 +2732,7 @@ func _break_plate(BB: Dictionary, d: float) -> void:
 		var sc: float = g.sc
 		var c := _p2s(BB, r[0] + r[2] / 2.0, r[1] + r[3] / 2.0)
 		var side := -1.0 if c.x < g.cx else 1.0
-		var it: Texture2D = IC["cab-items"]
+		var it: Texture2D = _cab_tex(BB, "items")
 		# 4 x 4 jagged pieces of the sweets
 		var sx: float = r[0] + 4
 		var sw: float = r[2] - 8

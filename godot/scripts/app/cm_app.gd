@@ -45,6 +45,9 @@ const BAN := {
 	"wall": ["Crate Wall", "Match next to the wall 3 times. It breaks and both diyas fly to your target.", "art/plank.webp", null],
 	"hole": ["Hidden Hole", "Break the crates around it. Crackers fall in and fill the hole.", "art/crate.webp", null],
 	"helper": ["Helper Bombs", "Bombs are hidden among the crates. Tap one: it blasts and sets off the others!", null, 10],
+	"cab_bottles": ["Soda Bottle Cabinet", "A new cabinet! Match next to it to break the glass, then every hit pops one bottle crate.", "art/cab-bottles-door.webp", null],
+	"cab_cups": ["Tea Cup Cabinet", "Match next to it. The first hit opens it, then every hit blasts one stack of cups.", "art/cab-cups-door.webp", null],
+	"cab_kaapi": ["Kaapi Cabinet", "Filter coffee! Match next to it to open it, then every hit knocks out one kaapi set.", "art/cab-kaapi-door.webp", null],
 	"cab": ["Sweet Shop Cabinet", "Match next to it. The first hit breaks the glass doors, then every hit blasts one sweet plate.", "art/cab-door.webp", null],
 	"meter": ["Cracker Meter full!", "Every match fills the meter. Drag the special from the meter onto any tile to fire it.", "art/ui-diya.webp", null],
 	"howto": ["How to play", "Swap two crackers to line up 3 or more. Line up 4, 5, a square or an L shape to make special crackers. Reach the target before your moves run out.", "art/ui-diya.webp", null],
@@ -167,6 +170,9 @@ func _ready() -> void:
 	street = Street.new()
 	street.lite = lite
 	add_child(street)
+	# Area 1 build costs for 30 levels (35 diyas): rising from 1 to 6
+	for i in mini(A1_COST.size(), street.TASKS.size()):
+		street.TASKS[i].c = A1_COST[i]
 	if int(S.get("area", 1)) == 2:
 		street.set_area(2)
 	_build_game()
@@ -2813,10 +2819,11 @@ func street_play() -> void:
 		return
 	open_card(mini(int(S.lv), levels.size() - 1))
 
-# areas: Area 1 = levels 1-10 (Sivakasi Street), Area 2 = levels 11-25 (the shop, Bunder Street, Chennai)
+# areas: Area 1 = levels 1-30 (Sivakasi Street), Area 2 = levels 31-60 (Ghilli Crackers, Bunder Street, Chennai)
 func area_levels() -> Vector2i:
-	return Vector2i(0, 10) if street.area == 1 else Vector2i(10, 25)
+	return Vector2i(0, 30) if street.area == 1 else Vector2i(30, 60)
 
+const A1_COST := [1, 2, 2, 3, 3, 4, 4, 5, 5, 6]
 func area_cap() -> int:
 	return mini(area_levels().y, levels.size())
 
@@ -3220,10 +3227,10 @@ func _dev(a: Dictionary) -> void:
 		S.step = 99
 		S.end1 = 1
 		S.end2 = 0
-		S.lv = 25
+		S.lv = 60
 		S.tut = 1
 		var bst := {}
-		for i in 25:
+		for i in 60:
 			bst[str(i)] = 2 if levels[i].get("ltype", "n") == "h" else 1
 		S.best = bst
 		show_screen("street")
@@ -3240,7 +3247,7 @@ func _dev(a: Dictionary) -> void:
 		home_ui.hide_home()
 		street.do_task(true)
 		if a.has("shots"):
-			for k in [6, 20, 34]:
+			for k in [3, 10, 17, 24, 31, 38, 45, 52]:
 				get_tree().create_timer(float(k)).timeout.connect(func(): get_viewport().get_texture().get_image().save_png("%s-2-build%02d.png" % [a.shots, k]))
 		home_ui._building(true)
 		for i in 400:

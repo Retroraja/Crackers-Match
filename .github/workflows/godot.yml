@@ -42,8 +42,8 @@ jobs:
           cp cmads/build/outputs/aar/cmads-release.aar ../../godot/addons/cmads/bin/
       - name: Android settings and debug key
         run: |
-          keytool -genkeypair -v -keystore "$HOME/debug.keystore" -storepass android -alias androiddebugkey -keypass android \
-            -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          # one fixed key (tools/android/cm-dev.keystore) so every new APK installs over the old one
+          cp tools/android/cm-dev.keystore "$HOME/debug.keystore"
           mkdir -p ~/.config/godot
           cat > ~/.config/godot/editor_settings-4.3.tres <<EOT
           [gd_resource type="EditorSettings" format=3]

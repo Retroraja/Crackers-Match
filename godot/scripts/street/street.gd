@@ -398,7 +398,12 @@ func set_area(a: int) -> void:
 	get_viewport().msaa_3d = Viewport.MSAA_2X
 	env.fog_enabled = false
 	env.ambient_light_color = Color("#ffe2c4")
-	env.ambient_light_energy = 0.75
+	env.ambient_light_energy = 0.6
+	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+	env.tonemap_exposure = 1.0
+	sun.light_color = Color("#ffc690")
+	sun.light_energy = 1.45
+	sun.rotation = Vector3(deg_to_rad(-38), deg_to_rad(-40), 0)
 	TASKS = ShopArea.TASKS.duplicate(true)
 	VW = shop.VW
 	cam_home(true)

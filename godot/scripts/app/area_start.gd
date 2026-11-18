@@ -1,118 +1,66 @@
-# Start of Area 2 (17 Nov, v2): three still shots like the intro story, no camera motion.
-# 1 the loaded red truck in front of our finished Crackers Factory (Area 1 street)
-# 2 the same truck on Bunder Street, Chennai (the world switches to Area 2 behind a fade)
-# 3 the truck stopped in front of our closed, rusty shop      then the "AREA 2" title card.
+# Start of Area 2 (18 Nov, v3): a picture slideshow like the approved preview (area2-story-slides-v3.mp4).
+# Three pictures rendered from the game's own scenes (art/story2): the loaded truck at our Crackers Factory,
+# the truck on Bunder Street, the truck at our rusty shop. Each zooms in slowly with its caption; fades between.
+# Then the "AREA 2 · Bunder Street, Chennai" title card, then the shop home.
 extends AreaEndScene
 class_name AreaStartScene
 
+var pic: TextureRect
+const CAPS := ["The first load of crackers\nis ready for Chennai!", "Chennai.  Bunder Street,\nwhere the big city buys its crackers.", "“Our first shop…\na little rusty, but it's ours.”"]
+
 func play(height: float) -> void:
+	# the picture must exist before super.play() starts shot 1
+	pic = TextureRect.new()
+	pic.set_anchors_preset(Control.PRESET_FULL_RECT)
+	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pic.size = Vector2(390, height)
+	add_child(pic)
+	move_child(pic, 0)
 	super.play(height)
 	(card.get_node("a") as Label).text = "A R E A   2"
 	(card.get_node("t") as Label).text = "Bunder Street, Chennai"
 	(card.get_node("u") as Label).text = "our first shop in the big city"
+	grade.visible = false
+	# a happy moment: the cheerful game music instead of the story theme, no wind
+	amb.stop()
+	music.stream = _stream("music")
+	music.play()
 
 func _shot(n: int) -> void:
 	shot = n
 	sid += 1
 	var id := sid
 	match n:
-		1: _at_factory(id)
-		2: _fade(id, _in_chennai)
-		3: _fade(id, _at_shop)
+		1, 2, 3: _slide(id, n)
 		4: _title(id)
 		_: _finish()
 
-func _road() -> void:
-	path = PackedVector3Array([Vector3.ZERO, Vector3(0, 0, 1)])
-	plen = PackedFloat32Array([0.0, 1.0])
-
-# park the truck at a spot, facing a direction (radians around Y; 0 = +z)
-var t2d: TextureRect
-# the truck is a flat picture laid over the still shot (the 3D truck never showed on screen)
-func _truck2d(pos: Vector2, w: float, flip := false) -> void:
-	if t2d == null:
-		t2d = TextureRect.new()
-		t2d.texture = load("res://art/truck2d.png")
-		t2d.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		t2d.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
-		t2d.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(t2d)
-		move_child(t2d, dim.get_index())
-	t2d.size = Vector2(w, w * 300.0 / 520.0)
-	t2d.position = pos
-	t2d.flip_h = flip
-	t2d.visible = true
-
-func _park(p: Vector3, rot: float, s: float) -> void:
-	return
-	_make_truck()
-	if truck == null:
-		return
-	drive = -1.0
-	chase = false
-	truck.visible = true
-	truck.global_position = p
-	truck.rotation.y = rot
-	(truck.get_child(0) as Node3D).scale = Vector3.ONE * s
-	var b: Node3D = truck.get_child(0).get_node_or_null("box4")
-	if b:
-		b.visible = true
-
-func _still(p: Vector3, l: Vector3) -> void:
-	street.CAMID += 1
-	street.camP = p
-	street.camL = l
-
-# a quick fade to black and back, changing the picture in the middle
-func _fade(id: int, f: Callable) -> void:
-	_tw().tween_property(cap, "modulate:a", 0.0, 0.25)
+func _slide(id: int, n: int) -> void:
+	grade.color.a = 0.0
+	_tw().tween_property(cap, "modulate:a", 0.0, 0.2)
 	var t := _tw()
-	t.tween_property(dim, "color:a", 1.0, 0.35)
+	if n > 1:
+		t.tween_property(dim, "color:a", 1.0, 0.3)
 	t.tween_callback(func():
-		if id == sid:
-			f.call(id))
+		if id != sid:
+			return
+		pic.texture = load("res://art/story2/s%d.jpg" % n)
+		pic.pivot_offset = pic.size / 2.0
+		pic.scale = Vector2.ONE
+		create_tween().tween_property(pic, "scale", Vector2.ONE * 1.06, 4.2).set_trans(Tween.TRANS_SINE))
 	t.tween_property(dim, "color:a", 0.0, 0.45)
+	_later(0.6, id, func(): say(CAPS[n - 1], id, 3.0))
+	_later(4.0, id, func(): _shot(n + 1))
 
-func _at_factory(id: int) -> void:
-	if street:
-		street.night(0.35)
-		_truck2d(Vector2(60, H - BOT - 230), 270)
-		_still(Vector3(-5.5, 5.8, -27.0), Vector3(0.5, 2.6, -50.0))
-	_later(0.5, id, func(): say("The first load of crackers\nis ready!", id, 3.0))
-	_later(3.8, id, func(): _shot(2))
-
-func _in_chennai(id: int) -> void:
-	if street:
-		street.night(0.0)
-		street.set_area(2)
-		_truck2d(Vector2(30, H - BOT - 250), 300)
-		_still(Vector3(-24.0, 5.5, 24.0), Vector3(-15.0, 2.2, 3.0))
-	_later(0.6, id, func(): say("Chennai.  Bunder Street,\nwhere the big city buys its crackers.", id, 3.2))
-	_later(4.2, id, func(): _shot(3))
-
-func _at_shop(id: int) -> void:
-	if street:
-		_truck2d(Vector2(-60, H - BOT - 210), 300)
-		_still(Vector3(0, 6.5, 30), Vector3(0, 4.4, -2))
-	man.mood("smile", 99)
-	man.base = "idle"
-	man.position.x = 2
-	_tw().tween_property(man, "position:y", H - BOT - 236, 0.8).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	_later(0.5, id, func(): say("“Our first shop…\na little rusty, but it's ours.”", id, 3.2))
-	_later(4.2, id, func():
-		_tw().tween_property(man, "position:y", H + 40, 0.5)
-		_shot(4))
+func _title(id: int) -> void:
+	_tw().tween_property(pic, "modulate", Color(0.45, 0.42, 0.5), 0.6)
+	super._title(id)
 
 func _process(_dt: float) -> void:
 	pass
 
-func _title(id: int) -> void:
-	if t2d:
-		t2d.visible = false
-	super._title(id)
-
 func _cleanup() -> void:
-	if is_instance_valid(truck):
-		truck.queue_free()
 	if street:
 		street.cam_home(true)
