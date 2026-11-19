@@ -200,6 +200,7 @@ func _ready() -> void:
 	street_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	scl.add_child(street_tex)
 	street.sv = street_sv
+	street.video_cb = build_video
 	_street_res()
 	get_window().size_changed.connect(_street_res)
 	if OS.get_cmdline_user_args().has("--perf=1"): print("TEXMEM after_street %d MB" % (Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576))
@@ -307,8 +308,7 @@ func set_perf_step(n: int) -> void:
 		street.lite = lite
 		if street.sun:
 			street.sun.shadow_enabled = perf_step == 0 and not lite
-	# slow phones: steady 30 fps (less heat, even frames); the game clock keeps real time
-	Engine.max_fps = 30 if perf_step >= 1 else 0
+	Engine.max_fps = 0   # never locked (19 Nov): every phone runs as fast as it can
 	if street and street.bazaar:
 		street.bazaar.set_busy(perf_step < 2)
 
@@ -2950,6 +2950,9 @@ func enter_area2() -> void:
 
 # first open: "Grandpa's Dream" over the live street, then level 1
 func play_story(then: Callable) -> void:
+	if VIDEO and not REC and ResourceLoader.exists("res://video/story.ogv"):
+		_video_story(then)
+		return
 	show_screen("street")
 	home_ui.sync_in()
 	home_ui.home.visible = false
@@ -2967,6 +2970,80 @@ func play_story(then: Callable) -> void:
 		save()
 		then.call())
 	st.tree_exited.connect(cl.queue_free)
+
+# the story as a video (phones): the 3D street is not drawn at all; Skip top-right
+func _video_story(then: Callable) -> void:
+	show_screen("street")
+	home_ui.sync_in()
+	home_ui.home.visible = false
+	street_sv.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	street_tex.visible = false
+	var cl := CanvasLayer.new()
+	cl.layer = 60
+	add_child(cl)
+	var root := ColorRect.new()
+	root.color = Color.BLACK
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	cl.add_child(root)
+	var vp := VideoStreamPlayer.new()
+	vp.stream = load("res://video/story.ogv")
+	vp.expand = true
+	vp.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vp.volume_db = 0.0 if sfx == null or sfx.mus_on else -80.0
+	root.add_child(vp)
+	# the video already shows "Skip ›" top-right: an invisible button over it
+	var skip := Button.new()
+	skip.flat = true
+	skip.modulate.a = 0.0
+	skip.position = Vector2(270, 0)
+	skip.size = Vector2(120, 70)
+	root.add_child(skip)
+	var ended := [false]
+	var end := func():
+		if ended[0]:
+			return
+		ended[0] = true
+		S.story = 1
+		save()
+		var t := create_tween()
+		t.tween_property(root, "modulate:a", 0.0, 0.4)
+		t.tween_callback(func():
+			vp.stop()
+			cl.queue_free()
+			street_tex.visible = true
+			street_sv.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+			then.call())
+	vp.finished.connect(end)
+	skip.pressed.connect(end)
+	print("VIDEO story start %d ms" % Time.get_ticks_msec())
+	vp.play()
+
+# a build as a video in place of the live 3D street (phones); the real build runs underneath unseen, so the
+# street is in the built state when the video ends. Only for builds that have a video (test: Area 1 build 1).
+func build_video(area: int, step: int) -> bool:
+	var path := "res://video/a%d_b%d.ogv" % [area, step]
+	if not VIDEO or REC or not ResourceLoader.exists(path):
+		return false
+	var vp := VideoStreamPlayer.new()
+	vp.stream = load(path)
+	vp.expand = true
+	vp.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vp.volume_db = -80.0   # the game plays the build sounds itself
+	street_tex.get_parent().add_child(vp)
+	street_tex.visible = false
+	street_sv.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	print("VIDEO build start %d ms" % Time.get_ticks_msec())
+	vp.finished.connect(func():
+		print("VIDEO build end %d ms" % Time.get_ticks_msec())
+		street_sv.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+		await get_tree().process_frame
+		await get_tree().process_frame
+		street_tex.visible = true
+		vp.queue_free())
+	vp.play()
+	return true
 
 # end of Area 1 (once): factory lights, fireworks, the truck leaves for Chennai, the notebook tick
 func play_area_end(then: Callable) -> void:
@@ -3080,6 +3157,11 @@ func ask_notify() -> void:
 
 # ================================================================== frame
 var street_sv: SubViewport
+# dev: recording the phone videos (--rec=story | --rec=b0): no FPS number; --rec=b0 hides every 2D layer
+var REC := OS.get_cmdline_user_args().has("--rec=story") or OS.get_cmdline_user_args().has("--rec=b0")
+var REC3D := OS.get_cmdline_user_args().has("--rec=b0")
+# phones play these instead of drawing live 3D (19 Nov test): res://video/*.ogv
+var VIDEO := OS.has_feature("mobile") or OS.get_cmdline_user_args().has("--video=1")
 var street_tex: TextureRect
 const STREET_RES_PHONE := 0.55
 func _street_res() -> void:
@@ -3106,6 +3188,7 @@ func _fps_show(dt: float) -> void:
 		fps_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		cl.add_child(fps_lbl)
 	fps_lbl.text = "FPS %d" % Engine.get_frames_per_second()
+	fps_lbl.visible = not REC
 var _pf_n := 0
 var _pf_f0 := 0
 func _process(dt: float) -> void:
@@ -3221,6 +3304,10 @@ func _flow(a: Dictionary) -> void:
 			home_ui._build_btn()
 		elif act == "build":
 			home_ui.panel()
+			if REC3D:
+				for n in get_children():
+					if n is CanvasLayer and (n as CanvasLayer).layer >= 0:
+						(n as CanvasLayer).visible = false
 			street.do_task(false)
 			home_ui.hide_home()
 			home_ui._building(true)

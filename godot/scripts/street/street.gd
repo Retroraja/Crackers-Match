@@ -779,8 +779,11 @@ func kind_of(T: Dictionary) -> String:
 
 var spend_cb: Callable    # the home screen flies the diya from the Build button to the site, then calls back
 
+var video_cb: Callable   # cm_app.build_video(area, step): phones play the build as a video
 func run_next() -> void:
 	var T: Dictionary = TASKS[step]
+	if video_cb.is_valid():
+		video_cb.call(area, step)
 	diyas -= int(T.c)
 	changed.emit()
 	var tot := task_len(T)
