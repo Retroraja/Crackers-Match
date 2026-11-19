@@ -149,6 +149,10 @@ func _ready() -> void:
 	levels = Levels.all()
 	load_save()
 	lite = _weak_phone()
+	if FileAccess.file_exists("user://live3d"):
+		_lt_state = 2
+		if FileAccess.get_file_as_string("user://live3d") == "1" and not OS.get_cmdline_user_args().has("--video=1"):
+			VIDEO = false
 	if FileAccess.file_exists("user://perf"):
 		perf_step = int(FileAccess.get_file_as_string("user://perf"))
 	elif lite:
@@ -186,7 +190,7 @@ func _ready() -> void:
 	# screen, about 3x less work) and that picture is stretched to fill the screen behind the menus.
 	street_sv = SubViewport.new()
 	street_sv.transparent_bg = true
-	street_sv.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	street_draw(true)
 	add_child(street_sv)
 	street_sv.add_child(street)
 	var scl := CanvasLayer.new()
@@ -509,10 +513,10 @@ func show_screen(id: String) -> void:
 		street.visible = st_on
 		street.process_mode = Node.PROCESS_MODE_INHERIT if st_on else Node.PROCESS_MODE_DISABLED
 		street_tex.visible = st_on
-		street_sv.render_target_update_mode = SubViewport.UPDATE_ALWAYS if st_on else SubViewport.UPDATE_DISABLED
+		street_draw(st_on)
 		street.cam.current = st_on
 		sky_layer.visible = st_on and street.bazaar == null
-		back.visible = not st_on
+		back.visible = not st_on and id != "game"
 	if LO and id != "game":
 		lose_hide()
 	if id != "win":
@@ -547,6 +551,44 @@ func _board_input() -> void:
 		game.set_process_unhandled_input(not blocked)
 
 # ================================================================== game screen
+# 19 Nov speed (his OPPO, level at 21 fps): the level drew ~5 full-screen layers on top of each other
+# (purple backdrop, light-blue game box, blurred picture, white gradient over it, the end dim). The white
+# gradient is now painted into the blurred picture once, and the layers it covers are not drawn.
+func _flatten_game_bg() -> void:
+	var bf: Control = G.nodes[1]
+	var img_r: TextureRect = bf.get_node_or_null("bgimg")
+	var ov: Control = bf.get_node_or_null("box")
+	if img_r == null or ov == null or img_r.texture == null:
+		return
+	await get_tree().process_frame
+	var im: Image = img_r.texture.get_image()
+	if im == null:
+		return
+	im = im.duplicate()
+	im.decompress()
+	im.convert(Image.FORMAT_RGBA8)
+	var h := im.get_height()
+	var w := im.get_width()
+	var ir := img_r.get_global_rect()
+	var orr := ov.get_global_rect()
+	var stops := [[0.0, 0.35], [0.4, 0.22], [1.0, 0.28]]
+	for y in h:
+		var sy := ir.position.y + (y + 0.5) / h * ir.size.y
+		var t := clampf((sy - orr.position.y) / maxf(orr.size.y, 1.0), 0.0, 1.0)
+		var a := 0.0
+		for i in range(1, stops.size()):
+			if t <= stops[i][0]:
+				a = lerpf(stops[i - 1][1], stops[i][1], (t - stops[i - 1][0]) / (stops[i][0] - stops[i - 1][0]))
+				break
+		for x in w:
+			var c := im.get_pixel(x, y)
+			im.set_pixel(x, y, Color(lerpf(c.r, 1.0, a), lerpf(c.g, 1.0, a), lerpf(c.b, 1.0, a), c.a))
+	img_r.texture = ImageTexture.create_from_image(im)
+	ov.visible = false
+	var gb: Node = G.nodes[0].get_node_or_null("box")
+	if gb:
+		(gb as CanvasItem).visible = false
+
 func _build_game() -> void:
 	G = WebLayout.new()
 	var root := G.build("res://ui/game.json", stage)
@@ -556,6 +598,7 @@ func _build_game() -> void:
 	root.move_child(bd, bg.get_index() + 1)
 	var dim: Control = G.node("endDim")
 	root.move_child(dim, bd.get_index() + 1)
+	_flatten_game_bg()
 	game = CMGame.new()
 	game.sfx = sfx
 	game.lite = lite
@@ -591,6 +634,7 @@ func _build_game() -> void:
 	G.node("shuf").modulate.a = 0
 	G.node("skip").visible = false
 	G.node("endDim").modulate.a = 0
+	G.node("endDim").visible = false
 	game.moves_changed.connect(_on_moves)
 	game.goal_changed.connect(hud)
 	game.score_changed.connect(sbar)
@@ -2327,6 +2371,7 @@ func level_done(mv: int) -> void:
 	face.mood("cheer", 4)
 	pop_face()
 	later(0.5, func():
+		G.node("endDim").visible = true
 		create_tween().tween_property(G.node("endDim"), "modulate:a", 1.0, 0.35)
 		lift_music())
 	later(0.75, func():
@@ -3012,10 +3057,12 @@ func _video_story(then: Callable) -> void:
 			vp.stop()
 			cl.queue_free()
 			street_tex.visible = true
-			street_sv.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+			street_draw(true)
 			then.call())
 	vp.finished.connect(end)
 	skip.pressed.connect(end)
+	if sfx:
+		sfx.duck(0.0)
 	print("VIDEO story start %d ms" % Time.get_ticks_msec())
 	vp.play()
 
@@ -3037,13 +3084,41 @@ func build_video(area: int, step: int) -> bool:
 	print("VIDEO build start %d ms" % Time.get_ticks_msec())
 	vp.finished.connect(func():
 		print("VIDEO build end %d ms" % Time.get_ticks_msec())
-		street_sv.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+		street_draw(true)
 		await get_tree().process_frame
 		await get_tree().process_frame
 		street_tex.visible = true
 		vp.queue_free())
 	vp.play()
 	return true
+
+# a full-screen video with its own sound (area end scenes on phones)
+func _video_full(path: String, then: Callable) -> void:
+	street_draw(false)
+	var cl := CanvasLayer.new()
+	cl.layer = 60
+	add_child(cl)
+	var root := ColorRect.new()
+	root.color = Color.BLACK
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	cl.add_child(root)
+	var vp := VideoStreamPlayer.new()
+	vp.stream = load(path)
+	vp.expand = true
+	vp.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vp.volume_db = 0.0 if sfx == null or sfx.mus_on else -80.0
+	root.add_child(vp)
+	if sfx:
+		sfx.duck(0.0)
+	vp.finished.connect(func():
+		var t := create_tween()
+		t.tween_property(root, "modulate:a", 0.0, 0.35)
+		t.tween_callback(func():
+			cl.queue_free()
+			street_draw(street_tex.visible)
+			then.call()))
+	vp.play()
 
 # end of Area 1 (once): factory lights, fireworks, the truck leaves for Chennai, the notebook tick
 func play_area_end(then: Callable) -> void:
@@ -3052,6 +3127,15 @@ func play_area_end(then: Callable) -> void:
 		then.call()
 		return
 	home_ui.home.visible = false
+	var vpath := "res://video/a%d_end.ogv" % street.area
+	if VIDEO and not REC and ResourceLoader.exists(vpath):
+		_video_full(vpath, func():
+			S[key] = 1
+			save()
+			then.call())
+		return
+	if REC:
+		print("ENDSTART %d" % Engine.get_frames_drawn())
 	var cl := CanvasLayer.new()
 	cl.layer = 60
 	add_child(cl)
@@ -3063,6 +3147,8 @@ func play_area_end(then: Callable) -> void:
 	cl.add_child(st)
 	st.play(get_viewport().get_visible_rect().size.y)
 	st.finished.connect(func():
+		if REC:
+			print("ENDEND %d" % Engine.get_frames_drawn())
 		S[key] = 1
 		save()
 		then.call())
@@ -3158,10 +3244,61 @@ func ask_notify() -> void:
 # ================================================================== frame
 var street_sv: SubViewport
 # dev: recording the phone videos (--rec=story | --rec=b0): no FPS number; --rec=b0 hides every 2D layer
-var REC := OS.get_cmdline_user_args().has("--rec=story") or OS.get_cmdline_user_args().has("--rec=b0")
-var REC3D := OS.get_cmdline_user_args().has("--rec=b0")
+var REC := " ".join(OS.get_cmdline_user_args()).contains("--rec=")
+var REC3D := OS.get_cmdline_user_args().has("--rec=b0") or OS.get_cmdline_user_args().has("--rec=build")
 # phones play these instead of drawing live 3D (19 Nov test): res://video/*.ogv
 var VIDEO := OS.has_feature("mobile") or OS.get_cmdline_user_args().has("--video=1")
+
+# Picture mode (phones, 19 Nov): the 3D street is NOT drawn every frame. It is drawn once (a still picture)
+# when the home screen shows and again after the camera settles; builds and area ends play as videos.
+# On the first home screen a phone tests live 3D for 3 s: 40+ fps (like his Moto) keeps the live street,
+# slower (like his OPPO) stays in picture mode. Remembered in user://live3d.
+var _lt_state := 0   # 0 not tested, 1 testing, 2 done
+var _snap_id := 0
+func street_draw(on: bool) -> void:
+	if street_sv == null:
+		return
+	if street:
+		street.no_fast = VIDEO
+	if not on:
+		street_sv.render_target_update_mode = SubViewport.UPDATE_DISABLED
+		return
+	if not VIDEO:
+		street_sv.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+		return
+	if OS.has_feature("mobile") and _lt_state == 0 and not FileAccess.file_exists("user://live3d") and int(S.get("story", 0)) == 1:
+		_live_test()
+		return
+	if _lt_state == 1:
+		return
+	_snap()
+
+func _snap() -> void:
+	_snap_id += 1
+	var id := _snap_id
+	street_sv.render_target_update_mode = SubViewport.UPDATE_ONCE
+	# again after the camera has settled (home glides take up to ~1.6 s)
+	for d in [0.6, 1.3, 2.0]:
+		get_tree().create_timer(d).timeout.connect(func():
+			if id == _snap_id and VIDEO and street_tex.visible:
+				street_sv.render_target_update_mode = SubViewport.UPDATE_ONCE)
+
+func _live_test() -> void:
+	_lt_state = 1
+	street_sv.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	await get_tree().create_timer(0.8).timeout
+	var f0 := Engine.get_frames_drawn()
+	var t0 := Time.get_ticks_msec()
+	await get_tree().create_timer(3.0).timeout
+	var fps := (Engine.get_frames_drawn() - f0) * 1000.0 / maxf(1.0, Time.get_ticks_msec() - t0)
+	var live := fps >= 40.0
+	var f := FileAccess.open("user://live3d", FileAccess.WRITE)
+	if f:
+		f.store_string("1" if live else "0")
+	_lt_state = 2
+	if live:
+		VIDEO = false
+	street_draw(street_tex.visible)
 var street_tex: TextureRect
 const STREET_RES_PHONE := 0.55
 func _street_res() -> void:
@@ -3193,6 +3330,11 @@ var _pf_n := 0
 var _pf_f0 := 0
 func _process(dt: float) -> void:
 	_fps_show(dt)
+	if G:
+		var ed: CanvasItem = G.node("endDim")
+		ed.visible = ed.modulate.a > 0.005
+		if screens.game.visible and back.visible:
+			back.visible = false
 	if OS.get_cmdline_user_args().has("--perf=1"):
 		_pf_t += dt
 		if _pf_t > 2.0:
@@ -3212,6 +3354,31 @@ func _process(dt: float) -> void:
 					nb += 1
 					if ci is Control:
 						area += (ci as Control).size.x * (ci as Control).size.y * (ci as Control).get_global_transform().get_scale().x * (ci as Control).get_global_transform().get_scale().y
+			if OS.get_cmdline_user_args().has("--layers=1"):
+				var L := []
+				for n in get_tree().root.find_children("*", "CanvasItem", true, false):
+					var ci := n as CanvasItem
+					if not ci.is_visible_in_tree() or ci.modulate.a <= 0.01:
+						continue
+					var r := Rect2()
+					if ci is Control:
+						var c := ci as Control
+						var sc := c.get_global_transform().get_scale()
+						r = Rect2(Vector2.ZERO, c.size * sc)
+					elif ci is Sprite2D and (ci as Sprite2D).texture:
+						var sp := ci as Sprite2D
+						r = Rect2(Vector2.ZERO, sp.texture.get_size() * sp.get_global_transform().get_scale())
+					var fr := r.size.x * r.size.y / (390.0 * 844.0)
+					var draws: bool = (ci is TextureRect and (ci as TextureRect).texture != null) or (ci is ColorRect and (ci as ColorRect).color.a > 0.0) or ci is Sprite2D or (ci is Panel) or ci.get_script() != null
+					if fr >= 0.25 and draws:
+						L.append([fr, ci.get_class(), str(ci.get_path()).right(60), ci.material != null])
+				L.sort_custom(func(x, y): return x[0] > y[0])
+				var tot := 0.0
+				for e in L:
+					tot += e[0]
+				print("LAYERS total %.1f screens, %d big items" % [tot, L.size()])
+				for e in L.slice(0, 25):
+					print("LAYER %.2f %s mat=%s %s" % [e[0], e[1], e[3], e[2]])
 			if OS.get_cmdline_user_args().has("--bigbox=1"):
 				var big := []
 				for n in get_tree().root.find_children("*", "Control", true, false):
@@ -3602,6 +3769,12 @@ func _dev(a: Dictionary) -> void:
 		S.step = 99
 		S.end1 = 0
 		show_screen("street")
+		if a.get("area", "1") == "2":
+			S.end1 = 1
+			S.end2 = 0
+			street.set_area(2)
+			street.step = street.TASKS.size()
+			sky_layer.visible = false
 		home_ui.sync_in()
 		home_ui.home.visible = false
 		var w: Dictionary = street.wide()

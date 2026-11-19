@@ -570,7 +570,7 @@ func build_all() -> void:
 	var n := can_do()
 	if n < 1:
 		return
-	FAST = true
+	FAST = not no_fast
 	FN = 0
 	FT = n
 	do_task(true)
@@ -780,8 +780,11 @@ func kind_of(T: Dictionary) -> String:
 var spend_cb: Callable    # the home screen flies the diya from the Build button to the site, then calls back
 
 var video_cb: Callable   # cm_app.build_video(area, step): phones play the build as a video
+var no_fast := false     # picture mode: Build All plays every build at normal speed (videos)
 func run_next() -> void:
 	var T: Dictionary = TASKS[step]
+	if " ".join(OS.get_cmdline_user_args()).contains("--rec="):
+		print("RECSTART %d" % Engine.get_frames_drawn())
 	if video_cb.is_valid():
 		video_cb.call(area, step)
 	diyas -= int(T.c)
@@ -807,6 +810,8 @@ func run_next() -> void:
 	after(wait, go)
 
 func _task_finished() -> void:
+	if " ".join(OS.get_cmdline_user_args()).contains("--rec="):
+		print("RECEND %d" % Engine.get_frames_drawn())
 	step += 1
 	changed.emit()
 	sfx.emit("area" if step >= TASKS.size() else "done")
