@@ -416,6 +416,7 @@ func set_area(a: int) -> void:
 	# (MSAA left off: with it, code-made boxes vanished in tests)
 	if bazaar == null:
 		env.fog_enabled = false
+	_warm = 0
 	env.ambient_light_color = Color("#ffe2c4")
 	env.ambient_light_energy = 0.6
 	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
@@ -849,9 +850,40 @@ func _tick(dt: float) -> void:
 			keep.append(o)
 	TW = keep + TW
 
+# build parts are hidden until their build: a phone prepares (compiles) their drawing the first time they
+# show, which froze every build. At the first frames the street is on screen, a tiny copy of every hidden
+# mesh is drawn right in front of the camera (too small to see), so that work is done before any build.
+var _warm := 0
+func _warm_up() -> void:
+	var made := []
+	var fwd := -cam.global_transform.basis.z
+	for n in find_children("*", "MeshInstance3D", true, false):
+		var mi := n as MeshInstance3D
+		if mi.mesh == null or mi.is_visible_in_tree():
+			continue
+		var c := MeshInstance3D.new()
+		c.mesh = mi.mesh
+		for i in mi.mesh.get_surface_count():
+			var m := mi.get_active_material(i)
+			if m:
+				c.set_surface_override_material(i, m)
+		c.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(c)
+		c.global_position = cam.global_position + fwd * 1.0
+		c.scale = Vector3.ONE * 0.0004
+		made.append(c)
+	get_tree().create_timer(0.6).timeout.connect(func():
+		for c in made:
+			if is_instance_valid(c):
+				c.queue_free())
+
 func _process(delta: float) -> void:
 	if not visible:
 		return
+	if _warm < 3:
+		_warm += 1
+		if _warm == 3:
+			_warm_up()
 	var dt := minf(0.1, delta) * SPEED
 	_tick(dt)
 	cam.position = camP

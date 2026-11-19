@@ -3061,9 +3061,26 @@ func ask_notify() -> void:
 
 # ================================================================== frame
 var _pf_t := 0.0
+# test build (19 Nov): frames-per-second number in the top-left corner, on every screen
+var fps_lbl: Label
+func _fps_show(dt: float) -> void:
+	if fps_lbl == null:
+		var cl := CanvasLayer.new()
+		cl.layer = 128
+		add_child(cl)
+		fps_lbl = Label.new()
+		fps_lbl.position = Vector2(6, 64)
+		fps_lbl.add_theme_font_size_override("font_size", 15)
+		fps_lbl.add_theme_color_override("font_color", Color(1, 1, 0.3))
+		fps_lbl.add_theme_color_override("font_outline_color", Color.BLACK)
+		fps_lbl.add_theme_constant_override("outline_size", 5)
+		fps_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cl.add_child(fps_lbl)
+	fps_lbl.text = "FPS %d" % Engine.get_frames_per_second()
 var _pf_n := 0
 var _pf_f0 := 0
 func _process(dt: float) -> void:
+	_fps_show(dt)
 	if OS.get_cmdline_user_args().has("--perf=1"):
 		_pf_t += dt
 		if _pf_t > 2.0:

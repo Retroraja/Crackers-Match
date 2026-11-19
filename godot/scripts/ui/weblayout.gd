@@ -15,7 +15,8 @@ const BAKE_SCALE := 2.0
 static var _bk: Node
 static var _bq: Array = []
 static func bake(cr: ColorRect) -> void:
-	if OS.get_cmdline_user_args().has("--nobake=1"):
+	# OFF (19 Nov): painting boxes once broke the instruction cards on phones (solid oval, late text)
+	if not OS.get_cmdline_user_args().has("--bake=1"):
 		return
 	if cr == null or not is_instance_valid(cr) or not (cr.material is ShaderMaterial):
 		return
