@@ -530,9 +530,46 @@ func show_screen(id: String) -> void:
 	_board_input()
 
 func open_modal(c: Control, on: bool) -> void:
+	if L_card != null and (c == L_card.root or c == L_hard.root):
+		_freeze_game(on)
 	c.visible = on
 	c.mouse_filter = Control.MOUSE_FILTER_STOP if on else Control.MOUSE_FILTER_IGNORE
 	_board_input()
+
+# 19 Nov speed (level card at 20 fps on his OPPO): while the level card is open over a level, the level behind it
+# (board, header, man, lights) is shown as one still picture of the last frame instead of being drawn every frame.
+var _frz: TextureRect
+var _frz_on := false
+func _freeze_game(on: bool) -> void:
+	if on:
+		if _frz_on or not screens.has("game") or not screens.game.visible or REC:
+			return
+		var img := get_viewport().get_texture().get_image()
+		if img == null or img.is_empty():
+			return
+		if _frz == null:
+			_frz = TextureRect.new()
+			_frz.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_frz.stretch_mode = TextureRect.STRETCH_SCALE
+			_frz.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			stage.get_parent().add_child(_frz)
+		stage.get_parent().move_child(_frz, stage.get_index())
+		_frz.texture = ImageTexture.create_from_image(img)
+		_frz.position = Vector2.ZERO
+		_frz.size = get_viewport().get_visible_rect().size
+		_frz.visible = true
+		screens.game.visible = false
+		_frz_on = true
+	elif _frz_on:
+		_frz_on = false
+		var other := false
+		for k in screens:
+			if k != "game" and screens[k].visible:
+				other = true
+		if not other:
+			screens.game.visible = true
+		_frz.visible = false
+		_frz.texture = null
 
 func _board_input() -> void:
 	if L_card == null or L_agree == null:
@@ -616,6 +653,7 @@ func _build_game() -> void:
 	# the badge head
 	var fc: Control = G.nodes[32]
 	face = CMFace.new()
+	face.split = true
 	face.size = fc.size
 	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	fc.add_child(face)
@@ -3484,6 +3522,12 @@ func _flow(a: Dictionary) -> void:
 			home_ui._building(true)
 		elif act == "play":
 			home_ui._play()
+			if a.has("go"):
+				await get_tree().create_timer(1.0).timeout
+				_card_play()
+				if a.get("go") == "card":
+					await get_tree().create_timer(3.0).timeout
+					open_card(card_i + 1)
 		elif act == "winnext":
 			title_s.visible = false
 			start(0)
@@ -3508,6 +3552,18 @@ func _dev(a: Dictionary) -> void:
 	S.lv = int(a.get("slv", 9))
 	var lv := int(a.get("lv", 6)) - 1
 	var t: String = a.t
+	if t == "gshot":
+		# dev (19 Nov speed): a level, optionally the next level card over it, then a screenshot
+		open_modal(L_card.root, false)
+		open_modal(L_hard.root, false)
+		start(lv)
+		await get_tree().create_timer(2.5).timeout
+		if a.has("card"):
+			open_card(lv + 1)
+			await get_tree().create_timer(1.5).timeout
+		get_viewport().get_texture().get_image().save_png(a.shot)
+		get_tree().quit()
+		return
 	if t == "card":
 		open_card(lv)
 	elif t == "game" or t == "end" or t == "lose" or t == "win" or t == "meter" or t == "cheer":

@@ -28,10 +28,29 @@ var bob := 0.0
 var sway := 0.0
 var breathe := 0.0
 var shrug := 0.0
+# 19 Nov (game badge): coat, head and hair are drawn once; only brows, eyes and mouth redraw, and only when they change
+var split := false
+var _st: Control
+var _sig := ""
 
 func _ready() -> void:
 	pen = Pen.new(self)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if split:
+		_st = FaceStatic.new()
+		_st.f = self
+		_st.pen = Pen.new(_st)
+		_st.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_st.show_behind_parent = true
+		_st.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		add_child(_st)
+		resized.connect(func(): _st.queue_redraw(); queue_redraw())
+
+class FaceStatic extends Control:
+	var f: CMFace
+	var pen: Pen
+	func _draw() -> void:
+		f._draw_f(pen, 1)
 
 func mood(n: String, hold: float = 1.4) -> void:
 	if not M.has(n):
@@ -70,6 +89,13 @@ func _process(dt: float) -> void:
 	look += (lk - look) * minf(1.0, dt * 6)
 	if bounce > 0:
 		bounce = maxf(0.0, bounce - dt * 2.2)
+	if split:
+		position.y = -sin(bounce * PI) * 4.0
+		var sg := "%d|%d|%d|%d|%d|%d|%d|%d" % [roundi(v.sm * 40), roundi(v.br * 40), roundi(v.ey * 40), roundi(v.mo * 40), roundi(v.wo * 40), roundi(v.wk * 40), roundi(look * 14), 1 if bl > 0 else 0]
+		if sg != _sig:
+			_sig = sg
+			queue_redraw()
+		return
 	# redraw ~20 times a second (it was every frame: the biggest script cost in levels and the story)
 	_rd += dt
 	if _rd >= 0.05 or bl > 0:
@@ -79,25 +105,33 @@ func _process(dt: float) -> void:
 var _rd := 0.0
 func _draw() -> void:
 	var _t0 := Time.get_ticks_usec()
-	_draw_f()
+	_draw_f(pen, 2 if split else 0)
 	CMGame.perf_add("face", Time.get_ticks_usec() - _t0)
 
-func _draw_f() -> void:
-	if pen == null:
+# part 0 = everything, 1 = coat/head/hair/nose only, 2 = brows/eyes/mouth only (split mode has no sway, bob or turn)
+func _draw_f(c: Pen, part: int = 0) -> void:
+	if c == null:
 		return
-	var c := pen
 	var W := size.x
 	var H := size.y
 	c.xf = Transform2D.IDENTITY
 	c.clip_poly = PackedVector2Array()
 	c.save()
 	var sc := minf(W / 150.0, H / 235.0)
-	c.translate(W / 2, H + 2 - sin(bounce * PI) * 4 - bob)
+	c.translate(W / 2, H + 2 - (0.0 if split else sin(bounce * PI) * 4) - bob)
 	c.scale(sc, sc)
 	c.rotate(sway)
 	var br2 := sin(t * 1.6) * breathe
 	c.save()
 	c.scale(1.0 + br2 * 0.01, 1.0 + br2 * 0.025 - shrug * 0.04)
+	if part == 2:
+		c.restore()
+		c.translate(0, -140 - br2 * 1.5 + shrug * 4)
+		c.rotate(turn * 0.05)
+		c.translate(-4 + turn * 13, 0)
+		_draw_feat(c)
+		c.restore()
+		return
 	# coat shoulders
 	c.begin(); c.move(-80, 0); c.bez(-80, -40, -60, -62, -30, -70); c.line(30, -70); c.bez(60, -62, 80, -40, 80, 0); c.close(); c.fill(Color("#2C2B34"))
 	c.begin(); c.move(-22, -72); c.line(22, -72); c.line(4, 0); c.line(-4, 0); c.close(); c.fill(Color("#F2F3F7"))
@@ -109,6 +143,20 @@ func _draw_f() -> void:
 	c.rotate(turn * 0.05)
 	CMFace.head_base(c)
 	c.translate(-4 + turn * 13, 0)
+	if part == 1:
+		_draw_nose(c)
+		c.restore()
+		return
+	_draw_feat(c)
+	if part == 0:
+		_draw_nose(c)
+	_draw_mouth(c)
+	c.restore()
+
+func _draw_nose(c: Pen) -> void:
+	c.begin(); c.move(3, -4); c.quad(10, 18, 6, 24); c.quad(0, 28, -6, 24); c.stroke(Color(130 / 255.0, 76 / 255.0, 46 / 255.0, 0.75), 2.4)
+
+func _draw_feat(c: Pen) -> void:
 	var br: float = v.br * 6
 	var wo: float = v.wo
 	var sm: float = v.sm
@@ -130,8 +178,11 @@ func _draw_f() -> void:
 		c.begin(); c.arc(ex + 2.5 + lx, -2.2, 1.3, 0, TAU); c.fill(Color.WHITE)
 		c.restore()
 		c.begin(); c.move(ex - 12, 1); c.quad(ex, -8 * o, ex + 12, 1); c.stroke("#2A282D", 2.2)
-	c.begin(); c.move(3, -4); c.quad(10, 18, 6, 24); c.quad(0, 28, -6, 24); c.stroke(Color(130 / 255.0, 76 / 255.0, 46 / 255.0, 0.75), 2.4)
-	# mouth
+	if split:
+		_draw_mouth(c)
+
+func _draw_mouth(c: Pen) -> void:
+	var sm: float = v.sm
 	var mo: float = v.mo
 	if mo > 0.08:
 		c.begin(); c.move(-16 - sm * 2, 36 - sm * 2); c.quad(2, 40 + sm * 3 + mo * 14, 18 + sm * 2, 35 - sm * 3); c.quad(2, 38 + sm, -16 - sm * 2, 36 - sm * 2); c.fill(Color("#5A1F1A"))
@@ -139,7 +190,6 @@ func _draw_f() -> void:
 			c.begin(); c.move(-12, 37 - sm); c.quad(2, 39 + sm, 14, 36 - sm * 2); c.line(13, 39); c.quad(2, 42, -11, 40); c.fill(Color.WHITE)
 	else:
 		c.begin(); c.move(-18, 38 - sm * 2); c.quad(2, 40 + sm * 5, 20, 35 - sm * 3); c.stroke("#6E2E26", 3.2)
-	c.restore()
 
 # neck, ears, face, stubble shade and hair (same in face.js and winguy.js)
 static func head_base(c: Pen) -> void:

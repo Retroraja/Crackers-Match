@@ -49,6 +49,10 @@ var clock := 0.0
 var stop := 0.0
 var flash := 0.0
 var dim := 0.0
+# 19 Nov: the board is only redrawn while something on it moves or glows
+var _anim := true
+var _quiet := 0
+var _last_dim := -1.0
 var busy := false
 var over := false
 var stopped := false
@@ -230,8 +234,7 @@ func start(level: Dictionary) -> void:
 	if gold_node:
 		gold_node.queue_free()
 		gold_node = null
-	floor_node = CMFloor.new()
-	floor_node.g = self
+	floor_node = _bake_floor()
 	floor_node.show_behind_parent = true
 	add_child(floor_node)
 	move_child(floor_node, 0)
@@ -293,6 +296,7 @@ func _fresh_base() -> void:
 		b.append(row)
 
 func fresh() -> void:
+	_quiet = 0
 	var t := 0
 	while true:
 		_fresh_base()
@@ -1473,8 +1477,13 @@ func _process2(delta: float) -> void:
 	for e in due:
 		e.f.call()
 	flash *= 0.84
-	queue_redraw()
 	var st := settled()
+	if not st or _anim or flash > 0.02 or hl != null or not fx.is_empty() or absf(dim - _last_dim) > 0.001:
+		_quiet = 0
+	else:
+		_quiet += 1
+	if _quiet < 3 or _quiet % 15 == 0:
+		queue_redraw()
 	if st:
 		stall = 0.0
 		if not was_rest:
@@ -1516,6 +1525,7 @@ func _unstick(dt: float) -> void:
 
 # ------------------------------------------------------------------ input (flow.js bind)
 func _unhandled_input(event: InputEvent) -> void:
+	_quiet = 0
 	if b.is_empty() or over:
 		return
 	if event is InputEventScreenTouch:
@@ -1583,6 +1593,8 @@ func _draw2() -> void:
 		return
 	var dt := frame_dt
 	var u := float(U)
+	_anim = gold_node != null
+	_last_dim = dim
 	_gold_carpet(u)
 	for pass_i in 2:
 		for r in range(R - 1, -1, -1):
@@ -1602,6 +1614,8 @@ func _draw2() -> void:
 				var py := y + (u - sz) / 2.0
 				if y + u < OY - 14:
 					continue
+				if e.fy != 0.0 or sz != u or e.get("shakeT", 0.0) > 0.0 or e.get("sx", 0.0) != 0.0 or e.get("sy", 0.0) != 0.0 or e.get("dead", false):
+					_anim = true
 				if e.has("ob") and CMBrk.is_brk(e.ob.t):
 					pass   # breakables are see-through at the edges: no cracker under them
 				elif e.k >= 6 and e.k < T.size():
@@ -1700,6 +1714,7 @@ func _shard_poly(po: Array) -> Array:
 	return out
 
 func _draw_special(e: Dictionary, r: int, k: int, px: float, py: float, sz: float) -> void:
+	_anim = true
 	var pu := 0.5 + 0.5 * sin(clock * 5.0 + r + k)
 	var s2 := sz * (1.08 + 0.05 * pu)
 	var ox2 := px + (sz - s2) / 2.0
@@ -1717,9 +1732,10 @@ func _draw_special(e: Dictionary, r: int, k: int, px: float, py: float, sz: floa
 	stroke_rr(ox2 + 1, oy2 + 1, s2 - 2, s2 - 2, 11, Color("#FFC62B"), 3)
 	var sw := fmod(clock * 0.55 + (r + k) * 0.13, 1.0) * s2 * 2.4 - s2 * 0.7
 	var band := PackedVector2Array([Vector2(ox2 + sw, oy2), Vector2(ox2 + sw + 12, oy2), Vector2(ox2 + sw - s2 * 0.4 + 12, oy2 + s2), Vector2(ox2 + sw - s2 * 0.4, oy2 + s2)])
-	var cut := Geometry2D.intersect_polygons(band, rr_poly(ox2 + 1, oy2 + 1, s2 - 2, s2 - 2, 11))
-	for p in cut:
-		draw_colored_polygon(p, Color(1, 1, 1, 0.55))
+	if sw > -12.0 and sw - s2 * 0.4 < s2:
+		var cut := Geometry2D.intersect_polygons(band, rr_poly(ox2 + 1, oy2 + 1, s2 - 2, s2 - 2, 11))
+		for p in cut:
+			draw_colored_polygon(p, Color(1, 1, 1, 0.55))
 
 func _draw_over(e: Dictionary, x: float, y: float, s: float) -> void:
 	if not e.has("ob"):
@@ -1740,6 +1756,7 @@ func _draw_over(e: Dictionary, x: float, y: float, s: float) -> void:
 		return
 	var k: float = 1.0 + o.get("sq", 0.0) * 0.18
 	if o.get("sq", 0.0) > 0.0:
+		_anim = true
 		o.sq = maxf(0.0, o.sq - 0.07)
 		var tr := Transform2D(0.0, Vector2(x + s / 2 + sin(clock * 60.0) * o.sq * 3.0, y + s / 2)) * Transform2D(0.0, Vector2(k, 2.0 - k), 0.0, Vector2.ZERO) * Transform2D(0.0, Vector2(-x - s / 2, -y - s / 2))
 		draw_set_transform_matrix(tr)
@@ -1758,11 +1775,14 @@ func _draw_over(e: Dictionary, x: float, y: float, s: float) -> void:
 		stroke_rr(x + 1, y + 1, s - 2, s - 2, 10, Color("#FFF4C4"), 2)
 		var cs := s * 0.6
 		draw_texture_rect(IC["ui-coin"], Rect2(x + (s - cs) / 2, y + (s - cs) / 2, cs, cs * 0.96), false)
+		_anim = true
 		var sg := fmod(clock * 0.5 + x * 0.004 + y * 0.002, 2.0) - 0.4
-		var band := PackedVector2Array([Vector2(x + s * sg, y), Vector2(x + s * sg + 7, y), Vector2(x + s * sg - s * 0.4 + 7, y + s), Vector2(x + s * sg - s * 0.4, y + s)])
-		for q in Geometry2D.intersect_polygons(band, p):
-			draw_colored_polygon(q, Color(1, 1, 1, 0.45))
+		if s * sg > -7.0 and s * sg - s * 0.4 < s:
+			var band := PackedVector2Array([Vector2(x + s * sg, y), Vector2(x + s * sg + 7, y), Vector2(x + s * sg - s * 0.4 + 7, y + s), Vector2(x + s * sg - s * 0.4, y + s)])
+			for q in Geometry2D.intersect_polygons(band, p):
+				draw_colored_polygon(q, Color(1, 1, 1, 0.45))
 	if o.get("fl", 0.0) > 0.0:
+		_anim = true
 		fill_rr(x, y, s, s, 9, Color(1, 1, 1, o.fl * 0.8))
 		o.fl = maxf(0.0, o.fl - 0.12)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -1780,6 +1800,47 @@ func _draw_gold(u: float) -> void:
 
 
 # the board frame and cells, drawn once (fx.js drawFloor)
+# 19 Nov: the board frame and its soft shadow are ~11 stacked layers of rounded shapes per cell. They never move,
+# so they are drawn once into a picture at the phone's real resolution and that picture is shown instead.
+func _bake_floor() -> Node2D:
+	var holder := Node2D.new()
+	if OS.get_cmdline_user_args().has("--nobake=1"):
+		var f0 := CMFloor.new()
+		f0.g = self
+		holder.add_child(f0)
+		return holder
+	var k := 1.0
+	if is_inside_tree():
+		k = get_global_transform_with_canvas().get_scale().x
+	k = clampf(k, 1.0, 4.0)
+	var u := float(U)
+	var pad := 40.0
+	var x0 := OX - pad
+	var y0 := OY - pad
+	var w := u * C + pad * 2.0
+	var h := u * R + pad * 2.0
+	var sv := SubViewport.new()
+	sv.size = Vector2i(ceili(w * k), ceili(h * k))
+	sv.transparent_bg = true
+	sv.disable_3d = true
+	sv.render_target_update_mode = SubViewport.UPDATE_ONCE
+	var f := CMFloor.new()
+	f.g = self
+	f.scale = Vector2(k, k)
+	f.position = Vector2(-x0 * k, -y0 * k)
+	sv.add_child(f)
+	holder.add_child(sv)
+	var spr := Sprite2D.new()
+	spr.texture = sv.get_texture()
+	spr.centered = false
+	spr.position = Vector2(x0, y0)
+	spr.scale = Vector2(1.0 / k, 1.0 / k)
+	var mat := CanvasItemMaterial.new()
+	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_PREMULT_ALPHA
+	spr.material = mat
+	holder.add_child(spr)
+	return holder
+
 class CMFloor extends Node2D:
 	var g: CMGame
 	func _draw() -> void:
