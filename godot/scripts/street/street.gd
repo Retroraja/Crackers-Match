@@ -44,6 +44,14 @@ var lite := false
 var area := 1
 var shop: ShopArea
 var bazaar: Bazaar
+var sv: SubViewport     # the street draws into this (lower resolution), see cm_app
+# a 3D point -> position on the (logical 390-wide) screen
+func screen_pos(p3: Vector3) -> Vector2:
+	var q := cam.unproject_position(p3)
+	if sv:
+		var vis := get_tree().root.get_visible_rect().size
+		q *= vis / Vector2(sv.size)
+	return q
 
 static func V(a: Array) -> Vector3:
 	return Vector3(a[0], a[1], a[2])
@@ -327,9 +335,18 @@ func _inst() -> void:
 		# the village had 2.75 M triangles in these, now 0.89 M
 		var lo := "res://street/kit_lo/%s.res" % it.piece
 		mm.mesh = load(lo if ResourceLoader.exists(lo) else "res://street/kit/%s.res" % it.piece)
-		mm.instance_count = it.list.size()
-		for i in it.list.size():
-			mm.set_instance_transform(i, M(it.list[i]))
+		# phones: a third fewer trees in the forest (see-through leaves stacked on each other are the slowest
+		# thing a phone draws); the path stones and flowers stay
+		var lst: Array = it.list
+		if OS.has_feature("mobile") and not it.stones and (it.piece.contains("Tree") or it.piece.begins_with("Pine")):
+			var keep := []
+			for i in lst.size():
+				if i % 3 != 2:
+					keep.append(lst[i])
+			lst = keep
+		mm.instance_count = lst.size()
+		for i in lst.size():
+			mm.set_instance_transform(i, M(lst[i]))
 		var mi := MultiMeshInstance3D.new()
 		mi.multimesh = mm
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if (it.cast and not lite) else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

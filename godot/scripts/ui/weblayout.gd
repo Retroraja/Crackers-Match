@@ -287,14 +287,13 @@ static func box(b: Dictionary, sz: Vector2) -> ColorRect:
 	for s in b.get("sh", []):
 		if not s["in"]:
 			m = maxf(m, absf(s.x) + absf(s.y) + s.b + absf(s.s) + 2.0)
-	var cr := ColorRect.new()
+	var cr := CssBox.new()
 	cr.name = "box"
 	cr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cr.position = Vector2(-m, -m)
 	cr.size = sz + Vector2(m * 2, m * 2)
-	var mat := ShaderMaterial.new()
-	mat.shader = BOX
-	cr.ready.connect(func(): bake(cr), CONNECT_ONE_SHOT)
+	var mat := cr.pm
+	mat.shader = BOX   # only to hold the settings; CssBox draws them as triangles
 	mat.set_shader_parameter("size", sz)
 	mat.set_shader_parameter("margin", m)
 	var rad: Array = b.get("rad", [0, 0, 0, 0])
@@ -359,7 +358,9 @@ static func box(b: Dictionary, sz: Vector2) -> ColorRect:
 	mat.set_shader_parameter("sh_g", sg)
 	mat.set_shader_parameter("sh_c", sc)
 	mat.set_shader_parameter("sh_in", PackedFloat32Array(si))
-	cr.material = mat
+	for k in ["g0_type", "g1_type", "g0_n", "g1_n", "bw", "bcol", "g0_cen", "g1_cen", "g0_rad", "g1_rad", "g0_ang", "g1_ang"]:
+		if mat.get_shader_parameter(k) == null:
+			mat.set_shader_parameter(k, {"g0_type": 0, "g1_type": 0, "g0_n": 0, "g1_n": 0, "bw": Vector4.ZERO, "bcol": Color(0, 0, 0, 0), "g0_cen": Vector2(0.5, 0.5), "g1_cen": Vector2(0.5, 0.5), "g0_rad": Vector2(0.5, 0.5), "g1_rad": Vector2(0.5, 0.5), "g0_ang": 180.0, "g1_ang": 180.0}[k])
 	return cr
 
 static func label(t: Dictionary, sz: Vector2) -> Label:

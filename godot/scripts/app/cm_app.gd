@@ -182,7 +182,26 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--perf=1"): print("TEXMEM before_street %d MB" % (Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576))
 	street = Street.new()
 	street.lite = lite
-	add_child(street)
+	# 19 Nov speed fix: the 3D street is drawn into its own picture at a lower resolution (phones: 55% of the
+	# screen, about 3x less work) and that picture is stretched to fill the screen behind the menus.
+	street_sv = SubViewport.new()
+	street_sv.transparent_bg = true
+	street_sv.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	add_child(street_sv)
+	street_sv.add_child(street)
+	var scl := CanvasLayer.new()
+	scl.layer = -5
+	add_child(scl)
+	street_tex = TextureRect.new()
+	street_tex.texture = street_sv.get_texture()
+	street_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	street_tex.stretch_mode = TextureRect.STRETCH_SCALE
+	street_tex.set_anchors_preset(Control.PRESET_FULL_RECT)
+	street_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	scl.add_child(street_tex)
+	street.sv = street_sv
+	_street_res()
+	get_window().size_changed.connect(_street_res)
 	if OS.get_cmdline_user_args().has("--perf=1"): print("TEXMEM after_street %d MB" % (Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576))
 	# Area 1 build costs for 30 levels (35 diyas): rising from 1 to 6
 	for i in mini(A1_COST.size(), street.TASKS.size()):
@@ -392,8 +411,7 @@ static func resize_box(c: Control, sz: Vector2) -> void:
 	if b:
 		var m := -b.position.x
 		b.size = sz + Vector2(m * 2, m * 2)
-		b.material.set_shader_parameter("size", sz)
-		WebLayout.bake(b)
+		b.pm.set_shader_parameter("size", sz)
 
 func set_img(c: Control, src: String) -> void:
 	var t := img_of(c)
@@ -402,17 +420,16 @@ func set_img(c: Control, src: String) -> void:
 
 static func boxr(c: Control) -> ColorRect:
 	for ch in c.get_children():
-		if ch is ColorRect and ch.material is ShaderMaterial:
+		if ch is CssBox:
 			return ch
 	return null
 
 func set_bg(c: Control, col: Color) -> void:
 	var b := boxr(c)
 	if b:
-		b.material.set_shader_parameter("bgc", col)
-		b.material.set_shader_parameter("g0_type", 0)
-		b.material.set_shader_parameter("g1_type", 0)
-		WebLayout.bake(b)
+		b.pm.set_shader_parameter("bgc", col)
+		b.pm.set_shader_parameter("g0_type", 0)
+		b.pm.set_shader_parameter("g1_type", 0)
 
 # build data[idx] and everything under it as a new copy under `parent`
 func sub(lay: WebLayout, idx: int, parent: Control) -> Control:
@@ -491,6 +508,8 @@ func show_screen(id: String) -> void:
 	if street:
 		street.visible = st_on
 		street.process_mode = Node.PROCESS_MODE_INHERIT if st_on else Node.PROCESS_MODE_DISABLED
+		street_tex.visible = st_on
+		street_sv.render_target_update_mode = SubViewport.UPDATE_ALWAYS if st_on else SubViewport.UPDATE_DISABLED
 		street.cam.current = st_on
 		sky_layer.visible = st_on and street.bazaar == null
 		back.visible = not st_on
@@ -3060,6 +3079,16 @@ func ask_notify() -> void:
 		OS.request_permission("android.permission.POST_NOTIFICATIONS")
 
 # ================================================================== frame
+var street_sv: SubViewport
+var street_tex: TextureRect
+const STREET_RES_PHONE := 0.55
+func _street_res() -> void:
+	var k := STREET_RES_PHONE if OS.has_feature("mobile") else 1.0
+	var ws := Vector2(get_window().size)
+	if not OS.has_feature("mobile"):
+		ws = get_viewport().get_visible_rect().size * 2.0
+	street_sv.size = Vector2i(maxi(64, int(ws.x * k)), maxi(64, int(ws.y * k)))
+
 var _pf_t := 0.0
 # test build (19 Nov): frames-per-second number in the top-left corner, on every screen
 var fps_lbl: Label

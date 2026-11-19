@@ -58,6 +58,8 @@ func light() -> void:
 	pm.energy_multiplier = 1.0
 	sky.sky_material = pm
 	var env: Environment = st.env
+	if st.sv:
+		st.sv.transparent_bg = false   # the photo sky needs a solid background
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.sky_rotation = Vector3(0, deg_to_rad(SKYR), 0)

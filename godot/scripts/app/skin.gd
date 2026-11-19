@@ -37,7 +37,7 @@ static func btn_box(kind: String, rad := 18.0) -> Dictionary:
 
 static func _box_of(c: Control) -> ColorRect:
 	for ch in c.get_children():
-		if ch is ColorRect and ch.material is ShaderMaterial:
+		if ch is CssBox:
 			return ch
 	return null
 

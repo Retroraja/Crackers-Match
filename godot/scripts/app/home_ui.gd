@@ -438,7 +438,7 @@ func _spend(site: Vector3, done: Callable) -> void:
 	var st_ := {"lt": 0.0}
 	var tw := create_tween()
 	tw.tween_method(func(k: float):
-		var tg: Vector2 = st.cam.unproject_position(site) - global_position
+		var tg: Vector2 = st.screen_pos(site) - global_position
 		var e := k * k * (3 - 2 * k)
 		var x := p0.x + (tg.x - p0.x) * e + sin(e * PI) * 40
 		var y := p0.y + (tg.y - p0.y) * e - sin(e * PI) * 60
