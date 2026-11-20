@@ -43,7 +43,9 @@ func build(a, street: Street) -> void:
 	catcher.name = "speed"
 	catcher.gui_input.connect(func(e: InputEvent):
 		if e is InputEventMouseButton and e.pressed and st.busy:
-			st.speed_up())
+			st.speed_up()
+		elif st is PicStreet and not st.busy and home.visible:
+			(st as PicStreet).drag_input(e))
 	add_child(catcher)
 	LH = WebLayout.new()
 	home = LH.build("res://ui/st_home.json", self)

@@ -32,6 +32,8 @@ func build(a) -> void:
 	fxc = SceneFx.new()
 	fxc.size = Vector2(390, 844)
 	cvs.add_child(fxc)
+	# the old painted front plants do not belong to the new rendered picture
+	LT.nodes[6].visible = false
 	clouds = [LT.nodes[7], LT.nodes[8]]
 	clouds[0].set_meta("cl", [46.0, 12.0])
 	clouds[1].set_meta("cl", [64.0, 40.0])
@@ -65,7 +67,6 @@ func play(first_open: bool) -> void:
 	await get_tree().create_timer(2.6).timeout
 	title.visible = true
 	Anim.play(LT.nodes[2], "st_breathe", 9.0, 0.0, "ease-in-out", -1, true, {}, true)
-	Anim.play(LT.nodes[6], "st_frd", 7.0, 0.0, "ease-in-out", -1, true, {}, true)
 	fxc.run = true
 	create_tween().tween_property(intro, "modulate:a", 0.0, 0.6)
 	await get_tree().create_timer(0.6).timeout
@@ -161,9 +162,10 @@ class SceneFx extends Control:
 	var add_layer: Control
 	var glow: Texture2D
 	var smoke_tex: Texture2D
-	const C := {"w": 780.0, "h": 1688.0, "px": 0.5, "chim": [616, 560], "win": [[560, 968], [632, 942], [636, 964], [420, 952], [450, 778], [562, 780], [634, 774], [420, 776]],
-		"tree": [[40, 760], [740, 600]], "petal": ["#FFB0C8", "#FFD2A0", "#FFFFFF"], "water": [[30, 1600, 140, 40], [100, 1290, 100, 30], [170, 1060, 70, 24]],
-		"fly": [[200, 1300], [600, 1550]], "bf": [["#FFB020", "#FF7A00"], ["#7FC8FF", "#3D7BFF"]]}
+	# 20 Nov: the title picture is now rendered from our 3D street (full quality, shadows): the Bakery
+	const C := {"w": 780.0, "h": 1688.0, "px": 0.5, "chim": [508, 616], "win": [[443, 981], [455, 1016], [299, 990], [311, 797], [422, 791]],
+		"tree": [[118, 805], [671, 840]], "petal": ["#FFB0C8", "#FFD2A0", "#FFFFFF"], "water": [],
+		"fly": [[258, 1332], [574, 1191]], "bf": [["#FFB020", "#FF7A00"], ["#7FC8FF", "#3D7BFF"]]}
 
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -206,7 +208,7 @@ class SceneFx extends Control:
 				petals.append({"x": rnd(b[0][0], b[1][0]), "y": rnd(b[0][1], b[1][1]), "vx": rnd(6, 16), "vy": rnd(10, 18), "rot": rnd(0, 6), "vr": rnd(-2, 2), "ph": rnd(0, 6),
 					"col": Color(C.petal[randi() % C.petal.size()]), "life": 0.0, "max": rnd(7, 10), "s": rnd(8, 11)})
 		tG -= dt
-		if tG <= 0:
+		if tG <= 0 and not C.water.is_empty():
 			tG = rnd(0.18, 0.4)
 			var w: Array = C.water[randi() % C.water.size()]
 			glints.append({"x": w[0] + rnd(0, w[2]), "y": w[1] + rnd(0, w[3]), "life": 0.0, "max": rnd(0.7, 1.1), "s": rnd(8, 12)})

@@ -59,7 +59,11 @@ func _open_shop(id: int) -> void:
 		street.cam_to(w.p, w.look, 3.2)
 		for i in 5:
 			_later(0.6 + i * 0.5, id, func():
-				street.sparkle(Vector3(randf_range(-4, 4), 0, randf_range(-12, -3)), 30, 3.0)
+				if street is PicStreet:
+					var c: Vector2 = (street as PicStreet).view.get_global_rect().get_center()
+					street.sparkle(Vector3(c.x + randf_range(-120, 120), c.y + randf_range(-60, 160), 0), 30, 3.0)
+				else:
+					street.sparkle(Vector3(randf_range(-4, 4), 0, randf_range(-12, -3)), 30, 3.0)
 				_sfx("story_ting", 0.4, randf_range(0.9, 1.2)))
 	man.base = "idle"
 	man.mood("smile", 99)
@@ -73,7 +77,15 @@ func _open_shop(id: int) -> void:
 
 # ------------------------------------------------------------------ 1. dusk: the factory windows light up
 func _dusk(id: int) -> void:
-	if street:
+	if street is PicStreet:
+		# picture mode: the factory picture fades to its dusk render and the windows light up
+		var ps: PicStreet = street
+		ps.dusk(3.0)
+		for i in 8:
+			_later(1.4 + i * 0.16, id, func():
+				ps.window_glow(i)
+				_sfx("story_ting", 0.35, 0.9 + i * 0.05))
+	elif street:
 		street.cam_to(Vector3(-3, 6.5, -27), Vector3(0, 4.2, -57), 4.0)
 		var st = street
 		create_tween().set_trans(Tween.TRANS_SINE).tween_method(func(k: float): st.night(k), 0.0, 0.8, 3.2)

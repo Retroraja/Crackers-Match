@@ -146,6 +146,7 @@ func now() -> float:
 # ================================================================== setup
 func _ready() -> void:
 	randomize()
+	get_tree().set_quit_on_go_back(false)
 	levels = Levels.all()
 	load_save()
 	lite = _weak_phone()
@@ -184,7 +185,7 @@ func _ready() -> void:
 	sky.set_anchors_preset(Control.PRESET_FULL_RECT)
 	sky_layer.add_child(sky)
 	if OS.get_cmdline_user_args().has("--perf=1"): print("TEXMEM before_street %d MB" % (Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576))
-	street = Street.new()
+	street = PicStreet.new() if PIC else Street.new()
 	street.lite = lite
 	# 19 Nov speed fix: the 3D street is drawn into its own picture at a lower resolution (phones: 55% of the
 	# screen, about 3x less work) and that picture is stretched to fill the screen behind the menus.
@@ -203,6 +204,11 @@ func _ready() -> void:
 	street_tex.set_anchors_preset(Control.PRESET_FULL_RECT)
 	street_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	scl.add_child(street_tex)
+	if PIC:
+		# picture-based areas: no 3D drawn; the street is pictures + stickers (scripts/street/pic_street.gd)
+		street_tex.texture = null
+		street_tex.add_child((street as PicStreet).view)
+		sky_layer.visible = false
 	street.sv = street_sv
 	street.video_cb = build_video
 	_street_res()
@@ -515,7 +521,7 @@ func show_screen(id: String) -> void:
 		street_tex.visible = st_on
 		street_draw(st_on)
 		street.cam.current = st_on
-		sky_layer.visible = st_on and street.bazaar == null
+		sky_layer.visible = st_on and street.bazaar == null and not PIC
 		back.visible = not st_on and id != "game"
 	if LO and id != "game":
 		lose_hide()
@@ -536,40 +542,21 @@ func open_modal(c: Control, on: bool) -> void:
 	c.mouse_filter = Control.MOUSE_FILTER_STOP if on else Control.MOUSE_FILTER_IGNORE
 	_board_input()
 
-# 19 Nov speed (level card at 20 fps on his OPPO): while the level card is open over a level, the level behind it
-# (board, header, man, lights) is shown as one still picture of the last frame instead of being drawn every frame.
-var _frz: TextureRect
+# 20 Nov: the old still-picture freeze read the screen back (get_image) and hung his wife's Redmi when the
+# card opened in the same frame as the win screen closed. Now the level behind the card simply pauses:
+# board, man and lights stop processing, so nothing behind asks for a redraw. No screen readback.
 var _frz_on := false
 func _freeze_game(on: bool) -> void:
+	if not screens.has("game"):
+		return
 	if on:
-		if _frz_on or not screens.has("game") or not screens.game.visible or REC:
+		if _frz_on or REC:
 			return
-		var img := get_viewport().get_texture().get_image()
-		if img == null or img.is_empty():
-			return
-		if _frz == null:
-			_frz = TextureRect.new()
-			_frz.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			_frz.stretch_mode = TextureRect.STRETCH_SCALE
-			_frz.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			stage.get_parent().add_child(_frz)
-		stage.get_parent().move_child(_frz, stage.get_index())
-		_frz.texture = ImageTexture.create_from_image(img)
-		_frz.position = Vector2.ZERO
-		_frz.size = get_viewport().get_visible_rect().size
-		_frz.visible = true
-		screens.game.visible = false
 		_frz_on = true
+		screens.game.process_mode = Node.PROCESS_MODE_DISABLED
 	elif _frz_on:
 		_frz_on = false
-		var other := false
-		for k in screens:
-			if k != "game" and screens[k].visible:
-				other = true
-		if not other:
-			screens.game.visible = true
-		_frz.visible = false
-		_frz.texture = null
+		screens.game.process_mode = Node.PROCESS_MODE_INHERIT
 
 func _board_input() -> void:
 	if L_card == null or L_agree == null:
@@ -1113,15 +1100,42 @@ func slots() -> void:
 				var bg := AppFx.badge(str(n), Color("#E8123C"), Vector2(22, 22), WebLayout.font("TitanOne"), 12, 11)
 				bg.position = Vector2(c.size.x - 25, 3)
 				c.add_child(bg)
-				kid(c, "img").modulate.a = 1.0
 			else:
-				set_t(pr, str(PRICE[k]))
+				_price_pill(pr, str(PRICE[k]))
+			# 20 Nov: unlocked boosters in full colour (the web template drew them at 55% and they looked locked)
+			kid(c, "img").modulate.a = 1.0
 		c.position = Vector2(12 + (i % 4) * 93, 702 + (i / 4) * 68) - sl.position
 		set_img(kid(c, "img"), "crk:b%d" % IDX[k])
 		var kk := k
 		tap(c, func(): _slot_down(kk), true)
 		slot_nodes[k] = c
 	set_t(G.node("gCoins"), str(S.coins))
+
+# booster price pill: [coin] 500, grown to the left from its right edge
+func _price_pill(pr: Control, num: String) -> void:
+	set_t(pr, num)
+	var l := lbl(pr)
+	if l == null:
+		return
+	if not pr.has_meta("r0"):
+		pr.set_meta("r0", pr.position.x + pr.size.x)
+	var f: Font = l.label_settings.font
+	var fs := l.label_settings.font_size
+	var tw := f.get_string_size(num, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var cs := 13.0
+	var w := 5.0 + cs + 3.0 + tw + 7.0
+	pr.position.x = float(pr.get_meta("r0")) - w
+	resize_box(pr, Vector2(w, pr.size.y))
+	var ci: TextureRect = pr.get_node_or_null("coinx")
+	if ci == null:
+		ci = _img_node("art/ui-coin.webp", Vector2(cs, cs))
+		ci.name = "coinx"
+		pr.add_child(ci)
+	ci.size = Vector2(cs, cs)
+	ci.position = Vector2(5.0, (pr.size.y - cs) / 2.0)
+	l.position.x = 5.0 + cs + 3.0
+	l.size.x = tw + 2.0
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 
 func _slot_down(k: String) -> void:
 	if game.busy or game.over or ending:
@@ -3024,7 +3038,9 @@ func enter_area2() -> void:
 	street.sky_node = sky_layer.get_child(0)
 	cl.add_child(st)
 	st.play(get_viewport().get_visible_rect().size.y)
+	back_skip = st._finish
 	st.finished.connect(func():
+		back_skip = Callable()
 		street.set_area(2)
 		sky_layer.visible = false
 		home_ui.sync_in()
@@ -3048,7 +3064,9 @@ func play_story(then: Callable) -> void:
 	street.sky_node = sky_layer.get_child(0)
 	cl.add_child(st)
 	st.play(get_viewport().get_visible_rect().size.y)
+	back_skip = st._finish
 	st.finished.connect(func():
+		back_skip = Callable()
 		S.story = 1
 		save()
 		then.call())
@@ -3087,6 +3105,7 @@ func _video_story(then: Callable) -> void:
 		if ended[0]:
 			return
 		ended[0] = true
+		back_skip = Callable()
 		S.story = 1
 		save()
 		var t := create_tween()
@@ -3099,6 +3118,7 @@ func _video_story(then: Callable) -> void:
 			then.call())
 	vp.finished.connect(end)
 	skip.pressed.connect(end)
+	back_skip = end
 	if sfx:
 		sfx.duck(0.0)
 	print("VIDEO story start %d ms" % Time.get_ticks_msec())
@@ -3108,7 +3128,7 @@ func _video_story(then: Callable) -> void:
 # street is in the built state when the video ends. Only for builds that have a video (test: Area 1 build 1).
 func build_video(area: int, step: int) -> bool:
 	var path := "res://video/a%d_b%d.ogv" % [area, step]
-	if not VIDEO or REC or not ResourceLoader.exists(path):
+	if PIC or not VIDEO or REC or not ResourceLoader.exists(path):
 		return false
 	var vp := VideoStreamPlayer.new()
 	vp.stream = load(path)
@@ -3166,7 +3186,7 @@ func play_area_end(then: Callable) -> void:
 		return
 	home_ui.home.visible = false
 	var vpath := "res://video/a%d_end.ogv" % street.area
-	if VIDEO and not REC and ResourceLoader.exists(vpath):
+	if VIDEO and not PIC and not REC and ResourceLoader.exists(vpath):
 		_video_full(vpath, func():
 			S[key] = 1
 			save()
@@ -3184,7 +3204,9 @@ func play_area_end(then: Callable) -> void:
 	street.sky_node = sky_layer.get_child(0)
 	cl.add_child(st)
 	st.play(get_viewport().get_visible_rect().size.y)
+	back_skip = st._finish
 	st.finished.connect(func():
+		back_skip = Callable()
 		if REC:
 			print("ENDEND %d" % Engine.get_frames_drawn())
 		S[key] = 1
@@ -3286,6 +3308,8 @@ var REC := " ".join(OS.get_cmdline_user_args()).contains("--rec=")
 var REC3D := OS.get_cmdline_user_args().has("--rec=b0") or OS.get_cmdline_user_args().has("--rec=build")
 # phones play these instead of drawing live 3D (19 Nov test): res://video/*.ogv
 var VIDEO := OS.has_feature("mobile") or OS.get_cmdline_user_args().has("--video=1")
+# picture-based areas (20 Nov): phones never draw 3D; dev: --pic=1 on the computer
+var PIC := OS.has_feature("mobile") or OS.get_cmdline_user_args().has("--pic=1")
 
 # Picture mode (phones, 19 Nov): the 3D street is NOT drawn every frame. It is drawn once (a still picture)
 # when the home screen shows and again after the camera settles; builds and area ends play as videos.
@@ -3295,6 +3319,9 @@ var _lt_state := 0   # 0 not tested, 1 testing, 2 done
 var _snap_id := 0
 func street_draw(on: bool) -> void:
 	if street_sv == null:
+		return
+	if PIC:
+		street_sv.render_target_update_mode = SubViewport.UPDATE_DISABLED
 		return
 	if street:
 		street.no_fast = VIDEO
@@ -3444,6 +3471,94 @@ func _process(dt: float) -> void:
 		if toast_t <= 0:
 			create_tween().tween_property(toast, "modulate:a", 0.0, 0.25)
 
+# ================================================================== Android back (agreed 19 Nov)
+# popup open -> close it like its X; playing -> pause/settings popup; win / Coin Blast -> Next/Continue;
+# story or build animation -> skip; home -> "Exit game?" (only Yes quits). Never quits by surprise.
+var back_skip: Callable = Callable()   # set by anything skippable (story video, scenes, build animation)
+var exit_box: ExitBox
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		on_back()
+
+func on_back() -> void:
+	if exit_box and exit_box.root.visible:
+		exit_box.close()
+		return
+	if back_skip.is_valid():
+		var f := back_skip
+		back_skip = Callable()
+		f.call()
+		return
+	if fakead != null or L_card == null:
+		return
+	if L_agree.root.visible or (home_ui and (home_ui.agree.visible or home_ui.TUT != 0)):
+		return
+	if L_ban.root.visible:
+		ban_done()
+		return
+	if L_got.root.visible:
+		open_modal(L_got.root, false)
+		return
+	if L_buy.root.visible:
+		open_modal(L_buy.root, false)
+		return
+	for L in [L_card, L_hard]:
+		if L.root.visible:
+			sfx.play("swoosh", 0.4)
+			open_modal(L.root, false)
+			_card_closed()
+			return
+	if L_bc.root.visible:
+		var go: Control = L_bc.node("bcGo")
+		if go.has_meta("cb"):
+			var ev := InputEventMouseButton.new()
+			ev.button_index = MOUSE_BUTTON_LEFT
+			ev.pressed = false
+			(go.get_meta("cb") as Callable).call(ev)
+		return
+	if L_sh and L_sh.root.visible:
+		close_sheet()
+		return
+	if gs_open:
+		gset(false)
+		return
+	if home_ui and home_ui.bp.visible:
+		home_ui.bp.visible = false
+		return
+	if home_ui and home_ui.notif.visible:
+		S.notif28 = 1
+		save()
+		home_ui.notif.visible = false
+		return
+	if LO and LO.root.visible:
+		if LO.s1.visible:
+			lose_step(2)
+			sfx.play("swoosh", 0.4)
+		else:
+			lose_hide()
+			game.stopped = true
+			home()
+		return
+	if screens.win.visible:
+		_win_next()
+		return
+	if screens.bonusEnd.visible:
+		fw.run(false)
+		next_level()
+		return
+	if screens.game.visible:
+		if game and not game.over and not ending and not game.stopped:
+			gset(true)
+		return
+	if street and street.busy:
+		street.SPEED = 30.0
+		return
+	if screens.street.visible or screens.title.visible:
+		if exit_box == null:
+			exit_box = ExitBox.new()
+			exit_box.build(top_layer, self)
+		exit_box.open()
+
 func _input(e: InputEvent) -> void:
 	if e is InputEventMouseButton and not e.pressed and game and game.stopped and not ending and screens.game.visible and fakead == null:
 		var any := false
@@ -3535,6 +3650,11 @@ func _flow(a: Dictionary) -> void:
 			won(8)
 			await get_tree().create_timer(3.5).timeout
 			_win_next()
+	if a.has("back"):
+		# dev: the Android back button N times
+		for i in int(a.back):
+			await get_tree().create_timer(0.6).timeout
+			on_back()
 	if a.has("shot"):
 		await get_tree().create_timer(float(a.get("wait", 1.0))).timeout
 		get_viewport().get_texture().get_image().save_png(a.shot)

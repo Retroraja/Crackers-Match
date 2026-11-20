@@ -837,8 +837,18 @@ func hit_ob(e: Dictionary, p: Array, blast_: bool) -> void:
 		deb.bits(x, Ty + S * 0.25, 10, ["#E8402C", "#FFD24A", "#B0700C"], 5, 1)
 		deb.chunks(IC.crate2_top, Lx, Ty, S, 2, 2, 1.1, {"poly": false})
 	if dead:
-		e.erase("ob")
-		sync()
+		_ob_gone(e, p)
+
+# 20 Nov: a fixed obstacle (crate, steel, breakables) sat on a hidden cracker that just appeared in its place when it
+# broke. Now the cell empties, so the crackers above fall in and new ones come from the top. Gold floor (fl) stays.
+func _ob_gone(e: Dictionary, p: Array) -> void:
+	var fixed_ob: bool = e.has("ob") and FIX.has(e.ob.t)
+	e.erase("ob")
+	var r: int = p[0]
+	var c: int = p[1]
+	if fixed_ob and r >= 0 and r < R and c >= 0 and c < C and b[r][c] == e:
+		b[r][c] = null
+	sync()
 
 # one hit on a breakable: its own sound and effect (CMBrk); cracks / flames play before the cell is free
 const BRK_SND := {"pot": ["ob_pot", "ob_pot"], "soda": ["ob_soda", "ob_soda"], "coco": ["ob_coco_knock", "ob_coco_split"],
@@ -867,11 +877,9 @@ func _hit_brk(e: Dictionary, p: Array, blast_: bool) -> void:
 			e.safe = clock + d + 0.05
 			at(d, func():
 				if e.has("ob") and e.ob.get("dying", false):
-					e.erase("ob")
-					sync())
+					_ob_gone(e, p))
 		else:
-			e.erase("ob")
-			sync()
+			_ob_gone(e, p)
 
 func hit_fl(r: int, c: int) -> void:
 	var key := "%d,%d" % [r, c]
@@ -1767,20 +1775,10 @@ func _draw_over(e: Dictionary, x: float, y: float, s: float) -> void:
 		var im: Texture2D = IC.crate2 if (t == "steel" and o.hp > 1) else IC.crate
 		draw_texture_rect(im, Rect2(x - 2, y - 2, s + 4, s + 4), false)
 	elif t == "coin":
-		var p := rr_poly(x + 1, y + 1, s - 2, s - 2, 10)
-		var cols := PackedColorArray()
-		for v in p:
-			cols.append(Color("#FFE58A").lerp(Color("#E9A21C"), clampf((v.y - y) / s, 0, 1)))
-		draw_polygon(p, cols)
-		stroke_rr(x + 1, y + 1, s - 2, s - 2, 10, Color("#FFF4C4"), 2)
-		var cs := s * 0.6
-		draw_texture_rect(IC["ui-coin"], Rect2(x + (s - cs) / 2, y + (s - cs) / 2, cs, cs * 0.96), false)
 		_anim = true
 		var sg := fmod(clock * 0.5 + x * 0.004 + y * 0.002, 2.0) - 0.4
-		if s * sg > -7.0 and s * sg - s * 0.4 < s:
-			var band := PackedVector2Array([Vector2(x + s * sg, y), Vector2(x + s * sg + 7, y), Vector2(x + s * sg - s * 0.4 + 7, y + s), Vector2(x + s * sg - s * 0.4, y + s)])
-			for q in Geometry2D.intersect_polygons(band, p):
-				draw_colored_polygon(q, Color(1, 1, 1, 0.45))
+		if not _coin_tile(x, y, s, sg):
+			_coin_draw(x, y, s, sg)
 	if o.get("fl", 0.0) > 0.0:
 		_anim = true
 		fill_rr(x, y, s, s, 9, Color(1, 1, 1, o.fl * 0.8))
@@ -1798,6 +1796,41 @@ func _draw_gold(u: float) -> void:
 		var fy_ := OY + int(a[0]) * u + 2
 		draw_texture_rect(IC.goldfloor, Rect2(fx_ - 1, fy_ - 1, u - 2, u - 2), false)
 
+
+# 20 Nov speed (Coin Blast at 21 fps on the Redmi): a coin tile was a gradient shape + outline + icon + a shine
+# stripe cut by Geometry2D, ~50 times every frame. Now the tile comes from a picture sheet drawn once on the
+# computer (tools/pic/coin_sheet.py: plain tile + COIN_N steps of the shine stripe); each coin shows its frame.
+const COIN_N := 48
+var _coin_tex: Texture2D
+
+func _coin_draw(x: float, y: float, s: float, sg: float) -> void:
+	var p := rr_poly(x + 1, y + 1, s - 2, s - 2, 10)
+	var cols := PackedColorArray()
+	for v in p:
+		cols.append(Color("#FFE58A").lerp(Color("#E9A21C"), clampf((v.y - y) / s, 0, 1)))
+	draw_polygon(p, cols)
+	stroke_rr(x + 1, y + 1, s - 2, s - 2, 10, Color("#FFF4C4"), 2)
+	var cs := s * 0.6
+	draw_texture_rect(IC["ui-coin"], Rect2(x + (s - cs) / 2, y + (s - cs) / 2, cs, cs * 0.96), false)
+	if s * sg > -7.0 and s * sg - s * 0.4 < s:
+		var band := PackedVector2Array([Vector2(x + s * sg, y), Vector2(x + s * sg + 7, y), Vector2(x + s * sg - s * 0.4 + 7, y + s), Vector2(x + s * sg - s * 0.4, y + s)])
+		for q in Geometry2D.intersect_polygons(band, p):
+			draw_colored_polygon(q, Color(1, 1, 1, 0.45))
+
+func _coin_tile(x: float, y: float, s: float, sg: float) -> bool:
+	if OS.get_cmdline_user_args().has("--nobake=1"):
+		return false
+	if _coin_tex == null:
+		_coin_tex = load("res://art/coin_sheet.png")
+		if _coin_tex == null:
+			return false
+	var f := 0
+	if s * sg > -7.0 and s * sg - s * 0.4 < s:
+		var a := -7.0 / s
+		f = 1 + clampi(int((sg - a) / (1.4 - a) * COIN_N), 0, COIN_N - 1)
+	var P := float(_coin_tex.get_width()) / 8.0
+	draw_texture_rect_region(_coin_tex, Rect2(x - 2, y - 2, s + 4, s + 4), Rect2((f % 8) * P, (f / 8) * P, P, P))
+	return true
 
 # the board frame and cells, drawn once (fx.js drawFloor)
 # 19 Nov: the board frame and its soft shadow are ~11 stacked layers of rounded shapes per cell. They never move,
@@ -1931,6 +1964,10 @@ func go(r: int, c: int, k: int, dr: int, dc: int) -> void:
 	var n = b[tr][tc]
 	var tap = dr == 0 and dc == 0
 	var col: int = n.k if (n != null and n.k < 6 and n.k >= 0 and not tap) else top()
+	# 20 Nov: a Colour Matchbox dropped on a cracker (bar or meter) clears that cracker's colour, not the most common one
+	if tap and e != null and e.has("drop_col"):
+		col = int(e.drop_col)
+		e.erase("drop_col")
 	if k == 8 or k == 10 or k == 14 or k == 18 or k == 19:
 		if e != null:
 			e.shakeT = 0.15
@@ -3037,6 +3074,8 @@ func place(k: String, r: int, c: int) -> bool:
 		return true
 	if e == null or e.has("ob") or e.get("diya", false) or busy or over or moves <= 0 or not KID.has(k):
 		return false
+	if e.k >= 0 and e.k < 6:
+		e.drop_col = e.k
 	e.k = KID[k]
 	use(r, c, 0, 0)
 	return true
@@ -3046,6 +3085,8 @@ func meter_pop(k: String, r: int, c: int) -> bool:
 	var e = at2(r, c)
 	if e == null or e.has("ob") or e.get("dead", false) or e.get("diya", false) or not KID.has(k):
 		return false
+	if e.k >= 0 and e.k < 6:
+		e.drop_col = e.k
 	e.k = KID[k]
 	e.safe = 0.0
 	get_tree().create_timer(0.06).timeout.connect(func():
