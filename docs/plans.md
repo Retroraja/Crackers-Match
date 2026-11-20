@@ -44,10 +44,17 @@ strips above/below the 390x844 stage).
 Out of Moves "buy moves" (cm_app MOVEP / tries.coin): ONE price (900 coins), more moves the more THIS level is failed.
 - Fail count is per level only; it resets when that level is cleared.
 - Tries 1-3: +5 moves · try 4: +10 · try 5 and after: +20.
-Also picked (from the talk, confirm details before building):
-1. Ad on Out of Moves = +5 moves AND a free rocket placed on the board.
-2. After a lost level, the next try starts with one free booster ("Try again with a free Rocket!").
-4. Each build pops a small chest: coins + a booster (the street pays like Gardenscapes' map).
-5. Piggy bank: every win adds coins; when full, one ad breaks it (~500 coins).
-Later maybe: 3 win streak (start boosters), 6 free gift every 4 h, 7 daily tasks, 8 ad for coins in Shop,
-9 easier hard levels 23-25 (start special or +2-3 moves).
+- Ad on Out of Moves: +5 moves only, once per try (no rocket). NO free booster on retry (decided: keeps coins worth it).
+  Players wait for the bigger offer and buy once (his Gardenscapes way).
+
+## Ways to earn coins (agreed 20 Nov) — not built yet
+- Piggy bank (Indian clay money pot / undiyal) on the home screen under Daily: +50 coins per win, full at 250
+  (5 wins); when full it shakes and glows; one ad breaks it. Win screen shows coins dropping into it.
+- Daily tasks using our specials ("Make 5 Rockets", "Fire 3 Ground Chakras", "Break 20 clay pots", "Win 3 levels"):
+  3 a day = 50, 100, 150 coins + 300 for finishing all three (~600 a day).
+- Still to decide: build chest (50-100 per build), free gift every 4 h (30-50), ad for coins in Shop (50 x3/day),
+  3-star bonus (+30).
+
+## DONE in code, goes into the next APK (commit after ffc4df3)
+- Coin Blast after EVERY 5th level (was only after 5 and 10), with a Skip link on its card (skip = gone for that
+  one, next level card opens). Android back on that card = Skip.

@@ -1560,6 +1560,13 @@ func _build_overlays() -> void:
 	L_bc.build("res://ui/bc30.json", stage)
 	L_bc.root.visible = false
 	ad_pad(L_bc.nodes[7], false, L_bc.nodes[8])
+	# Skip (20 Nov): Coin Blast is a choice, not forced. The card grows to hold it.
+	var bcc: Control = L_bc.nodes[1]
+	resize_box(bcc, Vector2(bcc.size.x, bcc.size.y + 34))
+	var sk := L_bc.make({"i": 0, "id": "bcSkip", "tag": "div", "r": [95, 598, 200, 30], "op": 1,
+		"txt": LoseUI.txt("Skip", "Sora-700", 16, UISkin.DARK)}, bcc.get_global_rect().position - L_bc.root.get_global_rect().position)
+	bcc.add_child(sk)
+	tap(sk, bonus_skip)
 	# banners
 	L_ban = WebLayout.new()
 	L_ban.build("res://ui/ban.json", stage)
@@ -2724,7 +2731,8 @@ func _win_bursts(i: int) -> void:
 
 func _win_next() -> void:
 	var n := (win_prev + 1) / 5
-	if (win_prev == 4 or win_prev == 9) and not S.bdone.has(str(n)):
+	# Coin Blast after every 5th level (20 Nov; was only after 5 and 10)
+	if (win_prev + 1) % 5 == 0 and not S.bdone.has(str(n)):
 		bonus_card(n)
 		return
 	next_level()
@@ -2782,7 +2790,9 @@ func bonus_level(n: int) -> Dictionary:
 	return {"name": "Coin Blast", "bonus": n, "after": n * 5, "moves": 10, "colors": [0, 1, 2, 5], "goal": {"coin": cs.size()}, "val": 5,
 		"shape": sh, "ob": {"coin": cs}, "big": [], "hide": [], "pre": pre, "luck": 0.5, "teach": null, "idx": 10, "combo": null, "intro": [], "ltype": "n", "reward": null, "diyas": 1}
 
+var bc_n := 0
 func bonus_card(n: int) -> void:
+	bc_n = n
 	open_modal(L_bc.root, true)
 	Anim.play(L_bc.nodes[1], "g28", 0.4, 0.0, "cubic-bezier(.3,1.6,.5,1)")
 	Anim.play(L_bc.nodes[4], "skg30", 1.6, 0.0, "ease-in-out", -1)
@@ -2797,6 +2807,15 @@ func bonus_card(n: int) -> void:
 	go.mouse_filter = Control.MOUSE_FILTER_STOP
 	go.gui_input.connect(f)
 	go.set_meta("cb", f)
+
+func bonus_skip() -> void:
+	if not L_bc.root.visible:
+		return
+	sfx.play("swoosh", 0.4)
+	open_modal(L_bc.root, false)
+	S.bdone[str(bc_n)] = 1
+	save()
+	next_level()
 
 func start_bonus(n: int) -> void:
 	BL = bonus_level(n)
@@ -3509,12 +3528,7 @@ func on_back() -> void:
 			_card_closed()
 			return
 	if L_bc.root.visible:
-		var go: Control = L_bc.node("bcGo")
-		if go.has_meta("cb"):
-			var ev := InputEventMouseButton.new()
-			ev.button_index = MOUSE_BUTTON_LEFT
-			ev.pressed = false
-			(go.get_meta("cb") as Callable).call(ev)
+		bonus_skip()
 		return
 	if L_sh and L_sh.root.visible:
 		close_sheet()
