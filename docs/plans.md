@@ -39,3 +39,15 @@ strips above/below the 390x844 stage).
 
 ## Saved to-do
 - Approved video "area2-start-and-12-builds.mp4" should be copied into previews/ when convenient.
+
+## Help when players run out (agreed 20 Nov) — not built yet
+Out of Moves "buy moves" (cm_app MOVEP / tries.coin): ONE price (900 coins), more moves the more THIS level is failed.
+- Fail count is per level only; it resets when that level is cleared.
+- Tries 1-3: +5 moves · try 4: +10 · try 5 and after: +20.
+Also picked (from the talk, confirm details before building):
+1. Ad on Out of Moves = +5 moves AND a free rocket placed on the board.
+2. After a lost level, the next try starts with one free booster ("Try again with a free Rocket!").
+4. Each build pops a small chest: coins + a booster (the street pays like Gardenscapes' map).
+5. Piggy bank: every win adds coins; when full, one ad breaks it (~500 coins).
+Later maybe: 3 win streak (start boosters), 6 free gift every 4 h, 7 daily tasks, 8 ad for coins in Shop,
+9 easier hard levels 23-25 (start special or +2-3 moves).
