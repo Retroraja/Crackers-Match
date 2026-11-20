@@ -52,8 +52,9 @@ Out of Moves "buy moves" (cm_app MOVEP / tries.coin): ONE price (900 coins), mor
   (5 wins); when full it shakes and glows; one ad breaks it. Win screen shows coins dropping into it.
 - Daily tasks using our specials ("Make 5 Rockets", "Fire 3 Ground Chakras", "Break 20 clay pots", "Win 3 levels"):
   3 a day = 50, 100, 150 coins + 300 for finishing all three (~600 a day).
-- Still to decide: build chest (50-100 per build), free gift every 4 h (30-50), ad for coins in Shop (50 x3/day),
-  3-star bonus (+30).
+- Ad for coins in the Shop: 50 coins per ad, up to 3 a day.
+- 3-star bonus: +30 coins on a 3-star win (stars from the win screen plan).
+- Still to decide: build chest (builds give NO coins today; only the area end gives 500), free gift every 4 h.
 
 ## DONE in code, goes into the next APK (commit after ffc4df3)
 - Coin Blast after EVERY 5th level (was only after 5 and 10), with a Skip link on its card (skip = gone for that
