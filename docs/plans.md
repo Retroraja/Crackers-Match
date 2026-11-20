@@ -54,7 +54,7 @@ Out of Moves "buy moves" (cm_app MOVEP / tries.coin): ONE price (900 coins), mor
   3 a day = 50, 100, 150 coins + 300 for finishing all three (~600 a day).
 - Ad for coins in the Shop: 50 coins per ad, up to 3 a day.
 - 3-star bonus: +30 coins on a 3-star win (stars from the win screen plan).
-- Still to decide: build chest (builds give NO coins today; only the area end gives 500), free gift every 4 h.
+- Left as is for now (decide later): build chest (builds give NO coins today; only the area end gives 500), free gift every 4 h.
 
 ## DONE in code, goes into the next APK (commit after ffc4df3)
 - Coin Blast after EVERY 5th level (was only after 5 and 10), with a Skip link on its card (skip = gone for that
