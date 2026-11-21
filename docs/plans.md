@@ -30,9 +30,11 @@ strips above/below the 390x844 stage).
   9 Ready Orders Corner (packed parcels tagged for other towns -> "light up more towns")
   Order board fills with one slip per build. Look (done 21 Nov): bright and colourful room -
   white tube light, light cream walls + sky-blue band, light cream/red tiles, brighter doors.
-  Camera (done 21 Nov, his reference home screen): ONE picture, dollhouse corner view from the front right,
-  ~45 deg down, narrow lens fov 38, pulled back. Room square-ish 5.6 x 5.6 m, floor stops at the front, right wall
-  cut to the blue band, walls capped at the ceiling. Tall things on the back/left walls, low things in front.
+  Camera + look (done 21 Nov, his indoor reference video + Kenney kit he gave): ONE full-screen picture from INSIDE a
+  long narrow room (4.4 x 7 m), camera near the front at 3.8 m looking down the room; floor and walls fill the
+  whole screen (no beige). Kenney Furniture Kit (art/a3/kit, CC0) + KIT_LOOK in backroom.gd = flat matching colours,
+  no photo textures, soft light. Left wall 3 racks, right wall gift shelf + fire corner, back wall bill desk/window/
+  phone desk/board/door, centre packing table, front parcels + cycle.
 - Story links (agreed 21 Nov): notebook step 3 stays "Light up more towns"; Area 3 = the first steps to it.
   Start = 3 slides (area_start.gd, start_area = 3, art/story3): 1 notebook, steps 1-2 ticked, step 3 gets gold line;
   2 the man opens the door from the shop into the dusty back store room; 3 in the mess, the man: "First, get GHILLI
@@ -40,7 +42,7 @@ strips above/below the 390x844 stage).
   End: sales book up, Madurai letter, "Madurai" written under step 3 in the notebook, NEXT card.
 - 3D room: scripts/street/backroom.gd (Backroom, TASKS + skip_to), rendered by tools/pic/a3_pic.gd; textures
   tools/a3tex.py -> art/a3. 9 builds made 21 Nov (builds only, no levels yet): ONE picture a3p0 holds all 9
-  (render: a3_pic.gd --w=1620 --h=3507 --p=6.85,17.8,12.6 --l=-0.25,2.2,-3.0 --fov=38 --steps=0..9 --out=/tmp/pics/a3p0, then
+  (render: a3_pic.gd --w=1620 --h=3507 --ceil=1 --p=0.3,3.8,5.5 --l=0.05,0.3,-3.0 --fov=58 --steps=0..9 --out=/tmp/pics/a3p0, then
   make_pics.py /tmp/pics godot 3) -> street/pics/a3_p0*.webp + a3.json (~0.6 MB). NOT wired into the game yet
   (pic_street set_area only knows 2; levels 61-80, order send-outs and the area end still to do).
 - Area 3 end: sales book going up + letter "Open a shop in Madurai?" -> Area 4 = second shop in Madurai.
