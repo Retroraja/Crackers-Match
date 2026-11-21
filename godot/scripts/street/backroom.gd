@@ -5,13 +5,15 @@
 extends Node3D
 class_name Backroom
 
-const W := 5.0      # room width (x -W/2..W/2): narrow enough for a phone-tall picture
-const D := 7.0      # room depth
+const W := 5.6      # room width (x -W/2..W/2)
+const D := 5.6      # room depth: square-ish, so the corner view fills a phone screen (his reference, 21 Nov)
 const H := 4.0      # ceiling
 const F := 2.6      # floor runs to z = F (the shop door wall, shown only for the doorway slide)
+const FG := 0.3     # the game picture: the floor stops just in front of the room (no long empty floor)
 var front := false
 var ceiling := false   # true for eye-level shots (the slides); the top view leaves it out
-const WH := 6.0     # walls are drawn taller than the ceiling so the top view never shows past them
+const WH := 6.0     # slides: walls are drawn taller than the ceiling so no view shows past them
+var wh := WH        # the game picture (dollhouse corner view): walls stop at the ceiling with a wooden cap
 const G := "res://art/a2/gen/%s"
 const K := "res://art/shop/%s.glb"
 var O := {}
@@ -109,11 +111,11 @@ func light(world_env: Environment, dl: DirectionalLight3D) -> void:
 	bulb.omni_range = 9.0
 	bulb.omni_attenuation = 1.4
 	bulb.shadow_enabled = true
-	bulb.position = Vector3(-0.6, H - 0.9, -4.5)
+	bulb.position = Vector3(-0.6, H - 0.9, -3.6)
 	add_child(bulb)
 	O.bulb_light = bulb
 	# bright order room (21 Nov): white tube lights on both side walls fill the room, no dark corners
-	for p in [Vector3(-W / 2 + 0.4, 3.0, -4.6), Vector3(W / 2 - 0.4, 3.0, -4.6), Vector3(-W / 2 + 0.4, 3.0, -1.2), Vector3(W / 2 - 0.4, 3.0, -1.2)]:
+	for p in [Vector3(-W / 2 + 0.4, 3.0, -3.8), Vector3(W / 2 - 0.4, 3.0, -3.8), Vector3(-W / 2 + 0.4, 3.0, -1.0), Vector3(W / 2 - 0.4, 3.0, -1.0)]:
 		var l := OmniLight3D.new()
 		l.light_color = Color("#ffffff")
 		l.light_energy = 0.45
@@ -131,25 +133,35 @@ func build() -> void:
 	var wood := mat("counter_0.jpg", "", Color(0.85, 0.7, 0.55), 1.5, 0.8)
 	var door_m := mat("counter_0.jpg", "", Color(0.55, 0.8, 1.25), 1.0, 0.6)
 	var t := 0.2
+	var fz := F if front else FG
+	if not front and not ceiling:
+		wh = H + 0.1
+		box(wood, Vector3(-W / 2 - t / 2, wh + 0.04, (fz - D) / 2), Vector3(t + 0.08, 0.08, D + fz + 0.08))
+		box(wood, Vector3(0, wh + 0.04, -D - t / 2), Vector3(W + t * 2 + 0.08, 0.08, t + 0.08))
 	# floor and ceiling
-	box(floor_m, Vector3(0, -0.05, (F - D) / 2), Vector3(W + 0.4, 0.1, D + F))
+	box(floor_m, Vector3(0, -0.05, (fz - D) / 2), Vector3(W + 0.4, 0.1, D + fz))
 	# ceiling and beams only cast shadows (the camera looks in from above, dollhouse style)
-	var cl := box(ceil_m, Vector3(0, H + 0.05, (F - D) / 2), Vector3(W + 0.4, 0.1, D + F))
+	var cl := box(ceil_m, Vector3(0, H + 0.05, (fz - D) / 2), Vector3(W + 0.4, 0.1, D + fz))
 	if not ceiling:
 		cl.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
 	else:
-		for z in [-1.0, -3.4, -5.8]:
+		for z in [-0.8, -2.7, -4.6]:
 			box(wood, Vector3(0, H - 0.1, z), Vector3(W, 0.2, 0.18))
 	# side walls: plaster above, teal dado below (an old Chennai godown)
+	# the game picture looks in from the front right corner: the right wall is cut down to the blue band (dollhouse)
 	for sx in [-1, 1]:
 		var x: float = sx * (W / 2 + t / 2)
-		box(plaster, Vector3(x, (WH + 1.1) / 2, (F - D) / 2), Vector3(t, WH - 1.1, D + F))
-		box(dado, Vector3(x, 0.55, (F - D) / 2), Vector3(t, 1.1, D + F))
-		box(wood, Vector3(x - sx * 0.11, 1.12, (F - D) / 2), Vector3(0.03, 0.05, D + F))
+		var cut: bool = sx > 0 and not ceiling and not front
+		if not cut:
+			box(plaster, Vector3(x, (wh + 1.1) / 2, (fz - D) / 2), Vector3(t, wh - 1.1, D + fz))
+		box(dado, Vector3(x, 0.55, (fz - D) / 2), Vector3(t, 1.1, D + fz))
+		box(wood, Vector3(x - sx * 0.11, 1.12, (fz - D) / 2), Vector3(0.03, 0.05, D + fz))
+		if cut:
+			box(wood, Vector3(x, 1.13, (fz - D) / 2), Vector3(t + 0.06, 0.06, D + fz + 0.06))
 	# back wall with the back door (right) and a barred window (left)
 	var bz := -D - t / 2
-	var dx := 1.3; var dw := 1.0; var dh := 2.3
-	var wx := -1.3; var ww := 1.1; var wy0 := 1.5; var wy1 := 2.5
+	var dx := 1.2; var dw := 1.0; var dh := 2.3
+	var wx := -1.6; var ww := 1.1; var wy0 := 1.5; var wy1 := 2.5
 	_wall_with_holes(plaster, dado, bz, t, [[dx - dw / 2, dx + dw / 2, 0.0, dh], [wx - ww / 2, wx + ww / 2, wy0, wy1]])
 	# door frame and the old blue wooden door, half open (swung into the room)
 	var fr := flat(Color("#f2efe6"), 0.5)
@@ -182,7 +194,7 @@ func build() -> void:
 	# sun shafts from the window and the door (soft additive strips)
 	# the hanging bulb
 	var cord := flat(Color("#1d1d1f"), 0.6)
-	box(cord, Vector3(-0.6, H - 0.45, -4.5), Vector3(0.015, 0.9, 0.015))
+	box(cord, Vector3(-0.6, H - 0.45, -3.6), Vector3(0.015, 0.9, 0.015))
 	var bm := flat(Color("#ffd9a0"), 0.3)
 	bm.emission_enabled = true
 	bm.emission = Color("#ffc070")
@@ -192,7 +204,7 @@ func build() -> void:
 	sm.radius = 0.07; sm.height = 0.16
 	bs.mesh = sm
 	bs.material_override = bm
-	bs.position = Vector3(-0.6, H - 0.95, -4.5)
+	bs.position = Vector3(-0.6, H - 0.95, -3.6)
 	add_child(bs)
 	messy()
 	if front:
@@ -215,11 +227,11 @@ func _wall_with_holes(plaster: Material, dado: Material, z: float, t: float, hol
 				hole = h
 		var spans: Array = []
 		if hole.is_empty():
-			spans = [[0.0, WH]]
+			spans = [[0.0, wh]]
 		else:
 			if hole[2] > 0.0:
 				spans.append([0.0, hole[2]])
-			spans.append([hole[3], WH])
+			spans.append([hole[3], wh])
 		for s in spans:
 			var y0: float = s[0]; var y1: float = s[1]
 			if y0 < 1.1:
@@ -286,13 +298,15 @@ func messy() -> void:
 		O.junk.append(q)
 	var web := alpha("res://art/a3/cobweb.png", Color(1, 1, 1, 0.8))
 	O.junk.append(quad(web, Vector3(-W / 2 + 0.55, H - 0.55, -D + 0.02), Vector2(1.1, 1.1), Vector3(0, 0, PI), j))
-	O.junk.append(quad(web, Vector3(W / 2 - 0.02, H - 0.5, -D + 0.6), Vector2(1.2, 1.0), Vector3(0, -PI / 2, PI), j))
+	O.junk.append(quad(web, Vector3(W / 2 - 0.55, H - 0.55, -D + 0.02), Vector2(1.1, 1.1), Vector3(0, PI, PI), j))
 	O.junk.append(quad(web, Vector3(-W / 2 + 0.02, H - 0.5, -1.0), Vector2(1.2, 1.0), Vector3(0, PI / 2, PI / 2), j))
 	# the mess was laid out for a 6.4 m room: pull it in to this width (cobwebs stay on the walls)
 	for c in j.get_children():
 		var n3 := c as Node3D
 		if absf(absf(n3.position.x) - W / 2) > 0.1:
 			n3.position.x *= W / 6.4
+		if n3.position.y < H - 1.5:
+			n3.position.z *= D / 7.0
 
 func _front_wall(plaster: Material, dado: Material, fr: Material) -> void:
 	var z := F + 0.1
@@ -339,15 +353,15 @@ func _cardboard(o: Node3D) -> void:
 # Each build is a Node3D group, hidden until built. skip_to(n) shows the room after n builds (for the pictures).
 # Every build after the first also pins one order slip on the order board (the board fills up through the area).
 const TASKS := [
-	{"n": "Clear the Back Room", "c": 2, "ic": "🧹", "site": [0, 0.3, -4.0]},
-	{"n": "Phone Order Desk", "c": 2, "ic": "☎️", "site": [0, 1.0, -6.6]},
-	{"n": "Stock Racks", "c": 3, "ic": "🗄️", "site": [-2.1, 1.6, -1.3]},
-	{"n": "Packing Table", "c": 3, "ic": "📦", "site": [0.3, 0.6, -3.0]},
-	{"n": "Gift Box & Wrap Table", "c": 3, "ic": "🎁", "site": [2.2, 1.0, -3.6]},
-	{"n": "Bill Desk & Weighing Scale", "c": 4, "ic": "🧾", "site": [-1.6, 0.6, -6.0]},
-	{"n": "Fire Safety Corner", "c": 4, "ic": "🧯", "site": [2.0, 0.8, -1.7]},
-	{"n": "Delivery Cycle", "c": 4, "ic": "🚲", "site": [1.5, 0.6, -5.4]},
-	{"n": "Ready Orders Corner", "c": 5, "ic": "🚚", "site": [-0.3, 0.5, -0.6]},
+	{"n": "Clear the Back Room", "c": 2, "ic": "🧹", "site": [0, 0.3, -2.8]},
+	{"n": "Phone Order Desk", "c": 2, "ic": "☎️", "site": [-0.2, 1.0, -5.2]},
+	{"n": "Stock Racks", "c": 3, "ic": "🗄️", "site": [-2.2, 1.6, -1.1]},
+	{"n": "Packing Table", "c": 3, "ic": "📦", "site": [0.7, 0.6, -2.3]},
+	{"n": "Gift Box & Wrap Table", "c": 3, "ic": "🎁", "site": [-1.6, 1.0, -3.3]},
+	{"n": "Bill Desk & Weighing Scale", "c": 4, "ic": "🧾", "site": [-1.9, 0.6, -4.8]},
+	{"n": "Fire Safety Corner", "c": 4, "ic": "🧯", "site": [2.2, 0.8, -5.0]},
+	{"n": "Delivery Cycle", "c": 4, "ic": "🚲", "site": [1.0, 0.6, -4.1]},
+	{"n": "Ready Orders Corner", "c": 5, "ic": "🚚", "site": [0.6, 0.5, -0.7]},
 ]
 var B: Array = []      # Node3D per build
 var slips: Array = []  # slip i is pinned by build i + 1
@@ -411,17 +425,17 @@ func builds() -> void:
 	steel.metallic = 0.6
 	var black := flat(Color("#202024"), 0.5)
 	# tube light fittings on the side walls (the room is bright from the start)
-	for tz in [-4.6, -1.2]:
-		for sx in [-1, 1]:
+	for tz in [-3.8, -1.0]:
+		for sx in ([-1] if not ceiling and not front else [-1, 1]):
 			put(G % "tube.glb", Vector3(sx * (W / 2 - 0.1), 3.0, tz), 1.0, Vector3(0, PI / 2, 0))
 	# 1 clear the back room: the junk goes (handled in skip_to); a broom and a bucket stay by the back wall
 	var g := group(0)
-	cyl(flat(Color("#c79a52")), Vector3(-2.3, 0.75, -6.75), 0.02, 1.5, g, Vector3(0, 0, 0.12))
-	cyl(flat(Color("#d9c58a")), Vector3(-2.22, 0.12, -6.75), 0.14, 0.24, g, Vector3.ZERO, 0.08)
-	cyl(flat(Color("#3a7ec9"), 0.4), Vector3(2.15, 0.16, -6.6), 0.16, 0.32, g, Vector3.ZERO, 0.13)
+	cyl(flat(Color("#c79a52")), Vector3(2.45, 0.75, -0.35), 0.02, 1.5, g, Vector3(0, 0, 0.12))
+	cyl(flat(Color("#d9c58a")), Vector3(2.53, 0.12, -0.35), 0.14, 0.24, g, Vector3.ZERO, 0.08)
+	cyl(flat(Color("#3a7ec9"), 0.4), Vector3(2.1, 0.16, -0.25), 0.16, 0.32, g, Vector3.ZERO, 0.13)
 	# 2 phone order desk: a desk under the order board, a big red phone, the open order book, pen stand and a chair
 	g = group(1)
-	var bx := 0.05
+	var bx := -0.2
 	box(pic_mat("res://art/a3/cork.jpg"), Vector3(bx, 1.95, -D + 0.03), Vector3(1.5, 1.0, 0.05), g)
 	var dk := Node3D.new()
 	dk.position = Vector3(bx, 0, -D + 0.42)
@@ -455,13 +469,13 @@ func builds() -> void:
 	# the first slip comes with the board
 	# 6 bill desk (under the window) with the green cash box, the bill book and a platform weighing scale
 	g = group(5)
-	put(K % "kitchenBar", Vector3(-1.75, 0, -6.15), 3.0, Vector3(0, PI, 0), g)
-	put(K % "kitchenBarEnd", Vector3(-0.46, 0, -6.15), 3.0, Vector3(0, PI, 0), g)
-	put(G % "cashbox.glb", Vector3(-1.95, 1.12, -6.2), 1.0, Vector3(0, 0.2, 0), g)
-	box(flat(Color("#f4efe0")), Vector3(-1.25, 1.14, -6.15), Vector3(0.3, 0.04, 0.22), g, Vector3(0, -0.2, 0))
-	box(flat(Color("#c8283a")), Vector3(-1.25, 1.165, -6.15), Vector3(0.3, 0.01, 0.06), g, Vector3(0, -0.2, 0))
+	put(K % "kitchenBar", Vector3(-2.05, 0, -D + 0.85), 3.0, Vector3(0, PI, 0), g)
+	put(K % "kitchenBarEnd", Vector3(-0.76, 0, -D + 0.85), 3.0, Vector3(0, PI, 0), g)
+	put(G % "cashbox.glb", Vector3(-2.25, 1.12, -D + 0.8), 1.0, Vector3(0, 0.2, 0), g)
+	box(flat(Color("#f4efe0")), Vector3(-1.55, 1.14, -D + 0.85), Vector3(0.3, 0.04, 0.22), g, Vector3(0, -0.2, 0))
+	box(flat(Color("#c8283a")), Vector3(-1.55, 1.165, -D + 0.85), Vector3(0.3, 0.01, 0.06), g, Vector3(0, -0.2, 0))
 	var sc := Node3D.new()
-	sc.position = Vector3(-2.0, 0, -5.2)
+	sc.position = Vector3(-0.4, 0, -3.95)
 	g.add_child(sc)
 	box(steel, Vector3(0, 0.07, 0), Vector3(0.6, 0.14, 0.5), sc)
 	box(flat(Color("#2e86de"), 0.4), Vector3(0, 0.15, 0), Vector3(0.56, 0.02, 0.46), sc)
@@ -473,7 +487,7 @@ func builds() -> void:
 	# 4 packing table: brown paper roll, string, parcels half done
 	g = group(3)
 	var t := Node3D.new()
-	t.position = Vector3(0.3, 0, -3.0)
+	t.position = Vector3(0.7, 0, -2.3)
 	g.add_child(t)
 	box(wood, Vector3(0, 0.86, 0), Vector3(1.8, 0.07, 0.9), t)
 	for lx in [-0.82, 0.82]:
@@ -493,12 +507,12 @@ func builds() -> void:
 		box(kraft, Vector3(0, p[2] / 2, 0), Vector3(0.32, p[2], 0.26), pn)
 		box(str_m, Vector3(0, p[2] / 2, 0), Vector3(0.33, p[2] + 0.005, 0.015), pn)
 		box(str_m, Vector3(0, p[2] / 2, 0), Vector3(0.015, p[2] + 0.005, 0.27), pn)
-	put(K % "cardboardBoxOpen", Vector3(1.0, 0, -2.3), 2.0, Vector3(0, 0.3, 0), g)
+	put(K % "cardboardBoxOpen", Vector3(1.75, 0, -1.55), 2.0, Vector3(0, 0.3, 0), g)
 	# 5 gift box & wrap table: the gift-box shelf on the right wall and the wrap table in front of it
 	g = group(4)
 	var sh := Node3D.new()
-	sh.position = Vector3(W / 2 - 0.3, 0, -3.9)
-	sh.rotation.y = -PI / 2
+	sh.position = Vector3(-W / 2 + 0.3, 0, -3.3)
+	sh.rotation.y = PI / 2
 	g.add_child(sh)
 	for sx in [-0.8, 0.8]:
 		box(dark_wood, Vector3(sx, 1.2, 0), Vector3(0.06, 2.4, 0.5), sh)
@@ -516,8 +530,8 @@ func builds() -> void:
 			x += w + 0.06
 			k += 1
 	var gw := Node3D.new()
-	gw.position = Vector3(1.55, 0, -3.3)
-	gw.rotation.y = -PI / 2 + 0.1
+	gw.position = Vector3(-1.1, 0, -3.3)
+	gw.rotation.y = PI / 2 + 0.1
 	g.add_child(gw)
 	box(wood, Vector3(0, 0.76, 0), Vector3(1.1, 0.06, 0.7), gw)
 	for lx in [-0.48, 0.48]:
@@ -536,7 +550,7 @@ func builds() -> void:
 	gift(Vector3(-0.12, 0.95, 0.16), Vector3(0.12, 0.14, 0.12), gcols[3], gw)
 	# 3 stock racks (left wall, front): steel racks to the ceiling full of Sivakasi cracker cartons
 	g = group(2)
-	for rz in [-1.85, -0.55]:
+	for rz in [-1.75, -0.5]:
 		var rk := Node3D.new()
 		rk.position = Vector3(-W / 2 + 0.35, 0, rz)
 		rk.rotation.y = PI / 2
@@ -552,7 +566,7 @@ func builds() -> void:
 	# 8 the delivery cycle by the back door, carrier box full of parcels
 	g = group(7)
 	var cy := Node3D.new()
-	cy.position = Vector3(1.45, 0, -5.45)
+	cy.position = Vector3(1.0, 0, -4.1)
 	cy.rotation.y = 0.35
 	g.add_child(cy)
 	var frame_m := flat(Color("#1f5fbf"), 0.35)
@@ -582,8 +596,8 @@ func builds() -> void:
 	# 7 fire safety corner (front right): red stand of sand buckets, an extinguisher, the FIRE SAFETY sign
 	g = group(6)
 	var fs := Node3D.new()
-	fs.position = Vector3(W / 2 - 0.25, 0, -1.7)
-	fs.rotation.y = -PI / 2
+	fs.position = Vector3(W / 2 - 0.62, 0, -D + 0.12)
+	fs.scale = Vector3.ONE * 0.8
 	g.add_child(fs)
 	var redp := flat(Color("#d0202e"), 0.4)
 	box(redp, Vector3(0, 1.3, -0.05), Vector3(1.2, 0.06, 0.06), fs)
@@ -595,18 +609,18 @@ func builds() -> void:
 		cyl(flat(Color("#e8cf8e"), 0.95), Vector3(bxp, 1.15, 0.03), 0.12, 0.01, fs)
 		box(steel, Vector3(bxp, 1.27, -0.04), Vector3(0.04, 0.08, 0.04), fs)
 	var ex := Node3D.new()
-	ex.position = Vector3(0.85, 0, 0.1)
+	ex.position = Vector3(0.25, 0, 0.6)
 	fs.add_child(ex)
 	cyl(redp, Vector3(0, 0.35, 0), 0.11, 0.7, ex)
 	box(black, Vector3(0, 0.75, 0), Vector3(0.12, 0.1, 0.12), ex)
 	box(black, Vector3(0.1, 0.72, 0), Vector3(0.18, 0.03, 0.03), ex, Vector3(0, 0, -0.4))
-	cyl(flat(Color("#e8cf8e"), 0.95), Vector3(-0.85, 0.2, 0.15), 0.25, 0.4, fs)
+	cyl(flat(Color("#e8cf8e"), 0.95), Vector3(-0.35, 0.2, 0.62), 0.25, 0.4, fs)
 	var sign := quad(pic_mat("res://art/a3/firesign.jpg"), Vector3(0, 1.85, -0.07), Vector2(0.9, 0.45), Vector3.ZERO, fs)
 	sign.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# 9 ready orders corner (front): packed parcels on a wooden pallet, tagged for other towns
 	g = group(8)
 	var ro := Node3D.new()
-	ro.position = Vector3(-0.35, 0, -0.6)
+	ro.position = Vector3(0.6, 0, -0.7)
 	ro.rotation.y = 0.12
 	g.add_child(ro)
 	box(dark_wood, Vector3(0, 0.07, 0), Vector3(1.6, 0.14, 1.0), ro)
