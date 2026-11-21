@@ -3951,6 +3951,27 @@ func _dev(a: Dictionary) -> void:
 		await get_tree().create_timer(1.5).timeout
 		get_viewport().get_texture().get_image().save_png(a.shots + "-n1-" + mode + ".png")
 		get_tree().quit()
+	elif t == "a3start":
+		# dev / preview: the Area 3 start slides (notebook, store room door, the man in the mess, title card)
+		open_modal(L_card.root, false)
+		open_modal(L_hard.root, false)
+		title_s.visible = false
+		show_screen("street")
+		home_ui.home.visible = false
+		var cl := CanvasLayer.new()
+		cl.layer = 60
+		add_child(cl)
+		var st := AreaStartScene.new()
+		st.start_area = 3
+		st.app = self
+		cl.add_child(st)
+		st.play(get_viewport().get_visible_rect().size.y)
+		if a.has("shots"):
+			for k in String(a.get("at", "3.5,6.5,9.5,12.5,15.5")).split(","):
+				var tk := float(k)
+				get_tree().create_timer(tk).timeout.connect(func(): get_viewport().get_texture().get_image().save_png("%s-%04.1f.png" % [a.shots, tk]))
+		if a.has("quit"):
+			get_tree().create_timer(float(a.get("after", 20.0))).timeout.connect(get_tree().quit)
 	elif t == "areaend":
 		# dev / preview video: Area 1 fully built, then the end scene, then quit
 		open_modal(L_card.root, false)

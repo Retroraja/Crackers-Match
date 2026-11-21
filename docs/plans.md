@@ -28,6 +28,12 @@ strips above/below the 390x844 stage).
   7 stock racks to the ceiling -> temple committee bulk order
   8 delivery cycle at back door -> delivery boy rides out with orders
   9 kids' corner + customer queue -> shop full, big rush of orders
+- Story links (agreed 21 Nov): notebook step 3 stays "Light up more towns"; Area 3 = the first steps to it.
+  Start = 3 slides (area_start.gd, start_area = 3, art/story3): 1 notebook, steps 1-2 ticked, step 3 gets gold line;
+  2 the man opens the door from the shop into the dusty back store room; 3 in the mess, the man: "First, get GHILLI
+  ready!"; card "AREA 3 · Busy Days at GHILLI · the first steps to more towns". (Slides made 21 Nov, dev: --t=a3start.)
+  End: sales book up, Madurai letter, "Madurai" written under step 3 in the notebook, NEXT card.
+- 3D room: scripts/street/backroom.gd (Backroom), rendered by tools/pic/a3_pic.gd; textures tools/a3tex.py -> art/a3.
 - Area 3 end: sales book going up + letter "Open a shop in Madurai?" -> Area 4 = second shop in Madurai.
   Grandpa's notebook never changes. New Year / festival shows much later.
 - Build it the picture way from the first build (docs/fps-rules.md): make the 3D room on the computer
