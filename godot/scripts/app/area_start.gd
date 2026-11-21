@@ -11,7 +11,7 @@ class_name AreaStartScene
 
 var pic: TextureRect
 var start_area := 2
-const CAPS3 := ["“Thatha, your next step…\nlight up more towns.”", "But first… our old store room.", "“First, get GHILLI ready!”"]
+const CAPS3 := ["“Thatha, your next step…\nlight up more towns.”", "Orders need space…\ntime to open the back room!", "“First, get GHILLI ready!”"]
 const CAPS := ["The first load of crackers\nis ready for Chennai!", "Chennai.  Bunder Street,\nwhere the big city buys its crackers.", "“Our first shop…\na little rusty, but it's ours.”"]
 
 func play(height: float) -> void:
