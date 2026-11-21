@@ -3,7 +3,7 @@
 N builds) into what the phone needs: one base picture per view (no builds) and one cut-out sticker per build that
 changes the view (the pixels that differ from the state before it, shadows included).
 
-usage: make_pics.py RENDER_DIR GODOT_DIR
+usage: make_pics.py RENDER_DIR GODOT_DIR [AREAS, e.g. 3]
   RENDER_DIR/a1p0/s0.png .. s10.png, a1p1, a1p2, a2p0, a2p1, title/s10.png, a1end/s10.png
 """
 import json, os, sys
@@ -19,7 +19,10 @@ SKY = Image.open(os.path.join(G, "street/art/sky.png")).convert("RGBA")
 AREAS = {
     1: {"n": 10, "pics": [("a1p0", [0, 1, 2]), ("a1p1", [3, 4, 5, 6]), ("a1p2", [7, 8, 9])], "sky": True},
     2: {"n": 12, "pics": [("a2p0", [0, 1, 2, 3, 4, 5]), ("a2p1", [6, 7, 8, 9, 10, 11])], "sky": False},
+    # Area 3 (21 Nov): the back store room, one picture holds all 9 builds (tools/pic/a3_pic.gd)
+    3: {"n": 9, "pics": [("a3p0", [0, 1, 2, 3, 4, 5, 6, 7, 8])], "sky": False},
 }
+ONLY = [int(x) for x in sys.argv[3].split(",")] if len(sys.argv) > 3 else list(AREAS)   # e.g. "3": only that area
 
 
 def load(path, sky, night=0.0):
@@ -76,6 +79,8 @@ def split(m, max_parts=14):
 
 def main():
     for A, cfg in AREAS.items():
+        if A not in ONLY:
+            continue
         data = {"w": W, "h": H, "pics": []}
         for p, (d, builds) in enumerate(cfg["pics"]):
             st = [np.asarray(load(os.path.join(R, d, "s%d.png" % k), cfg["sky"])) for k in range(cfg["n"] + 1)]

@@ -33,9 +33,22 @@ func _ready() -> void:
 	cam.position = V3(a.get("p", "0,4.6,6.0"))
 	cam.look_at(V3(a.get("l", "0,0.8,-3.6")), Vector3.UP)
 	cam.current = true
-	for i in 4:
-		await get_tree().process_frame
-	await RenderingServer.frame_post_draw
-	sv.get_texture().get_image().save_png(a.get("shot", "/tmp/a3.png"))
-	print("PIC saved ", a.get("shot", "/tmp/a3.png"))
+	# -- --steps=0,1,2 --out=dir : the room after each number of builds (sN.png), like pic_tool.gd
+	var steps: Array = []
+	if a.has("steps"):
+		for x in String(a.steps).split(","):
+			steps.append(int(x))
+	else:
+		steps.append(int(a.get("step", 0)))
+	for n in steps:
+		room.skip_to(n)
+		for i in 4:
+			await get_tree().process_frame
+		for T in Backroom.TASKS:
+			var q := cam.unproject_position(Vector3(T.site[0], T.site[1], T.site[2]))
+			print("PIC site %s  y=%.2f x=%.2f" % [T.n, q.y / sv.size.y, q.x / sv.size.x])
+		await RenderingServer.frame_post_draw
+		var path: String = a.get("shot", "/tmp/a3.png") if not a.has("out") else "%s/s%d.png" % [a.out, n]
+		sv.get_texture().get_image().save_png(path)
+		print("PIC saved ", path)
 	get_tree().quit()

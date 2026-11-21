@@ -33,7 +33,11 @@ strips above/below the 390x844 stage).
   2 the man opens the door from the shop into the dusty back store room; 3 in the mess, the man: "First, get GHILLI
   ready!"; card "AREA 3 · Busy Days at GHILLI · the first steps to more towns". (Slides made 21 Nov, dev: --t=a3start.)
   End: sales book up, Madurai letter, "Madurai" written under step 3 in the notebook, NEXT card.
-- 3D room: scripts/street/backroom.gd (Backroom), rendered by tools/pic/a3_pic.gd; textures tools/a3tex.py -> art/a3.
+- 3D room: scripts/street/backroom.gd (Backroom, TASKS + skip_to), rendered by tools/pic/a3_pic.gd; textures
+  tools/a3tex.py -> art/a3. 9 builds made 21 Nov (builds only, no levels yet): ONE picture a3p0 holds all 9
+  (render: a3_pic.gd --w=1620 --h=3507 --p=0,7.6,5.6 --l=0,0,-2.8 --fov=55 --steps=0..9 --out=/tmp/pics/a3p0, then
+  make_pics.py /tmp/pics godot 3) -> street/pics/a3_p0*.webp + a3.json (~0.6 MB). NOT wired into the game yet
+  (pic_street set_area only knows 2; levels 61-80, order send-outs and the area end still to do).
 - Area 3 end: sales book going up + letter "Open a shop in Madurai?" -> Area 4 = second shop in Madurai.
   Grandpa's notebook never changes. New Year / festival shows much later.
 - Build it the picture way from the first build (docs/fps-rules.md): make the 3D room on the computer

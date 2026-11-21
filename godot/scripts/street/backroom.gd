@@ -5,7 +5,7 @@
 extends Node3D
 class_name Backroom
 
-const W := 6.4      # room width (x -W/2..W/2)
+const W := 5.0      # room width (x -W/2..W/2): narrow enough for a phone-tall picture
 const D := 7.0      # room depth
 const H := 4.0      # ceiling
 const F := 2.6      # floor runs to z = F (the shop door wall, shown only for the doorway slide)
@@ -109,7 +109,7 @@ func light(world_env: Environment, dl: DirectionalLight3D) -> void:
 	bulb.omni_range = 7.0
 	bulb.omni_attenuation = 1.4
 	bulb.shadow_enabled = true
-	bulb.position = Vector3(0.2, H - 0.9, -D * 0.5)
+	bulb.position = Vector3(-0.6, H - 0.9, -4.5)
 	add_child(bulb)
 	O.bulb_light = bulb
 
@@ -139,8 +139,8 @@ func build() -> void:
 		box(wood, Vector3(x - sx * 0.11, 1.12, (F - D) / 2), Vector3(0.03, 0.05, D + F))
 	# back wall with the back door (right) and a barred window (left)
 	var bz := -D - t / 2
-	var dx := 1.55; var dw := 1.1; var dh := 2.3
-	var wx := -1.6; var ww := 1.2; var wy0 := 1.5; var wy1 := 2.5
+	var dx := 1.3; var dw := 1.0; var dh := 2.3
+	var wx := -1.3; var ww := 1.1; var wy0 := 1.5; var wy1 := 2.5
 	_wall_with_holes(plaster, dado, bz, t, [[dx - dw / 2, dx + dw / 2, 0.0, dh], [wx - ww / 2, wx + ww / 2, wy0, wy1]])
 	# door frame and the old blue wooden door, half open (swung into the room)
 	var fr := flat(Color("#5a3e2a"))
@@ -171,14 +171,9 @@ func build() -> void:
 		var x := wx - ww / 2 + (i + 0.5) * ww / 6
 		box(flat(Color("#2a2a2c"), 0.5), Vector3(x, (wy0 + wy1) / 2, -D - 0.02), Vector3(0.025, wy1 - wy0, 0.025))
 	# sun shafts from the window and the door (soft additive strips)
-	var sh := alpha("res://art/a3/shaft.png", Color(1, 1, 1, 0.55), true)
-	for k in 3:
-		quad(sh, Vector3(wx + 0.25 + k * 0.12, 1.15, -D + 1.15), Vector2(0.9 + k * 0.1, 2.7), Vector3(deg_to_rad(-38), deg_to_rad(-8 + k * 8), 0))
-	for k in 3:
-		quad(sh, Vector3(dx - 0.2 + k * 0.15, 1.0, -D + 1.0), Vector2(1.0, 2.6), Vector3(deg_to_rad(-34), deg_to_rad(-6 + k * 6), 0))
 	# the hanging bulb
 	var cord := flat(Color("#1d1d1f"), 0.6)
-	box(cord, Vector3(0.2, H - 0.45, -D * 0.5), Vector3(0.015, 0.9, 0.015))
+	box(cord, Vector3(-0.6, H - 0.45, -4.5), Vector3(0.015, 0.9, 0.015))
 	var bm := flat(Color("#ffd9a0"), 0.3)
 	bm.emission_enabled = true
 	bm.emission = Color("#ffc070")
@@ -188,7 +183,7 @@ func build() -> void:
 	sm.radius = 0.07; sm.height = 0.16
 	bs.mesh = sm
 	bs.material_override = bm
-	bs.position = Vector3(0.2, H - 0.95, -D * 0.5)
+	bs.position = Vector3(-0.6, H - 0.95, -4.5)
 	add_child(bs)
 	messy()
 	if front:
@@ -284,6 +279,11 @@ func messy() -> void:
 	O.junk.append(quad(web, Vector3(-W / 2 + 0.55, H - 0.55, -D + 0.02), Vector2(1.1, 1.1), Vector3(0, 0, PI), j))
 	O.junk.append(quad(web, Vector3(W / 2 - 0.02, H - 0.5, -D + 0.6), Vector2(1.2, 1.0), Vector3(0, -PI / 2, PI), j))
 	O.junk.append(quad(web, Vector3(-W / 2 + 0.02, H - 0.5, -1.0), Vector2(1.2, 1.0), Vector3(0, PI / 2, PI / 2), j))
+	# the mess was laid out for a 6.4 m room: pull it in to this width (cobwebs stay on the walls)
+	for c in j.get_children():
+		var n3 := c as Node3D
+		if absf(absf(n3.position.x) - W / 2) > 0.1:
+			n3.position.x *= W / 6.4
 
 func _front_wall(plaster: Material, dado: Material, fr: Material) -> void:
 	var z := F + 0.1
@@ -325,3 +325,259 @@ func _cardboard(o: Node3D) -> void:
 					m.roughness = 0.95
 					_cb[src] = m
 				mi.set_surface_override_material(i, _cb[src])
+
+# ================================================================ the 9 builds (21 Nov, docs/plans.md Area 3)
+# Each build is a Node3D group, hidden until built. skip_to(n) shows the room after n builds (for the pictures).
+# Every build after the first also pins one order slip on the order board (the board fills up through the area).
+const TASKS := [
+	{"n": "Clear the Back Room", "c": 2, "ic": "🧹", "site": [0, 0.3, -4.0]},
+	{"n": "Order Board & Old Phone", "c": 2, "ic": "📋", "site": [0, 1.7, -6.8]},
+	{"n": "Billing Counter & Cash Box", "c": 3, "ic": "🧾", "site": [-1.6, 0.6, -6.1]},
+	{"n": "Packing Table", "c": 3, "ic": "📦", "site": [0.3, 0.6, -3.0]},
+	{"n": "Gift-Box Shelf", "c": 3, "ic": "🎁", "site": [2.2, 1.2, -3.9]},
+	{"n": "Gift-Wrap Corner", "c": 4, "ic": "🎀", "site": [1.8, 0.7, -1.5]},
+	{"n": "Stock Racks to the Ceiling", "c": 4, "ic": "🗄️", "site": [-2.1, 1.6, -1.3]},
+	{"n": "Delivery Cycle", "c": 4, "ic": "🚲", "site": [1.5, 0.6, -5.4]},
+	{"n": "Kids' Corner & Customer Queue", "c": 5, "ic": "🧒", "site": [-0.4, 0.6, -2.0]},
+]
+var B: Array = []      # Node3D per build
+var slips: Array = []  # slip i is pinned by build i + 1
+
+func pic_mat(path: String, rough := 0.85) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = load(path)
+	m.roughness = rough
+	return m
+
+func cyl(m: Material, c: Vector3, r: float, h: float, parent: Node3D, rot := Vector3.ZERO, r2 := -1.0) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = r
+	cm.bottom_radius = r if r2 < 0 else r2
+	cm.height = h
+	cm.radial_segments = 20
+	mi.mesh = cm
+	mi.material_override = m
+	mi.position = c
+	mi.rotation = rot
+	parent.add_child(mi)
+	return mi
+
+func group() -> Node3D:
+	var n := Node3D.new()
+	add_child(n)
+	B.append(n)
+	return n
+
+# a gift box with a gold ribbon cross
+func gift(c: Vector3, s: Vector3, col: Color, parent: Node3D, ry := 0.0) -> void:
+	var n := Node3D.new()
+	n.position = c
+	n.rotation.y = ry
+	parent.add_child(n)
+	box(flat(col, 0.5), Vector3(0, s.y / 2, 0), s, n)
+	var gold := flat(Color("#f5c542"), 0.3)
+	gold.metallic = 0.5
+	box(gold, Vector3(0, s.y / 2, 0), Vector3(s.x + 0.01, s.y + 0.01, 0.04), n)
+	box(gold, Vector3(0, s.y / 2, 0), Vector3(0.04, s.y + 0.01, s.z + 0.01), n)
+	box(gold, Vector3(-0.04, s.y + 0.03, 0), Vector3(0.07, 0.05, 0.1), n, Vector3(0, 0, 0.6))
+	box(gold, Vector3(0.04, s.y + 0.03, 0), Vector3(0.07, 0.05, 0.1), n, Vector3(0, 0, -0.6))
+
+# a cracker carton with its label on the front (+z of the carton)
+func carton(c: Vector3, s: Vector3, i: int, parent: Node3D, ry := 0.0) -> void:
+	var n := Node3D.new()
+	n.position = c
+	n.rotation.y = ry
+	parent.add_child(n)
+	box(flat(Color("#b9946a"), 0.95), Vector3(0, s.y / 2, 0), s, n)
+	var q := quad(pic_mat("res://art/a3/carton%d.jpg" % (i % 6)), Vector3(0, s.y / 2, s.z / 2 + 0.003), Vector2(s.x * 0.98, s.y * 0.98), Vector3.ZERO, n)
+	q.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+func builds() -> void:
+	var wood := mat("counter_0.jpg", "", Color(0.95, 0.78, 0.6), 1.2, 0.75)
+	var dark_wood := mat("counter_0.jpg", "", Color(0.6, 0.42, 0.3), 1.2, 0.75)
+	var steel := flat(Color("#7b8794"), 0.45)
+	steel.metallic = 0.6
+	var black := flat(Color("#202024"), 0.5)
+	# 1 clear the back room: the junk goes (handled in skip_to); a broom and a bucket stay by the back wall
+	var g := group()
+	cyl(flat(Color("#c79a52")), Vector3(-2.3, 0.75, -6.75), 0.02, 1.5, g, Vector3(0, 0, 0.12))
+	cyl(flat(Color("#d9c58a")), Vector3(-2.22, 0.12, -6.75), 0.14, 0.24, g, Vector3.ZERO, 0.08)
+	cyl(flat(Color("#3a7ec9"), 0.4), Vector3(2.15, 0.16, -6.6), 0.16, 0.32, g, Vector3.ZERO, 0.13)
+	# 2 order board and the old phone on its little wall shelf
+	g = group()
+	var bx := 0.05
+	box(pic_mat("res://art/a3/cork.jpg"), Vector3(bx, 1.95, -D + 0.03), Vector3(1.5, 1.0, 0.05), g)
+	box(dark_wood, Vector3(bx, 1.05, -D + 0.15), Vector3(0.6, 0.05, 0.3), g)
+	var ph := Node3D.new()
+	ph.position = Vector3(bx, 1.08, -D + 0.16)
+	g.add_child(ph)
+	var red := flat(Color("#b3202c"), 0.35)
+	box(red, Vector3(0, 0.07, 0), Vector3(0.3, 0.14, 0.24), ph, Vector3(-0.15, 0, 0))
+	cyl(flat(Color("#f0e6d0"), 0.4), Vector3(0, 0.15, 0.03), 0.07, 0.02, ph, Vector3(-0.5, 0, 0))
+	box(red, Vector3(0, 0.19, -0.02), Vector3(0.34, 0.05, 0.07), ph)
+	box(black, Vector3(0.24, 0.02, 0.0), Vector3(0.04, 0.04, 0.04), ph)
+	# the first slip comes with the board
+	# 3 billing counter (under the window) with the green cash box, a bill book and a stool
+	g = group()
+	put(K % "kitchenBar", Vector3(-1.75, 0, -6.15), 3.0, Vector3(0, PI, 0), g)
+	put(K % "kitchenBarEnd", Vector3(-0.46, 0, -6.15), 3.0, Vector3(0, PI, 0), g)
+	put(G % "cashbox.glb", Vector3(-1.95, 1.12, -6.2), 1.0, Vector3(0, 0.2, 0), g)
+	box(flat(Color("#f4efe0")), Vector3(-1.25, 1.14, -6.15), Vector3(0.3, 0.04, 0.22), g, Vector3(0, -0.2, 0))
+	box(flat(Color("#c8283a")), Vector3(-1.25, 1.165, -6.15), Vector3(0.3, 0.01, 0.06), g, Vector3(0, -0.2, 0))
+	# 4 packing table: brown paper roll, string, parcels half done
+	g = group()
+	var t := Node3D.new()
+	t.position = Vector3(0.3, 0, -3.0)
+	g.add_child(t)
+	box(wood, Vector3(0, 0.86, 0), Vector3(1.8, 0.07, 0.9), t)
+	for lx in [-0.82, 0.82]:
+		for lz in [-0.38, 0.38]:
+			box(dark_wood, Vector3(lx, 0.42, lz), Vector3(0.07, 0.84, 0.07), t)
+	box(dark_wood, Vector3(0, 0.25, 0), Vector3(1.6, 0.04, 0.8), t)
+	var kraft := flat(Color("#b98a55"), 0.9)
+	cyl(kraft, Vector3(-0.55, 0.98, -0.18), 0.09, 0.7, t, Vector3(0, 0, PI / 2))
+	box(kraft, Vector3(-0.1, 0.9, 0.05), Vector3(0.7, 0.005, 0.5), t, Vector3(0, 0.15, 0))
+	cyl(flat(Color("#e8dcc0")), Vector3(0.62, 0.95, -0.25), 0.06, 0.1, t)
+	var str_m := flat(Color("#e9e0c8"))
+	for p in [[0.3, 0.1, 0.36, 0.2], [0.65, 0.12, 0.3, -0.3], [0.45, 0.02, 0.28, 0.6]]:
+		var pn := Node3D.new()
+		pn.position = Vector3(p[0], 0.895, p[1])
+		pn.rotation.y = p[3]
+		t.add_child(pn)
+		box(kraft, Vector3(0, p[2] / 2, 0), Vector3(0.32, p[2], 0.26), pn)
+		box(str_m, Vector3(0, p[2] / 2, 0), Vector3(0.33, p[2] + 0.005, 0.015), pn)
+		box(str_m, Vector3(0, p[2] / 2, 0), Vector3(0.015, p[2] + 0.005, 0.27), pn)
+	put(K % "cardboardBoxOpen", Vector3(1.0, 0, -2.3), 2.0, Vector3(0, 0.3, 0), g)
+	# 5 gift-box shelf on the right wall
+	g = group()
+	var sh := Node3D.new()
+	sh.position = Vector3(W / 2 - 0.3, 0, -3.9)
+	sh.rotation.y = -PI / 2
+	g.add_child(sh)
+	for sx in [-0.8, 0.8]:
+		box(dark_wood, Vector3(sx, 1.2, 0), Vector3(0.06, 2.4, 0.5), sh)
+	box(dark_wood, Vector3(0, 1.2, -0.24), Vector3(1.66, 2.4, 0.02), sh)
+	var gcols := [Color("#d62846"), Color("#2e86de"), Color("#7b3fbf"), Color("#2ead5b"), Color("#ff7a1a"), Color("#e84a5f"), Color("#f5c542")]
+	var k := 0
+	for r in 4:
+		var y := 0.08 + r * 0.6
+		box(wood, Vector3(0, y, 0), Vector3(1.6, 0.04, 0.48), sh)
+		var x := -0.68
+		while x < 0.62:
+			var w := 0.22 + (k % 3) * 0.05
+			var hh := 0.2 + ((k * 7) % 4) * 0.05
+			gift(Vector3(x + w / 2, y + 0.02, 0.0), Vector3(w, hh, 0.3), gcols[k % gcols.size()], sh, (k % 2) * 0.08)
+			x += w + 0.06
+			k += 1
+	# 6 gift-wrap corner (front right): a low table, paper rolls in a bin, ribbon spools, a hamper
+	g = group()
+	var gw := Node3D.new()
+	gw.position = Vector3(1.6, 0, -1.4)
+	gw.rotation.y = -0.25
+	g.add_child(gw)
+	box(wood, Vector3(0, 0.76, 0), Vector3(1.1, 0.06, 0.7), gw)
+	for lx in [-0.48, 0.48]:
+		for lz in [-0.3, 0.3]:
+			box(dark_wood, Vector3(lx, 0.37, lz), Vector3(0.06, 0.74, 0.06), gw)
+	cyl(flat(Color("#c79a52")), Vector3(0.62, 0.3, 0.45), 0.2, 0.6, gw)
+	for i in 6:
+		var a := i * TAU / 6
+		cyl(pic_mat("res://art/a3/wrap%d.jpg" % (i % 4)), Vector3(0.62 + cos(a) * 0.09, 0.75, 0.45 + sin(a) * 0.09), 0.045, 0.9, gw, Vector3(sin(a) * 0.15, 0, cos(a) * 0.15))
+	for i in 3:
+		cyl(flat(gcols[i], 0.4), Vector3(-0.35 + i * 0.16, 0.83, -0.18), 0.06, 0.08, gw)
+	box(pic_mat("res://art/a3/wrap0.jpg"), Vector3(0.1, 0.8, 0.08), Vector3(0.5, 0.005, 0.4), gw, Vector3(0, 0.3, 0))
+	var bas := cyl(flat(Color("#b88648"), 0.95), Vector3(-0.2, 0.92, 0.12), 0.17, 0.25, gw, Vector3.ZERO, 0.13)
+	bas.name = "hamper"
+	gift(Vector3(-0.25, 0.95, 0.1), Vector3(0.14, 0.18, 0.14), gcols[0], gw)
+	gift(Vector3(-0.12, 0.95, 0.16), Vector3(0.12, 0.14, 0.12), gcols[3], gw)
+	# 7 stock racks to the ceiling (left wall, front): steel racks full of cracker cartons
+	g = group()
+	for rz in [-1.85, -0.55]:
+		var rk := Node3D.new()
+		rk.position = Vector3(-W / 2 + 0.35, 0, rz)
+		rk.rotation.y = PI / 2
+		g.add_child(rk)
+		for px in [-0.6, 0.6]:
+			for pz in [-0.25, 0.25]:
+				box(steel, Vector3(px, H / 2 - 0.1, pz), Vector3(0.05, H - 0.2, 0.05), rk)
+		for r in 5:
+			var y := 0.12 + r * 0.74
+			box(steel, Vector3(0, y, 0), Vector3(1.26, 0.03, 0.54), rk)
+			for c in 3:
+				carton(Vector3(-0.4 + c * 0.4, y + 0.015, 0.0), Vector3(0.36, 0.3 + (r + c) % 2 * 0.08, 0.44), r * 3 + c, rk)
+	# 8 the delivery cycle by the back door, carrier box full of parcels
+	g = group()
+	var cy := Node3D.new()
+	cy.position = Vector3(1.45, 0, -5.45)
+	cy.rotation.y = 0.35
+	g.add_child(cy)
+	var frame_m := flat(Color("#1f5fbf"), 0.35)
+	frame_m.metallic = 0.4
+	for wx in [-0.55, 0.55]:
+		var tor := MeshInstance3D.new()
+		var tm := TorusMesh.new()
+		tm.inner_radius = 0.3
+		tm.outer_radius = 0.35
+		tor.mesh = tm
+		tor.material_override = black
+		tor.position = Vector3(wx, 0.35, 0)
+		tor.rotation.x = PI / 2
+		cy.add_child(tor)
+		cyl(steel, Vector3(wx, 0.35, 0), 0.03, 0.12, cy, Vector3(PI / 2, 0, 0))
+	for seg in [[Vector3(-0.55, 0.35, 0), Vector3(0.0, 0.35, 0)], [Vector3(0.0, 0.35, 0), Vector3(0.45, 0.85, 0)], [Vector3(-0.55, 0.35, 0), Vector3(-0.15, 0.85, 0)], [Vector3(-0.15, 0.85, 0), Vector3(0.45, 0.85, 0)], [Vector3(0.0, 0.35, 0), Vector3(-0.15, 0.85, 0)], [Vector3(0.55, 0.35, 0), Vector3(0.45, 0.95, 0)]]:
+		var a: Vector3 = seg[0]; var b2: Vector3 = seg[1]
+		var mid := (a + b2) / 2
+		var mi := cyl(frame_m, mid, 0.025, a.distance_to(b2), cy)
+		mi.basis = Basis(Quaternion(Vector3.UP, (b2 - a).normalized()))
+	box(black, Vector3(-0.15, 0.92, 0), Vector3(0.22, 0.05, 0.12), cy)
+	box(steel, Vector3(0.45, 1.0, 0), Vector3(0.04, 0.04, 0.5), cy)
+	box(steel, Vector3(-0.55, 0.78, 0), Vector3(0.45, 0.03, 0.3), cy)
+	box(flat(Color("#c8283a"), 0.6), Vector3(-0.55, 0.96, 0), Vector3(0.42, 0.32, 0.34), cy)
+	box(flat(Color("#f5c542"), 0.4), Vector3(-0.55, 0.97, 0.172), Vector3(0.3, 0.1, 0.005), cy)
+	box(kraft, Vector3(-0.55, 1.18, 0), Vector3(0.3, 0.14, 0.24), cy, Vector3(0, 0.3, 0))
+	# 9 kids' corner (a small mat with a low table of sparkler boxes) and customers waiting at the counter
+	g = group()
+	box(flat(Color("#c8283a"), 0.95), Vector3(0.1, 0.01, -0.4), Vector3(2.0, 0.02, 1.4), g, Vector3(0, 0.1, 0))
+	box(flat(Color("#f5c542"), 0.95), Vector3(0.1, 0.015, -0.4), Vector3(1.7, 0.02, 1.1), g, Vector3(0, 0.1, 0))
+	box(flat(Color("#2e86de"), 0.95), Vector3(0.1, 0.02, -0.4), Vector3(1.5, 0.02, 0.9), g, Vector3(0, 0.1, 0))
+	var kt := Node3D.new()
+	kt.position = Vector3(0.1, 0, -0.45)
+	g.add_child(kt)
+	cyl(flat(Color("#ff7a1a"), 0.5), Vector3(0, 0.42, 0), 0.4, 0.05, kt)
+	cyl(flat(Color("#ffd23f"), 0.5), Vector3(0, 0.2, 0), 0.06, 0.4, kt)
+	for i in 4:
+		carton(Vector3(-0.22 + i * 0.15, 0.445, -0.05 + (i % 2) * 0.1), Vector3(0.12, 0.08, 0.18), i, kt, 0.2 * i)
+	var kids := [["female-b", Vector3(-0.45, 0, -0.2), 0.8], ["male-a", Vector3(0.65, 0, -0.15), -0.8]]
+	for kd in kids:
+		_person(kd[0], kd[1], kd[2], 1.1, g)
+	var queue := [["male-c", Vector3(-1.5, 0, -5.3), PI + 0.4], ["female-a", Vector3(-1.25, 0, -4.6), PI + 0.6], ["male-e", Vector3(-1.05, 0, -3.9), PI + 0.5]]
+	for q in queue:
+		_person(q[0], q[1], q[2], 1.8, g)
+	# order slips on the board: one per build from build 2 on
+	for i in 8:
+		var sm := pic_mat("res://art/a3/slip%d.jpg" % (i % 4))
+		var col := i % 4
+		var row := i / 4
+		var sl := quad(sm, Vector3(bx - 0.5 + col * 0.33 + (row % 2) * 0.08, 2.17 - row * 0.42, -D + 0.065), Vector2(0.24, 0.3), Vector3(0, 0, randf_range(-0.12, 0.12)))
+		var pin := box(flat(Color("#e8243c"), 0.3), Vector3(0, 0.12, 0.01), Vector3(0.035, 0.035, 0.03), sl)
+		pin.position = Vector3(0, 0.12, 0.01)
+		slips.append(sl)
+
+func _person(kind: String, pos: Vector3, rot_y: float, s: float, parent: Node3D) -> void:
+	var o := put("res://art/a2/people/character-%s.glb" % kind, pos, s, Vector3(0, rot_y, 0), parent)
+	var ap: AnimationPlayer = o.find_child("AnimationPlayer", true, false)
+	if ap and ap.has_animation("idle"):
+		ap.play("idle")
+		ap.seek(0.3, true)
+		ap.pause()
+
+# the room after n builds (0 = the mess)
+func skip_to(n: int) -> void:
+	if B.is_empty():
+		builds()
+	O.junk_root.visible = n < 1
+	for i in B.size():
+		(B[i] as Node3D).visible = i < n
+	for i in slips.size():
+		(slips[i] as Node3D).visible = i + 1 < n
