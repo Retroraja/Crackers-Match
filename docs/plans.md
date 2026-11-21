@@ -80,6 +80,9 @@ Out of Moves "buy moves" (cm_app MOVEP / tries.coin): ONE price (900 coins), mor
 ## Hard levels (agreed 21 Nov) — not built yet
 Hard levels had 26-31 moves vs normal 17-21 (he finished level 35 with 12-15 moves left). Change ONLY hard levels'
 moves to about 22-24. Boards unchanged. Normal levels untouched. He plays and tells, then adjust.
+Added 21 Nov (talked, saved for later): ALL hard levels end with many moves left. Why: hard levels get ~50% more
+moves than normal (26-31 vs 18-21), most start with a free special (Colour Matchbox), and use the same 1-hit
+obstacles as normal levels. Rule idea: hard = 22-24 moves, no free start special, more 2-hit obstacles.
 
 ## 1000 Wala look (talked 21 Nov, not agreed yet)
 Now: a line of 15 small pops hopping tile to tile ("pencil line"). Idea: a red cracker string laid along the path,
@@ -91,3 +94,23 @@ levels, but NOT object shapes (no heart, star, diya...). Play-changing layouts i
 two islands (gap between), pillars (blocked cells in the middle), staircase edges, ring (hole in the centre),
 skyline (uneven column heights), narrow channel (thin opening top or bottom).
 Mixed in after level 30, about one in three levels. Difficulty/moves unchanged by this.
+
+## Gold tiles "match on their own" + wrong hints (found 21 Nov, saved for later) — not built yet
+Why (cm/cm_game.gd): a 2x2 square counts as a match. hint_move() prefers special-making swaps (incl. squares) and
+lights only the 2 swapped tiles, so the hint looks like no match. A square makes a Ground Chakra that flies to a goal
+tile, and gold under a cracker is a goal, so gold breaks "by itself". luck() also sets up ~30% of refills to match,
+and calm() only stops ~60% of landing matches after level 30.
+Rule idea: hint lights every tile of the match and shows a plain 3-in-a-row first; from level 31 new crackers are
+not set up to match.
+
+## Obstacle look (talked 21 Nov, saved for later) — not built yet
+All breakables use the same simple break. Rule idea: one bold object per tile with a sharp dark outline like the
+clay pot; first hit cracks it, last hit bursts it its own way.
+- Diya stack (art/brk/diya_1.png = 3 small diyas, from level 53): replace with 1 big sharp, edgy clay diya; flame
+  flares, then the clay cracks into pieces.
+- Gift box (from level 49): ribbon unties on hit 1; on hit 2 the lid pops, sides fall open, confetti bursts.
+
+## Pacing after all specials (talked 21 Nov, NOT agreed yet)
+Now all 8 specials are unlocked by level 40, then nothing new comes. He noted that "something new every 5 levels"
+would also use things up fast. Idea: unlock specials about every 10 levels so the 8th comes near level 80; a new
+obstacle or board trick halfway between (levels 5, 15, 25...); a reward chest every 10 levels.
