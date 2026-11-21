@@ -17,17 +17,19 @@ Level card dim and level background should fill the full screen height on tall p
 strips above/below the 390x844 stage).
 
 ## Area 3 "Busy Days at GHILLI" (talked 18 Nov) — inside the same Chennai shop, indoor builds (Royal Match style)
-- 20 levels, 9 builds. Orders come all through the area: after each build a small real order is packed and sent out
-  (celebration moment); an order board on the wall fills with slips.
-  1 clear the back store room -> neighbour aunty's sparkler pack
-  2 order board + old phone -> first phone order: school function
-  3 billing counter + cash register -> a family's Diwali bill
-  4 packing table (paper, string) -> 5 parcels for nearby houses
-  5 gift-box shelf -> office order of 20 Diwali gift boxes
-  6 gift-wrap corner -> wedding family's wrapped hampers
-  7 stock racks to the ceiling -> temple committee bulk order
-  8 delivery cycle at back door -> delivery boy rides out with orders
-  9 kids' corner + customer queue -> shop full, big rush of orders
+- 20 levels, 9 builds. The back store room behind the shop becomes GHILLI's ORDER ROOM (orders come in, get packed,
+  go out). Builds (agreed 21 Nov, replaces the 18 Nov list; no kids/customers in a back room), in work order:
+  1 Clear the Back Room (junk out, broom + bucket)
+  2 Phone Order Desk (phone, order book, order board on the wall)
+  3 Stock Racks (steel racks of Sivakasi cracker cartons)
+  4 Packing Table (brown paper, string, tape)
+  5 Gift Box & Wrap Table (Diwali gift boxes + wrapping paper)
+  6 Bill Desk & Weighing Scale (bills for big orders)
+  7 Fire Safety Corner (sand buckets, fire extinguisher)
+  8 Delivery Cycle (at the back door, carrier loaded)
+  9 Ready Orders Corner (packed parcels tagged for other towns -> "light up more towns")
+  Order board fills with one slip per build. Look (offered 21 Nov, waiting for go): bright and colourful room -
+  white tube light, light cream walls + sky-blue band, light cream/red tiles, brighter doors.
 - Story links (agreed 21 Nov): notebook step 3 stays "Light up more towns"; Area 3 = the first steps to it.
   Start = 3 slides (area_start.gd, start_area = 3, art/story3): 1 notebook, steps 1-2 ticked, step 3 gets gold line;
   2 the man opens the door from the shop into the dusty back store room; 3 in the mess, the man: "First, get GHILLI
