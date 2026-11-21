@@ -5,13 +5,13 @@
 # Start of Area 3 (21 Nov, start_area = 3): picks up from the Area 2 end ("NEXT · Busy Days at GHILLI"):
 #   1 Grandpa's notebook: steps 1-2 ticked, step 3 "Light up more towns" lights up in gold
 #   2 the man opens the door from the shop into the dusty back store room (art/story3/s2, from scripts/street/backroom.gd)
-#   3 inside the mess, the man pops up: "First, get GHILLI ready!"   then "AREA 3 · Busy Days at GHILLI"
+#   3 inside the mess, the man pops up: "Orders are coming. Let's set up this room!"   then "AREA 3 · Busy Days at GHILLI"
 extends AreaEndScene
 class_name AreaStartScene
 
 var pic: TextureRect
 var start_area := 2
-const CAPS3 := ["“Thatha, your next step…\nlight up more towns.”", "Orders need space…\ntime to open the back room!", "“First, get GHILLI ready!”"]
+const CAPS3 := ["“Thatha, your next step…\nlight up more towns.”", "Orders need space…\ntime to open the back room!", "“Orders are coming.\nLet's set up this room!”"]
 const CAPS := ["The first load of crackers\nis ready for Chennai!", "Chennai.  Bunder Street,\nwhere the big city buys its crackers.", "“Our first shop…\na little rusty, but it's ours.”"]
 
 func play(height: float) -> void:
