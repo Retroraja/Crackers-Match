@@ -9,13 +9,14 @@ const W := 5.6      # room width (x -W/2..W/2)
 const D := 5.6      # room depth: square-ish, so the corner view fills a phone screen (his reference, 21 Nov)
 const H := 4.0      # ceiling
 const F := 2.6      # floor runs to z = F (the shop door wall, shown only for the doorway slide)
-const FG := 0.3     # the game picture: the floor stops just in front of the room (no long empty floor)
+const FG := 6.0     # the game picture: the camera stands inside the room, the floor runs on under it (no gap)
 var front := false
 var ceiling := false   # true for eye-level shots (the slides); the top view leaves it out
 const WH := 6.0     # slides: walls are drawn taller than the ceiling so no view shows past them
 var wh := WH        # the game picture (dollhouse corner view): walls stop at the ceiling with a wooden cap
 const G := "res://art/a2/gen/%s"
 const K := "res://art/shop/%s.glb"
+const KIT := "res://art/a3/kit/%s.glb"   # Kenney Furniture Kit (CC0), sharp clean pieces for the builds
 var O := {}
 var env: Environment
 var sun: DirectionalLight3D
@@ -95,13 +96,17 @@ func light(world_env: Environment, dl: DirectionalLight3D) -> void:
 	env.background_color = Color("#f4ead8")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color("#fff6e8")
-	env.ambient_light_energy = 0.5
+	env.ambient_light_energy = 0.38
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.tonemap_exposure = 0.95
+	env.tonemap_exposure = 0.88
+	env.adjustment_enabled = true
+	env.adjustment_contrast = 1.12
+	env.adjustment_saturation = 1.12
 	sun.light_color = Color("#fff0d4")
-	sun.light_energy = 2.6
+	sun.light_energy = 3.0
 	sun.shadow_enabled = true
-	sun.directional_shadow_max_distance = 30
+	sun.directional_shadow_max_distance = 16
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	sun.shadow_bias = 0.04
 	# from behind the back wall, high and from the left: patches of sun on the floor in front of the door and window
 	sun.rotation = Vector3(deg_to_rad(-30), deg_to_rad(165), 0)
@@ -334,6 +339,19 @@ func _front_wall(plaster: Material, dado: Material, fr: Material) -> void:
 	l.position = Vector3(0.0, 2.2, z + 1.2)
 	add_child(l)
 
+# Kenney kit pieces come in pale flat colours: re-skin them (light parts / dark parts) with real materials
+func skin(o: Node3D, m: Dictionary) -> Node3D:
+	for c in o.find_children("*", "MeshInstance3D", true, false):
+		var mi := c as MeshInstance3D
+		for i in mi.mesh.get_surface_count():
+			var src := mi.get_active_material(i)
+			if src is StandardMaterial3D:
+				var l: float = (src as StandardMaterial3D).albedo_color.get_luminance()
+				var k := "light" if l > 0.45 else "dark"
+				if m.has(k):
+					mi.set_surface_override_material(i, m[k])
+	return o
+
 # Kenney boxes are a light peach: old brown cardboard, a little dusty
 var _cb := {}
 func _cardboard(o: Node3D) -> void:
@@ -440,32 +458,47 @@ func builds() -> void:
 	var dk := Node3D.new()
 	dk.position = Vector3(bx, 0, -D + 0.42)
 	g.add_child(dk)
-	box(wood, Vector3(0, 0.76, 0), Vector3(1.3, 0.06, 0.62), dk)
-	box(dark_wood, Vector3(-0.45, 0.37, 0), Vector3(0.36, 0.74, 0.58), dk)
-	for lx in [0.6]:
-		for lz in [-0.26, 0.26]:
-			box(dark_wood, Vector3(lx, 0.37, lz), Vector3(0.06, 0.74, 0.06), dk)
+	skin(put(KIT % "desk", Vector3(-0.72, 0, 0.36), 2.0, Vector3.ZERO, dk), {"light": wood, "dark": dark_wood})
+	put(KIT % "lampSquareTable", Vector3(0.42, 0.76, -0.25), 1.6, Vector3.ZERO, dk)
 	box(flat(Color("#f8f3e4")), Vector3(0.12, 0.8, 0.08), Vector3(0.42, 0.02, 0.3), dk, Vector3(0, 0.1, 0))
 	box(flat(Color("#2e86de")), Vector3(0.12, 0.795, 0.08), Vector3(0.44, 0.012, 0.32), dk, Vector3(0, 0.1, 0))
 	cyl(flat(Color("#f5c542"), 0.4), Vector3(0.48, 0.85, -0.12), 0.05, 0.12, dk)
 	# chair
-	var ch := Node3D.new()
-	ch.position = Vector3(bx + 0.1, 0, -D + 1.05)
-	g.add_child(ch)
-	box(flat(Color("#2ead5b"), 0.5), Vector3(0, 0.45, 0), Vector3(0.45, 0.05, 0.42), ch)
-	box(flat(Color("#2ead5b"), 0.5), Vector3(0, 0.75, 0.2), Vector3(0.45, 0.55, 0.05), ch)
-	for lx in [-0.19, 0.19]:
-		for lz in [-0.18, 0.18]:
-			box(steel, Vector3(lx, 0.22, lz), Vector3(0.04, 0.44, 0.04), ch)
+	skin(put(KIT % "chairDesk", Vector3(bx + 0.05, 0, -D + 1.25), 2.0, Vector3(0, PI + 0.3, 0), g), {"light": flat(Color("#1f7a46"), 0.45), "dark": steel})
+	put(KIT % "trashcan", Vector3(bx + 0.95, 0, -D + 0.45), 0.45, Vector3.ZERO, g)
 	var ph := Node3D.new()
 	ph.position = Vector3(bx - 0.3, 0.79, -D + 0.42)
 	ph.scale = Vector3.ONE * 1.4
 	g.add_child(ph)
-	var red := flat(Color("#b3202c"), 0.35)
-	box(red, Vector3(0, 0.07, 0), Vector3(0.3, 0.14, 0.24), ph, Vector3(-0.15, 0, 0))
-	cyl(flat(Color("#f0e6d0"), 0.4), Vector3(0, 0.15, 0.03), 0.07, 0.02, ph, Vector3(-0.5, 0, 0))
-	box(red, Vector3(0, 0.19, -0.02), Vector3(0.34, 0.05, 0.07), ph)
-	box(black, Vector3(0.24, 0.02, 0.0), Vector3(0.04, 0.04, 0.04), ph)
+	# an old rotary desk phone: stepped base, white dial with finger holes, handset on a cradle, curly cord
+	var red := flat(Color("#c3202e"), 0.25)
+	red.clearcoat_enabled = true
+	box(red, Vector3(0, 0.03, 0), Vector3(0.28, 0.06, 0.24), ph)
+	box(red, Vector3(0, 0.085, 0.01), Vector3(0.22, 0.06, 0.18), ph, Vector3(-0.18, 0, 0))
+	var dial := Node3D.new()
+	dial.position = Vector3(0, 0.15, 0.055)
+	dial.rotation.x = 0.55
+	ph.add_child(dial)
+	cyl(flat(Color("#f4efe2"), 0.3), Vector3.ZERO, 0.065, 0.012, dial)
+	for i in 10:
+		var an := -0.6 + i * 0.5
+		cyl(black, Vector3(cos(an) * 0.045, 0.004, sin(an) * 0.045), 0.009, 0.01, dial)
+	cyl(red, Vector3(0, 0.007, 0), 0.02, 0.01, dial)
+	for sx in [-0.11, 0.11]:
+		box(red, Vector3(sx, 0.135, -0.05), Vector3(0.04, 0.06, 0.05), ph)
+	cyl(red, Vector3(0, 0.175, -0.05), 0.022, 0.3, ph, Vector3(0, 0, PI / 2))
+	for sx in [-0.15, 0.15]:
+		box(red, Vector3(sx, 0.16, -0.035), Vector3(0.07, 0.04, 0.09), ph, Vector3(0.2, 0, 0))
+	for i in 7:
+		var tor := MeshInstance3D.new()
+		var tm := TorusMesh.new()
+		tm.inner_radius = 0.008
+		tm.outer_radius = 0.016
+		tor.mesh = tm
+		tor.material_override = black
+		tor.position = Vector3(-0.16 - i * 0.022, 0.02, -0.06 + i * 0.012)
+		tor.rotation.z = PI / 2
+		ph.add_child(tor)
 	# the first slip comes with the board
 	# 6 bill desk (under the window) with the green cash box, the bill book and a platform weighing scale
 	g = group(5)

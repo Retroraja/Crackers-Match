@@ -15,6 +15,7 @@ func _ready() -> void:
 	var sv := SubViewport.new()
 	sv.size = Vector2i(int(a.get("w", 1080)), int(a.get("h", 2338)))
 	sv.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	sv.msaa_3d = Viewport.MSAA_4X   # crisp edges
 	add_child(sv)
 	var we := WorldEnvironment.new()
 	we.environment = Environment.new()
