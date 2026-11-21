@@ -30,6 +30,10 @@ strips above/below the 390x844 stage).
   9 Ready Orders Corner (packed parcels tagged for other towns -> "light up more towns")
   Order board fills with one slip per build. Look (done 21 Nov): bright and colourful room -
   white tube light, light cream walls + sky-blue band, light cream/red tiles, brighter doors.
+  NEXT (his note 21 Nov, do later): camera is TOO HIGH (now ~8 m looking down, builds small, half empty floor).
+  Plan: lower camera ~3-4 m, closer, a bit from the front corner (Homescapes-like room view); 2 pictures like
+  Area 2: p0 back half (phone desk, bill desk, delivery cycle, packing table), p1 front half (racks, gift table,
+  fire safety, ready orders), slide after build 5.
 - Story links (agreed 21 Nov): notebook step 3 stays "Light up more towns"; Area 3 = the first steps to it.
   Start = 3 slides (area_start.gd, start_area = 3, art/story3): 1 notebook, steps 1-2 ticked, step 3 gets gold line;
   2 the man opens the door from the shop into the dusty back store room; 3 in the mess, the man: "First, get GHILLI
