@@ -59,3 +59,11 @@ Out of Moves "buy moves" (cm_app MOVEP / tries.coin): ONE price (900 coins), mor
 ## DONE in code, goes into the next APK (commit after ffc4df3)
 - Coin Blast after EVERY 5th level (was only after 5 and 10), with a Skip link on its card (skip = gone for that
   one, next level card opens). Android back on that card = Skip.
+
+## Hard levels (agreed 21 Nov) — not built yet
+Hard levels had 26-31 moves vs normal 17-21 (he finished level 35 with 12-15 moves left). Change ONLY hard levels'
+moves to about 22-24. Boards unchanged. Normal levels untouched. He plays and tells, then adjust.
+
+## 1000 Wala look (talked 21 Nov, not agreed yet)
+Now: a line of 15 small pops hopping tile to tile ("pencil line"). Idea: a red cracker string laid along the path,
+then a fast chain of 25-30 bangs with flash, sparks, smoke puff, small tile shake, crackle sound, ~1.5-2 s.
