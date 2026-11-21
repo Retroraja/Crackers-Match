@@ -120,3 +120,35 @@ def carton(i):
 for i in range(6):
     carton(i).save(f"{OUT}/carton{i}.jpg", quality=90)
 print("builds ok")
+
+# ---- bright order room (21 Nov): light cream and red floor tiles (2 x 2 tiles per picture, grout lines)
+im = Image.new("RGB", (256, 256), (240, 228, 205))
+d = ImageDraw.Draw(im)
+for ty in range(2):
+    for tx in range(2):
+        c = (240, 230, 208) if (tx + ty) % 2 == 0 else (212, 112, 90)
+        d.rectangle([tx * 128 + 3, ty * 128 + 3, tx * 128 + 124, ty * 128 + 124], fill=c)
+n = noise(256, 256, (128, 128, 128), 10, 1.0).convert("L")
+im = Image.blend(im, Image.merge("RGB", [n] * 3), 0.08)
+im.save(f"{OUT}/floor_bright.jpg", quality=90)
+print("floor ok")
+
+# ---- parcel tags for other towns
+F = ImageFont.truetype(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../godot/fonts/LilitaOne.ttf"), 30)
+for i, (town, col) in enumerate([("KANCHIPURAM", (214, 40, 70)), ("VELLORE", (46, 134, 222)), ("MADURAI", (46, 173, 91)), ("SALEM", (255, 122, 26))]):
+    im = Image.new("RGB", (256, 96), (250, 246, 232))
+    d = ImageDraw.Draw(im)
+    d.rectangle([0, 0, 255, 95], outline=col, width=8)
+    fs = 30
+    f = F
+    while d.textlength(town, font=f) > 228:
+        fs -= 2; f = f.font_variant(size=fs)
+    d.text((128, 50), town, font=f, fill=col, anchor="mm")
+    im.save(f"{OUT}/tag{i}.jpg", quality=90)
+# fire sign
+im = Image.new("RGB", (256, 128), (200, 30, 40))
+d = ImageDraw.Draw(im)
+d.rectangle([0, 0, 255, 127], outline=(255, 255, 255), width=8)
+d.text((128, 64), "FIRE SAFETY", font=F.font_variant(size=34), fill=(255, 255, 255), anchor="mm")
+im.save(f"{OUT}/firesign.jpg", quality=90)
+print("tags ok")

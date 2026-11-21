@@ -28,7 +28,7 @@ strips above/below the 390x844 stage).
   7 Fire Safety Corner (sand buckets, fire extinguisher)
   8 Delivery Cycle (at the back door, carrier loaded)
   9 Ready Orders Corner (packed parcels tagged for other towns -> "light up more towns")
-  Order board fills with one slip per build. Look (offered 21 Nov, waiting for go): bright and colourful room -
+  Order board fills with one slip per build. Look (done 21 Nov): bright and colourful room -
   white tube light, light cream walls + sky-blue band, light cream/red tiles, brighter doors.
 - Story links (agreed 21 Nov): notebook step 3 stays "Light up more towns"; Area 3 = the first steps to it.
   Start = 3 slides (area_start.gd, start_area = 3, art/story3): 1 notebook, steps 1-2 ticked, step 3 gets gold line;
@@ -37,7 +37,7 @@ strips above/below the 390x844 stage).
   End: sales book up, Madurai letter, "Madurai" written under step 3 in the notebook, NEXT card.
 - 3D room: scripts/street/backroom.gd (Backroom, TASKS + skip_to), rendered by tools/pic/a3_pic.gd; textures
   tools/a3tex.py -> art/a3. 9 builds made 21 Nov (builds only, no levels yet): ONE picture a3p0 holds all 9
-  (render: a3_pic.gd --w=1620 --h=3507 --p=0,7.6,5.6 --l=0,0,-2.8 --fov=55 --steps=0..9 --out=/tmp/pics/a3p0, then
+  (render: a3_pic.gd --w=1620 --h=3507 --p=0,8.0,6.4 --l=0,0,-2.9 --fov=58 --steps=0..9 --out=/tmp/pics/a3p0, then
   make_pics.py /tmp/pics godot 3) -> street/pics/a3_p0*.webp + a3.json (~0.6 MB). NOT wired into the game yet
   (pic_street set_area only knows 2; levels 61-80, order send-outs and the area end still to do).
 - Area 3 end: sales book going up + letter "Open a shop in Madurai?" -> Area 4 = second shop in Madurai.
