@@ -25,8 +25,24 @@ func tex(n: String) -> Texture2D:
 	return load((G % n) if not n.begins_with("res://") else n)
 
 # triplanar in world space: boxes of any size keep the same texture scale (like the tiled .glb pieces of Area 2)
+# KIT_LOOK (21 Nov, his ask): flat matching colours like the Kenney kit's own pictures, no grainy photo textures.
+# Each photo texture becomes its average colour; our own clean art (art/a3: floor tiles, labels) stays.
+const KIT_LOOK := true
+var _avg := {}
+func avg(path: String) -> Color:
+	if not _avg.has(path):
+		var im := Image.load_from_file(ProjectSettings.globalize_path(G % path if not path.begins_with("res://") else path))
+		im.resize(1, 1, Image.INTERPOLATE_BILINEAR)
+		_avg[path] = im.get_pixel(0, 0)
+	return _avg[path]
+
 func mat(diff: String, nor := "", tint := Color.WHITE, tile := 2.0, rough := 0.9) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
+	if KIT_LOOK and not diff.begins_with("res://art/a3/"):
+		m.albedo_color = (avg(diff) * tint).lightened(0.08)
+		m.albedo_color.a = 1.0
+		m.roughness = 0.8
+		return m
 	m.albedo_texture = tex(diff)
 	m.albedo_color = tint
 	if nor != "":
@@ -96,14 +112,14 @@ func light(world_env: Environment, dl: DirectionalLight3D) -> void:
 	env.background_color = Color("#f4ead8")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color("#fff6e8")
-	env.ambient_light_energy = 0.38
+	env.ambient_light_energy = 0.6 if KIT_LOOK else 0.38
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_exposure = 0.88
 	env.adjustment_enabled = true
 	env.adjustment_contrast = 1.12
 	env.adjustment_saturation = 1.12
 	sun.light_color = Color("#fff0d4")
-	sun.light_energy = 3.0
+	sun.light_energy = 2.0 if KIT_LOOK else 3.0
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 16
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
@@ -341,6 +357,8 @@ func _front_wall(plaster: Material, dado: Material, fr: Material) -> void:
 
 # Kenney kit pieces come in pale flat colours: re-skin them (light parts / dark parts) with real materials
 func skin(o: Node3D, m: Dictionary) -> Node3D:
+	if KIT_LOOK:
+		return o
 	for c in o.find_children("*", "MeshInstance3D", true, false):
 		var mi := c as MeshInstance3D
 		for i in mi.mesh.get_surface_count():
