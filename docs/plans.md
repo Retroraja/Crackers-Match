@@ -67,3 +67,10 @@ moves to about 22-24. Boards unchanged. Normal levels untouched. He plays and te
 ## 1000 Wala look (talked 21 Nov, not agreed yet)
 Now: a line of 15 small pops hopping tile to tile ("pencil line"). Idea: a red cracker string laid along the path,
 then a fast chain of 25-30 bangs with flash, sparks, smoke puff, small tile shake, crackle sound, ~1.5-2 s.
+
+## Board shape variety (agreed 21 Nov) — not built yet
+Now: 34 of 60 boards are full 9x8 squares; most of the other 26 only lose a corner/row. He wants variety in later
+levels, but NOT object shapes (no heart, star, diya...). Play-changing layouts instead:
+two islands (gap between), pillars (blocked cells in the middle), staircase edges, ring (hole in the centre),
+skyline (uneven column heights), narrow channel (thin opening top or bottom).
+Mixed in after level 30, about one in three levels. Difficulty/moves unchanged by this.
