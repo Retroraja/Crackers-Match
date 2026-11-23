@@ -26,6 +26,8 @@ func _ready() -> void:
 	var cam: Camera3D
 	if a.get("mode", "lane") == "lane":
 		cam = await lane(sv)
+	elif a.get("mode") == "hub":
+		cam = await hub_view(sv)
 	elif a.get("mode") == "street":
 		cam = await street_view(sv)
 		if a.has("drive"):
@@ -369,16 +371,18 @@ func bunting(g: Node3D, p0: Vector3, p1: Vector3, h: float) -> void:
 		f.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		f.material_override = mat(cols[i % cols.size()], 0.4)
 
+var LR := 0.22
+var LS := 1.2
 func lamps(g: Node3D, p0: Vector3, p1: Vector3, h: float) -> void:
-	var n := int(p0.distance_to(p1) / 1.2)
+	var n := int(p0.distance_to(p1) / LS)
 	for i in n + 1:
 		var t := float(i) / n
 		var p := p0.lerp(p1, t)
-		p.y = h - 0.8 * (1.0 - pow(2.0 * t - 1.0, 2))
+		p.y = h - (0.8 if LR > 0.15 else 0.18) * (1.0 - pow(2.0 * t - 1.0, 2))
 		var b := MeshInstance3D.new()
 		var sm := SphereMesh.new()
-		sm.radius = 0.22
-		sm.height = 0.44
+		sm.radius = LR
+		sm.height = LR * 2.0
 		b.mesh = sm
 		b.material_override = mat(["#ffd23a", "#ff6a3a", "#fff3a0"][i % 3], 2.0)
 		b.position = p
@@ -797,3 +801,100 @@ func drive(sv: SubViewport, cam: Camera3D) -> void:
 		await RenderingServer.frame_post_draw
 		sv.get_texture().get_image().save_png("%s/d%04d.png" % [a.out, i])
 	print("PIC drive done ", n)
+
+
+# ------------------------------------------------------------------ 23 Nov: "GHILLI Delivery Hub" home view, all builds done
+func tex_box(par: Node3D, size: Vector3, pos: Vector3, tex: String, c := "#ffffff", rot_y := 0.0) -> MeshInstance3D:
+	var b := box(par, size, pos, c, rot_y)
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = load(tex)
+	m.albedo_color = Color(c)
+	m.roughness = 0.8
+	b.material_override = m
+	return b
+
+func hub_view(sv: SubViewport) -> Camera3D:
+	sv.transparent_bg = false
+	var st := Street.new()
+	st.sv = sv
+	sv.add_child(st)
+	await get_tree().process_frame
+	st.set_area(2)
+	st.sun.shadow_enabled = true
+	st.sun.directional_shadow_max_distance = 90
+	st.process_mode = Node.PROCESS_MODE_INHERIT
+	st.skip_to(12)
+	st.SHOW = false
+	st.EM.clear()
+	st.fx.clear()
+	st.process_mode = Node.PROCESS_MODE_DISABLED
+	var bz: Node3D = st.bazaar
+	const K := "res://art/a3/kit/%s.glb"
+	# 2 order board on the wall left of the shutter: cork board with order slips, DELIVERED stamps
+	var ob := Node3D.new()
+	ob.position = V3(a.get("board", "-3.75,2.1,0.35"))
+	bz.add_child(ob)
+	tex_box(ob, Vector3(1.5, 1.1, 0.06), Vector3.ZERO, "res://art/a3/cork.jpg")
+	box(ob, Vector3(1.62, 1.22, 0.04), Vector3(0, 0, -0.02), "#6b3e22")
+	for i in 6:
+		var x := -0.5 + (i % 3) * 0.5
+		var y := 0.25 - (i / 3) * 0.5
+		tex_box(ob, Vector3(0.36, 0.4, 0.02), Vector3(x, y, 0.04), "res://art/a3/slip%d.jpg" % (i % 4))
+		if i < 5:
+			var stp := box(ob, Vector3(0.3, 0.09, 0.01), Vector3(x, y - 0.05, 0.06), "#2e9e44")
+			stp.rotation.z = 0.25
+	# 3 packing table on the footpath with boxes, tape, a stack of parcels
+	var pt := Node3D.new()
+	pt.position = V3(a.get("table", "-2.2,0.19,1.55"))
+	bz.add_child(pt)
+	put(pt, K % "table", Vector3.ZERO, 2.4, 0.0)
+	for b in [[-0.4, 0.0, 0.3], [0.35, 0.1, -0.4], [0.0, 0.0, 1.2]]:
+		put(pt, K % "cardboardBoxClosed", Vector3(b[0], 1.82, b[1]), 2.2, b[2])
+	put(pt, K % "cardboardBoxOpen", Vector3(-1.4, 0.0, 0.3), 2.6, 0.4)
+	for i in 3:
+		put(pt, K % "cardboardBoxClosed", Vector3(1.35, i * 0.62, 0.25), 2.6, i * 0.3)
+	# 1 the grey van at the kerb, 4 two delivery bikes behind it
+	grey_van(bz, V3(a.get("van", "-2.6,0.3,5.2")), float(a.get("vr", "1.5708")), float(a.get("vs", "1.6")))
+	put(bz, "gen/bike", V3(a.get("bike1", "2.6,0.0,4.7")), 1.0, 0.35)
+	put(bz, "gen/bike", V3(a.get("bike2", "3.6,0.0,4.8")), 1.0, 0.4)
+	# customer queue along the footpath, facing the counter
+	var kinds := ["female-a", "male-c", "female-c", "male-e", "female-b", "male-a"]
+	for i in kinds.size():
+		var o := put(bz, "people/character-" + kinds[i], V3(a.get("q0", "3.3,0.19,2.0")) + Vector3(i * 0.7, 0, (i % 2) * 0.1), 2.5, -PI / 2 + 0.25)
+		var ap: AnimationPlayer = o.find_child("AnimationPlayer", true, false)
+		if ap and ap.has_animation("idle"):
+			ap.play("idle")
+			ap.seek(i * 0.3, true)
+	# evening: low warm sun, dimmer sky, shop lights and serial bulbs on
+	if a.has("sunset"):
+		var sun: DirectionalLight3D = st.sun
+		sun.light_color = Color("#ffb46e")
+		sun.light_energy = 0.95
+		sun.rotation = Vector3(deg_to_rad(-14), deg_to_rad(-62), 0)
+		var env: Environment = st.env
+		env.ambient_light_color = Color("#9a86b8")
+		env.ambient_light_energy = 0.55
+		if env.sky and env.sky.sky_material is PanoramaSkyMaterial:
+			var pm: PanoramaSkyMaterial = env.sky.sky_material
+			pm.energy_multiplier = 0.75
+		env.adjustment_enabled = true
+		env.adjustment_saturation = 1.15
+		env.adjustment_color_correction = null
+		for k in ["tube_m", "sign_m", "lan_m", "bulb_m"]:
+			if bz.O.has(k):
+				bz.glow(bz.O[k], 3.0)
+		var lt := OmniLight3D.new()
+		lt.light_color = Color("#ffd49a")
+		lt.light_energy = 2.2
+		lt.omni_range = 7.0
+		lt.position = Vector3(0, 2.6, 1.2)
+		bz.add_child(lt)
+		LR = 0.07
+		LS = 0.35
+		lamps(bz, Vector3(-3.9, 0, 1.5), Vector3(3.9, 0, 1.5), 3.05)
+		lamps(bz, Vector3(-3.9, 0, 0.4), Vector3(3.9, 0, 0.4), 4.45)
+	var cam := st.cam
+	cam.fov = float(a.get("fov", 50))
+	cam.position = V3(a.get("p", "0.3,7.5,15.5"))
+	cam.look_at(V3(a.get("l", "0,2.4,0")), Vector3.UP)
+	return cam
