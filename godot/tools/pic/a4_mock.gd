@@ -739,6 +739,15 @@ func street_view(sv: SubViewport) -> Camera3D:
 		recolor(put(bz, "nature/tree_palmTall", Vector3(x, 0.18, 26), 9.0, randf() * TAU), _leaf)
 	if not a.has("novan"):
 		VAN = grey_van(bz, V3(a.get("van", "6,0.3,10.5")), float(a.get("vr", "-1.45")), float(a.get("vs", "1.7")))
+	# unloaded parcels on the pavement by the temple gate
+	var bx := V3(a.get("bx", "-30,0.18,19.5"))
+	for i in int(a.get("boxes", "0")):
+		var q: Vector3 = [Vector3(0, 0, 0), Vector3(0.75, 0, 0.15), Vector3(0.35, 0.5, 0.05), Vector3(1.5, 0, 0.05), Vector3(1.1, 0.5, 0.1)][i]
+		var bb := box(bz, Vector3(0.62, 0.5, 0.55), bx + q + Vector3(0, 0.25, 0), "#b8834c")
+		bb.rotation.y = i * 0.35
+		box(bb, Vector3(0.64, 0.08, 0.57), Vector3(0, 0.08, 0), "#d8b07a")
+	if a.has("sunset"):
+		sunset(st, bz, false)
 	var cam := st.cam
 	cam.fov = float(a.get("fov", 50))
 	cam.position = V3(a.get("p", "16,4.2,11.5"))
@@ -840,7 +849,7 @@ func hub_view(sv: SubViewport) -> Camera3D:
 		var x := -0.5 + (i % 3) * 0.5
 		var y := 0.25 - (i / 3) * 0.5
 		tex_box(ob, Vector3(0.36, 0.4, 0.02), Vector3(x, y, 0.04), "res://art/a3/slip%d.jpg" % (i % 4))
-		if i < 5:
+		if i < int(a.get("stamps", "5")) and not (i == 0 and a.has("nostamp0")):
 			var stp := box(ob, Vector3(0.3, 0.09, 0.01), Vector3(x, y - 0.05, 0.06), "#2e9e44")
 			stp.rotation.z = 0.25
 	# 3 packing table on the footpath with boxes, tape, a stack of parcels
@@ -854,7 +863,8 @@ func hub_view(sv: SubViewport) -> Camera3D:
 	for i in 3:
 		put(pt, K % "cardboardBoxClosed", Vector3(1.35, i * 0.62, 0.25), 2.6, i * 0.3)
 	# 1 the grey van at the kerb, 4 two delivery bikes behind it
-	grey_van(bz, V3(a.get("van", "-2.6,0.3,5.2")), float(a.get("vr", "1.5708")), float(a.get("vs", "1.6")))
+	if not a.has("novan"):
+		grey_van(bz, V3(a.get("van", "-2.6,0.3,5.2")), float(a.get("vr", "1.5708")), float(a.get("vs", "1.6")))
 	put(bz, "gen/bike", V3(a.get("bike1", "2.6,0.0,4.7")), 1.0, 0.35)
 	put(bz, "gen/bike", V3(a.get("bike2", "3.6,0.0,4.8")), 1.0, 0.4)
 	# customer queue along the footpath, facing the counter
@@ -865,36 +875,42 @@ func hub_view(sv: SubViewport) -> Camera3D:
 		if ap and ap.has_animation("idle"):
 			ap.play("idle")
 			ap.seek(i * 0.3, true)
-	# evening: low warm sun, dimmer sky, shop lights and serial bulbs on
 	if a.has("sunset"):
-		var sun: DirectionalLight3D = st.sun
-		sun.light_color = Color("#ffb46e")
-		sun.light_energy = 0.95
-		sun.rotation = Vector3(deg_to_rad(-14), deg_to_rad(-62), 0)
-		var env: Environment = st.env
-		env.ambient_light_color = Color("#9a86b8")
-		env.ambient_light_energy = 0.55
-		if env.sky and env.sky.sky_material is PanoramaSkyMaterial:
-			var pm: PanoramaSkyMaterial = env.sky.sky_material
-			pm.energy_multiplier = 0.75
-		env.adjustment_enabled = true
-		env.adjustment_saturation = 1.15
-		env.adjustment_color_correction = null
-		for k in ["tube_m", "sign_m", "lan_m", "bulb_m"]:
-			if bz.O.has(k):
-				bz.glow(bz.O[k], 3.0)
-		var lt := OmniLight3D.new()
-		lt.light_color = Color("#ffd49a")
-		lt.light_energy = 2.2
-		lt.omni_range = 7.0
-		lt.position = Vector3(0, 2.6, 1.2)
-		bz.add_child(lt)
-		LR = 0.07
-		LS = 0.35
-		lamps(bz, Vector3(-3.9, 0, 1.5), Vector3(3.9, 0, 1.5), 3.05)
-		lamps(bz, Vector3(-3.9, 0, 0.4), Vector3(3.9, 0, 0.4), 4.45)
+		sunset(st, bz, true)
 	var cam := st.cam
 	cam.fov = float(a.get("fov", 50))
 	cam.position = V3(a.get("p", "0.3,7.5,15.5"))
 	cam.look_at(V3(a.get("l", "0,2.4,0")), Vector3.UP)
 	return cam
+
+
+# evening: low warm sun, dimmer sky, shop lights and serial bulbs on
+func sunset(st, bz: Node3D, shop: bool) -> void:
+	var sun: DirectionalLight3D = st.sun
+	sun.light_color = Color("#ffb46e")
+	sun.light_energy = 0.95
+	sun.rotation = Vector3(deg_to_rad(float(a.get("sx", "-14"))), deg_to_rad(float(a.get("sy", "-62"))), 0)
+	var env: Environment = st.env
+	env.ambient_light_color = Color("#9a86b8")
+	env.ambient_light_energy = 0.55
+	if env.sky and env.sky.sky_material is PanoramaSkyMaterial:
+		var pm: PanoramaSkyMaterial = env.sky.sky_material
+		pm.energy_multiplier = 0.75
+	env.adjustment_enabled = true
+	env.adjustment_saturation = 1.15
+	env.adjustment_color_correction = null
+	for k in ["tube_m", "sign_m", "lan_m", "bulb_m"]:
+		if bz.O.has(k):
+			bz.glow(bz.O[k], 3.0)
+	var lt := OmniLight3D.new()
+	lt.light_color = Color("#ffd49a")
+	lt.light_energy = 2.2
+	lt.omni_range = 7.0
+	lt.position = Vector3(0, 2.6, 1.2)
+	bz.add_child(lt)
+	if not shop:
+		return
+	LR = 0.07
+	LS = 0.35
+	lamps(bz, Vector3(-3.9, 0, 1.5), Vector3(3.9, 0, 1.5), 3.05)
+	lamps(bz, Vector3(-3.9, 0, 0.4), Vector3(3.9, 0, 0.4), 4.45)
