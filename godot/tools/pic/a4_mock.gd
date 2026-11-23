@@ -26,6 +26,8 @@ func _ready() -> void:
 	var cam: Camera3D
 	if a.get("mode", "lane") == "lane":
 		cam = await lane(sv)
+	elif a.get("mode") == "street":
+		cam = await street_view(sv)
 	elif a.get("mode") == "road":
 		cam = road_view(sv)
 	else:
@@ -597,4 +599,113 @@ func road_view(sv: SubViewport) -> Camera3D:
 	cam.position = V3(a.get("p", "0.2,4.6,12.5"))
 	cam.look_at(V3(a.get("l", "-1.2,1.2,-30")), Vector3.UP)
 	cam.current = true
+	return cam
+
+
+# ------------------------------------------------------------------ test 2 (23 Nov): the SAME Area 2 Chennai street,
+# low camera behind the GHILLI van, a plaster-textured gopuram temple on the left pavement
+var TEXW: Texture2D
+var TEXN: Texture2D
+var TEXS: Texture2D
+
+func pmat(c: String, stone := false) -> StandardMaterial3D:
+	if TEXW == null:
+		TEXW = load("res://art/a2/gen/row_0.jpg")
+		TEXN = load("res://art/a2/gen/row_1.jpg")
+		TEXS = load("res://art/a2/gen/row_4.jpg")
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = TEXS if stone else TEXW
+	m.albedo_color = Color(c).lightened(0.15)
+	m.normal_enabled = not stone
+	m.normal_texture = TEXN
+	m.uv1_triplanar = true
+	m.uv1_scale = Vector3.ONE * (0.5 if stone else 0.35)
+	m.roughness = 0.85
+	return m
+
+func tbox(par: Node3D, size: Vector3, pos: Vector3, c: String, stone := false) -> MeshInstance3D:
+	var b := box(par, size, pos, c)
+	b.material_override = pmat(c, stone)
+	return b
+
+func temple(g: Node3D) -> void:
+	# compound wall (stone) with red-white stripes, gopuram over the gate, shrine vimana behind
+	for side in [-1, 1]:
+		tbox(g, Vector3(6.5, 3.0, 0.7), Vector3(side * 5.25, 1.5, 0), "#d9cbb0", true)
+		for i in 7:
+			tbox(g, Vector3(0.46, 2.0, 0.08), Vector3(side * 5.25 - 3.0 + i * 1.0, 1.6, 0.38), "#c0392b" if i % 2 == 0 else "#f6efe2")
+		tbox(g, Vector3(6.6, 0.35, 0.9), Vector3(side * 5.25, 3.15, 0), "#e8d7b0")
+	var cols := ["#e9c46a", "#e07b39", "#4aa3b5", "#e07b39", "#e9c46a", "#c84a3a", "#e9c46a"]
+	tbox(g, Vector3(4.6, 4.4, 4.0), Vector3(0, 2.2, 0), "#efe0bf", true)
+	tbox(g, Vector3(1.9, 3.4, 0.2), Vector3(0, 1.7, 2.02), "#3b2414")
+	for i in 7:
+		var k := 1.0 - i * 0.1
+		var w := 5.0 * k
+		var d := 4.2 * k
+		var y := 4.4 + i * 1.45
+		tbox(g, Vector3(w, 1.2, d), Vector3(0, y + 0.6, 0), cols[i])
+		tbox(g, Vector3(w + 0.3, 0.22, d + 0.3), Vector3(0, y + 1.3, 0), "#fff3d6")
+		# little figure niches
+		var n := maxi(2, int(w / 0.9))
+		for j in n:
+			var x := -w / 2 + (j + 0.5) * w / n
+			tbox(g, Vector3(0.42, 0.75, 0.12), Vector3(x, y + 0.6, d / 2 + 0.06), ["#2e86ab", "#c0392b", "#27ae60", "#f39c12"][(i + j) % 4])
+	tbox(g, Vector3(2.6, 1.0, 1.5), Vector3(0, 15.1, 0), "#d35400")
+	for x in [-0.8, 0.0, 0.8]:
+		var k := MeshInstance3D.new()
+		var sm := SphereMesh.new()
+		sm.radius = 0.22
+		sm.height = 0.7
+		k.mesh = sm
+		var km := StandardMaterial3D.new()
+		km.albedo_color = Color("#f1c40f")
+		km.metallic = 0.8
+		km.roughness = 0.25
+		k.material_override = km
+		k.position = Vector3(x, 15.9, 0)
+		g.add_child(k)
+	# shrine behind
+	tbox(g, Vector3(4, 3.5, 4), Vector3(0, 1.75, -6), "#efe0bf", true)
+	for i in 3:
+		tbox(g, Vector3(3.2 - i * 0.8, 1.0, 3.2 - i * 0.8), Vector3(0, 4.0 + i, -6), cols[i + 1])
+
+func street_view(sv: SubViewport) -> Camera3D:
+	sv.transparent_bg = false
+	var st := Street.new()
+	st.sv = sv
+	sv.add_child(st)
+	await get_tree().process_frame
+	st.set_area(2)
+	st.sun.shadow_enabled = true
+	st.sun.directional_shadow_max_distance = 120
+	st.process_mode = Node.PROCESS_MODE_INHERIT
+	st.skip_to(12)
+	st.SHOW = false
+	st.EM.clear()
+	st.fx.clear()
+	st.process_mode = Node.PROCESS_MODE_DISABLED
+	var bz: Node3D = st.bazaar
+	for c in bz.get_children():
+		if c is Node3D and (c as Node3D).position.distance_to(Vector3(-11, 0.18, 18.5)) < 0.5:
+			c.visible = false
+	var t := Node3D.new()
+	t.position = V3(a.get("tp", "-34,0.18,22"))
+	t.rotation.y = deg_to_rad(float(a.get("tr", "150")))
+	t.scale = Vector3.ONE * float(a.get("ts", "1.0"))
+	bz.add_child(t)
+	temple(t)
+	# the far side of the street was never built in Area 2 (behind its camera): a row of city buildings
+	var far := [["building-c", -60, 31], ["building-a", -46, 31], ["building-d", -74, 31], ["building-g", -88, 31],
+		["building-l", -60, -3], ["building-n", -74, -3], ["building-i", -88, -3], ["building-m", -104, 12]]
+	for b in far:
+		var o := city(bz, b[0], Vector3(b[1], 0.18, b[2]), 9.0, PI if b[2] > 20 else 0.0)
+		if b[1] < -100:
+			o.rotation.y = PI / 2
+	for x in [-52, -66, -80, -94]:
+		recolor(put(bz, "nature/tree_palmTall", Vector3(x, 0.18, 26), 9.0, randf() * TAU), _leaf)
+	var v := ghilli_van(bz, V3(a.get("van", "6,0.3,10.5")), float(a.get("vr", "-1.45")), float(a.get("vs", "1.7")))
+	var cam := st.cam
+	cam.fov = float(a.get("fov", 50))
+	cam.position = V3(a.get("p", "16,4.2,11.5"))
+	cam.look_at(V3(a.get("l", "-30,2.0,12")), Vector3.UP)
 	return cam
