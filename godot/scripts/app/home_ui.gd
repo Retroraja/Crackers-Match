@@ -64,6 +64,7 @@ func build(a, street: Street) -> void:
 	app.tap(LH.node("pCoin"), func(): app.sheet("shop"))
 	app.tap(LH.node("hShop"), func(): app.sheet("shop"))
 	app.tap(LH.node("hDaily"), func(): app.sheet("daily"))
+	_build_piggy()
 	var nav := {31: "Events", 33: "Ranks", 39: "Team", 42: "Crackers"}
 	for i in nav:
 		var n: String = nav[i]
@@ -227,7 +228,79 @@ func sync_out() -> void:
 	app.S.step = st.step
 	app.save()
 
+# 23 Nov: the piggy bank (clay undiyal) under Daily, and a dot on Daily when a daily task can be claimed
+var pig: Control
+var pig_bar: ColorRect
+var pig_tw: Tween
+var dt_dot: Control
+func _build_piggy() -> void:
+	pig = Control.new()
+	pig.position = Vector2(10, 124)
+	pig.size = Vector2(54, 62)
+	pig.pivot_offset = Vector2(27, 40)
+	home.add_child(pig)
+	var ic := TextureRect.new()
+	ic.texture = load("res://art/web/piggy.png")
+	ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	ic.position = Vector2(5, 0)
+	ic.size = Vector2(44, 44)
+	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pig.add_child(ic)
+	var bg := ColorRect.new()
+	bg.color = Color(0, 0, 0, 0.5)
+	bg.position = Vector2(7, 44)
+	bg.size = Vector2(40, 6)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pig.add_child(bg)
+	pig_bar = ColorRect.new()
+	pig_bar.color = Color("#FFC93C")
+	pig_bar.position = bg.position
+	pig_bar.size = Vector2(0, 6)
+	pig_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pig.add_child(pig_bar)
+	var l := Label.new()
+	var ls := LabelSettings.new()
+	ls.font = load("res://art/LilitaOne.ttf")
+	ls.font_size = 12
+	ls.font_color = Color.WHITE
+	ls.outline_size = 4
+	ls.outline_color = Color("#3a0d2e")
+	l.label_settings = ls
+	l.text = "Piggy"
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.position = Vector2(0, 48)
+	l.size = Vector2(54, 16)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pig.add_child(l)
+	app.tap(pig, app.piggy_tap)
+	dt_dot = AppFx.badge("!", Color("#E8123C"), Vector2(20, 20), WebLayout.font("TitanOne"), 13, 10, 2)
+	dt_dot.position = Vector2(40, -4)
+	LH.node("hDaily").add_child(dt_dot)
+
+func refresh_extra() -> void:
+	if pig == null:
+		return
+	var p := int(app.S.get("piggy", 0))
+	pig_bar.size.x = 40.0 * p / float(app.PIG_MAX)
+	var full: bool = p >= int(app.PIG_MAX)
+	if full and pig_tw == null:
+		# full: it shakes and glows until the player breaks it
+		pig_tw = create_tween().set_loops()
+		pig_tw.tween_property(pig, "rotation", 0.14, 0.08)
+		pig_tw.tween_property(pig, "rotation", -0.14, 0.12)
+		pig_tw.tween_property(pig, "rotation", 0.0, 0.08)
+		pig_tw.tween_property(pig, "modulate", Color(1.35, 1.25, 0.9), 0.3)
+		pig_tw.tween_property(pig, "modulate", Color.WHITE, 0.5)
+		pig_tw.tween_interval(0.8)
+	elif not full and pig_tw != null:
+		pig_tw.kill()
+		pig_tw = null
+		pig.rotation = 0
+		pig.modulate = Color.WHITE
+	dt_dot.visible = app.dtask_ready() > 0
+
 func refresh() -> void:
+	refresh_extra()
 	if not home.visible:
 		return
 	var n := mini(st.step, st.TASKS.size())
@@ -294,8 +367,18 @@ func _build_btn() -> void:
 	app.street_sfx("open")
 
 # ---------------------------------------------------------------- the build window
+# the picture of build i in the build window: Area 1 art/task-N, Areas 2-3 cut from their stickers (art/web/task-aA-N)
+func task_icon(i: int) -> String:
+	if st.area >= 2 and ResourceLoader.exists("res://art/web/task-a%d-%d.webp" % [st.area, i + 1]):
+		return "art/task-a%d-%d.webp" % [st.area, i + 1]
+	return "art/task-%d.webp" % (i + 1)
+
 func panel() -> void:
 	var n := mini(st.step, st.TASKS.size())
+	# 23 Nov: the window's title and progress line follow the area
+	var ar := clampi(st.area, 1, 3) - 1
+	app.set_t(LB.nodes[3], ["Sivakasi Street", "GHILLI Crackers", "Order Room"][ar])
+	app.set_t(LB.nodes[5], ["Street Progress", "Shop Progress", "Room Progress"][ar])
 	var bar: Control = LB.node("bpBar")
 	app.resize_box(bar, Vector2(232.0 * n / st.TASKS.size(), bar.size.y))
 	app.set_t(LB.node("bpCnt"), "%d/%d" % [n, st.TASKS.size()])
@@ -313,7 +396,7 @@ func panel() -> void:
 		r.set_meta("dyn", 1)
 		r.visible = true
 		r.position.y = y
-		app.set_img(app.kid(r, "img"), "art/task-%d.webp" % (i + 1))
+		app.set_img(app.kid(r, "img"), task_icon(i))
 		app.set_t(app.kid(r, "span"), T.n)
 		_wrap(app.kid(r, "span"), 128.0)
 		if first:
@@ -372,8 +455,8 @@ func panel() -> void:
 		r2.set_meta("dyn", 1)
 		r2.visible = true
 		r2.modulate.a = 1
-		app.set_img(app.kid(r2, "img"), "art/task-10.webp")
-		app.set_t(app.kid(r2, "span"), "Sivakasi Street is complete!")
+		app.set_img(app.kid(r2, "img"), task_icon(st.TASKS.size() - 1))
+		app.set_t(app.kid(r2, "span"), ["Sivakasi Street is complete!", "GHILLI Crackers is open!", "The order room is ready!"][clampi(st.area, 1, 3) - 1])
 		app.kid(r2, "button").visible = false
 
 # ---------------------------------------------------------------- while building
@@ -420,6 +503,8 @@ func _area_won_show() -> void:
 	get_tree().create_timer(7.0).timeout.connect(func():
 		if st.area == 1:
 			app.enter_area2()
+		elif st.area == 2:
+			app.enter_area3()
 		else:
 			show_home())
 

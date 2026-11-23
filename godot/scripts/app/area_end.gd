@@ -32,11 +32,22 @@ func play(height: float) -> void:
 	if area == 2:
 		t.text = "Busy Days at GHILLI"
 		u.text = "“Orders are coming in. Get the shop ready!”"
+	elif area == 3:
+		t.label_settings.font_size = 34
+		t.text = "GHILLI Delivery Hub"
+		u.text = "deliveries all over Chennai · coming soon"
 
 func _shot(n: int) -> void:
 	shot = n
 	sid += 1
 	var id := sid
+	if area == 3:
+		match n:
+			1: _room_ready(id)
+			2: _orders_out(id)
+			3: _next(id)
+			_: _finish()
+		return
 	if area == 2:
 		match n:
 			1: _open_shop(id)
@@ -74,6 +85,32 @@ func _open_shop(id: int) -> void:
 	_later(4.4, id, func():
 		_tw().tween_property(man, "position:y", H + 40, 0.6)
 		_shot(2))
+
+# Area 3 end (23 Nov): the finished order room sparkles, the man cheers, then the parcels go out
+func _room_ready(id: int) -> void:
+	for i in 6:
+		_later(0.5 + i * 0.45, id, func():
+			if street is PicStreet:
+				var c: Vector2 = (street as PicStreet).view.get_global_rect().get_center()
+				street.sparkle(Vector3(c.x + randf_range(-140, 140), c.y + randf_range(-160, 180), 0), 30, 3.0)
+			_sfx("story_ting", 0.4, randf_range(0.9, 1.2)))
+	man.base = "idle"
+	man.mood("smile", 99)
+	man.position.x = 2
+	_tw().tween_property(man, "position:y", H - BOT - 236, 1.0).set_delay(0.6).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_later(1.2, id, func(): man.mood("cheer", 1.2))
+	_later(0.5, id, func(): say("“Thatha, GHILLI's order room\nis ready!”", id, 3.4))
+	_later(4.4, id, func():
+		_tw().tween_property(man, "position:y", H + 40, 0.6)
+		_shot(2))
+
+func _orders_out(id: int) -> void:
+	for i in 7:
+		_later(0.3 + i * 0.5, id, func():
+			street.firework()
+			_sfx("story_ting", 0.35, randf_range(0.8, 1.3)))
+	_later(0.4, id, func(): say("Orders are going out\nall over Chennai!", id, 3.2))
+	_later(4.2, id, func(): _shot(3))
 
 # ------------------------------------------------------------------ 1. dusk: the factory windows light up
 func _dusk(id: int) -> void:

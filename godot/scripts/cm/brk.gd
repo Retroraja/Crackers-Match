@@ -38,6 +38,7 @@ var shake := 0.0
 func _init() -> void:
 	for n in ["pot_1", "pot_c", "soda_1", "coco_2", "coco_1", "match_3", "match_2", "match_1", "match_o", "news_2", "news_1",
 			"bangle_1", "gift_2", "gift_1", "diya_1", "diya_c", "sheet", "bow", "flame", "half0", "half1",
+			"diyab", "diyab_c", "giftr", "gifto", "gift_lid", "gift_l", "gift_r",
 			"mbox0", "mbox1", "mbox2", "ring0", "ring1", "ring2", "ring3", "ring4", "ring5", "ring6"]:
 		TX[n] = load("res://art/brk/%s.png" % n)
 	RAD = _radial([0.0, 0.5, 1.0], [Color(1, 1, 1, 1), Color(1, 1, 1, 0.55), Color(1, 1, 1, 0)])
@@ -82,9 +83,9 @@ func tex_for(o: Dictionary) -> Texture2D:
 		"coco": return TX.coco_2 if hp >= 2 else TX.coco_1
 		"match": return TX["match_%d" % clampi(hp, 1, 3)]
 		"news": return TX.news_2 if hp >= 2 else TX.news_1
-		"gift": return TX.gift_2 if hp >= 2 else TX.gift_1
+		"gift": return TX.giftr if hp >= 2 else TX.gifto   # 23 Nov: bold box with a gold ribbon, then without it
 	if t == "dstack":
-		return TX.diya_1
+		return TX.diyab   # 23 Nov: one big sharp clay diya (was 3 small ones)
 	return TX.get(t + "_1")
 
 # draw the obstacle in a cell (x, y = top-left, s = cell size); the picture is 1.3x the object
@@ -318,32 +319,39 @@ func hit(k: String, hp: int, x: float, y: float, s: float, src) -> float:
 		"gift":
 			impact(k, x, y, s, last, src)
 			if not last:
-				bits(x - 0.15 * s, y, 14, ["#22C1B5", "#0F8E86", "#FFD45A"], s * 0.035, s * 3.2, {"up": s * 1.6, "g": s * 6.0, "type": "paper", "drag": 1.0})
+				# 23 Nov: hit 1, the ribbon unties: the bow flies off, gold ribbon bits
+				sprite(TX.bow, x + 0.02 * s, y - 0.3 * s, s, {"vx": s * rnd(-0.8, 0.8), "vy": -s * 4.0, "g": s * 11.0, "vr": rnd(-5, 5), "life": 0.9})
+				bits(x, y, 16, ["#FFD45A", "#F5B82E", "#FFE9A0"], s * 0.04, s * 3.4, {"up": s * 1.6, "g": s * 6.0, "type": "paper", "drag": 1.0, "jit": s * 0.3})
 				return 0.0
-			chunks(TX.gift_2, x, y, s, 3, 3, 1.1, {"life": 0.95, "up": 3.0, "grav": 12.0, "src": src})
-			sprite(TX.bow, x + 0.1 * s, y - 0.2 * s, s, {"vx": s * 0.5, "vy": -s * 4.2, "g": s * 11.0, "vr": 4.0, "life": 0.9})
+			# hit 2: the lid pops up, the sides fall open, confetti bursts
+			sprite(TX.gift_lid, x, y, s, {"vx": s * rnd(-0.4, 0.4), "vy": -s * 4.6, "g": s * 11.0, "vr": rnd(-3, 3), "life": 1.0})
+			sprite(TX.gift_l, x, y, s, {"vx": -s * 1.5, "vy": -s * 1.1, "g": s * 12.0, "vr": -4.5, "life": 0.95})
+			sprite(TX.gift_r, x, y, s, {"vx": s * 1.5, "vy": -s * 1.1, "g": s * 12.0, "vr": 4.5, "life": 0.95})
 			glow(x, y, s * 1.4, "#FFD75A", 0.7)
-			bits(x, y, 50, ["#FF4F6D", "#FFD54F", "#4FC3F7", "#7CE07C", "#B388FF", "#FFFFFF"], s * 0.03, s * 6.0, {"up": s * 2.4, "g": s * 5.0, "type": "confetti", "drag": 1.3, "life": 1.2, "jit": s * 0.3})
+			flash_fx(x, y, s * 0.6, 0.12)
+			bits(x, y, 60, ["#FF4F6D", "#FFD54F", "#4FC3F7", "#7CE07C", "#B388FF", "#FFFFFF"], s * 0.03, s * 6.5, {"cone": -PI / 2, "spread": 2.2, "g": s * 5.0, "type": "confetti", "drag": 1.3, "life": 1.3, "jit": s * 0.3})
 			bits(x, y - 0.05 * s, 30, ["#FFE082", "#FFD54F", "#FFFFFF", "#FFF59D"], s * 0.045, s * 4.5, {"up": s * 1.5, "g": s * 2.5, "type": "twinkle", "life": 0.9, "add": true, "drag": 1.0})
 		"dstack":
+			# 23 Nov: one big clay diya: its flame flares up, then the clay cracks into pieces
 			impact(k, x, y, s, false, src)
-			var h := _hold(TX.diya_c, x, y, s, 0.42)
+			var h := _hold(TX.diyab_c, x, y, s, 0.45)
 			h.lit = true
-			glow(x, y - 0.05 * s, s * 1.3, "#FFAA3C", 1.0)
-			g.at(0.42, func():
+			h.big = true
+			glow(x + 0.5 * s, y - 0.3 * s, s * 1.4, "#FFAA3C", 1.0)
+			g.at(0.45, func():
 				impact(k, x, y, s, true, src)
-				chunks(TX.diya_1, x, y, s, 4, 3, 1.05, {"life": 0.9, "src": src})
-				for p in DPOS:
-					var fx: float = x + (p[0] - 0.04 + 0.39 * p[2]) * s
-					var fy: float = y + (p[1] - 0.07 * p[2]) * s
-					fireball(fx, fy, s * 0.22, 0.4)
-					bits(fx, fy, 14, ["#FFE082", "#FFB300", "#FF6D00"], s * 0.022, s * 1.8, {"cone": -PI / 2, "spread": 1.4, "g": -s * 1.4, "life": 1.1, "type": "ember", "add": true})
-				bits(x, y, 18, M.c, s * 0.04, s * 4.0, {"up": s * 2.0, "g": s * 14.0, "src": src, "bias": true, "jit": s * 0.4}))
-			return 0.42
+				chunks(TX.diyab, x, y, s, 4, 3, 1.1, {"life": 0.9, "src": src})
+				var fx: float = x + 0.5 * s
+				var fy: float = y - 0.28 * s
+				fireball(fx, fy, s * 0.38, 0.45)
+				bits(fx, fy, 22, ["#FFE082", "#FFB300", "#FF6D00"], s * 0.024, s * 2.2, {"cone": -PI / 2, "spread": 1.6, "g": -s * 1.4, "life": 1.1, "type": "ember", "add": true})
+				bits(x, y, 22, M.c, s * 0.045, s * 4.4, {"up": s * 2.0, "g": s * 14.0, "src": src, "bias": true, "jit": s * 0.4})
+				cloud(x, y + s * 0.1, s * 1.0, M.d, 7, 0.9))
+			return 0.45
 	return 0.0
 
 func _hold(tex: Texture2D, x: float, y: float, s: float, d: float) -> Dictionary:
-	var h := {"tex": tex, "x": x, "y": y, "s": s, "d": d, "age": 0.0, "lit": false}
+	var h := {"tex": tex, "x": x, "y": y, "s": s, "d": d, "age": 0.0, "lit": false, "big": false}
 	held.append(h)
 	return h
 
@@ -496,7 +504,15 @@ func _draw_add() -> void:
 	var L := add_layer
 	# flames on held diyas
 	for h in held:
-		if h.lit:
+		if h.lit and h.big:
+			# the big diya: one flame at the spout that flares up before the lamp breaks
+			var kf := minf(1.0, h.age / h.d)
+			var fs2: float = h.s * (0.3 + 0.55 * kf) * (1.0 + 0.15 * sin(h.age * 31.0))
+			var fx2: float = h.x + 0.5 * h.s
+			var fy2: float = h.y - 0.24 * h.s
+			L.draw_texture_rect(RAD, Rect2(fx2 - fs2 * 1.2, fy2 - fs2 * 1.7, fs2 * 2.4, fs2 * 2.4), false, Color(1, 0.7, 0.3, 0.75))
+			L.draw_texture_rect(TX.flame, Rect2(fx2 - fs2 * 0.65, fy2 - fs2 * 1.25, fs2 * 1.3, fs2 * 1.3), false)
+		elif h.lit:
 			var lit := minf(1.0, h.age / h.d * 3.0) * (1.0 + 0.4 * sin(h.age * 30.0))
 			for p in DPOS:
 				var fx: float = h.x + (p[0] - 0.04 + 0.395 * p[2]) * h.s

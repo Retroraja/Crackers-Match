@@ -12,13 +12,23 @@ const IDX := {"matchbox": 14, "rocket": 6, "flowerpot": 7, "chakra": 8, "skyshot
 const SL := ["hammer", "sparkler", "flowerpot", "skyshot", "snake", "rail", "wala", "seven"]
 const LBL := {"matchbox": "Colour Matchbox", "rocket": "Rocket", "flowerpot": "Flowerpot", "chakra": "Ground Chakra", "skyshot": "Sky Shot", "sparkler": "Sparkler", "rail": "Rail Cracker", "wala": "1000-Wala", "atom": "Bomb", "hammer": "Lakshmi Vedi Hammer", "seven": "Seven Shot", "snake": "Snake Tablet"}
 const PRICE := {"matchbox": 600, "rocket": 100, "flowerpot": 900, "sparkler": 700, "chakra": 200, "rail": 1400, "skyshot": 1600, "wala": 1300, "atom": 300, "hammer": 500, "seven": 1800, "snake": 1100}
-const UNL := {"hammer": 5, "sparkler": 10, "flowerpot": 15, "skyshot": 20, "snake": 25, "rail": 30, "wala": 35, "seven": 40}
+# 23 Nov pacing: a new bar cracker about every 10 levels, the 8th near level 80 (was every 5, all by level 40)
+const UNL := {"hammer": 5, "sparkler": 10, "flowerpot": 20, "skyshot": 30, "snake": 40, "rail": 50, "wala": 60, "seven": 75}
 const SB := ["rocket", "matchbox", "chakra", "atom"]   # in unlock order (Lv 2, 3, 5, 8)
 const SBU := {"rocket": 2, "matchbox": 3, "chakra": 5, "atom": 8}
 const PACK := {"rocket": 900, "chakra": 1200, "atom": 1500, "matchbox": 1900}
 const SBD := {"rocket": "Start the level with a Rocket on the board!", "chakra": "Start the level with a Ground Chakra on the board!", "atom": "Start the level with a Bomb on the board!", "matchbox": "Start the level with a Colour Matchbox on the board!"}
 const DESC2 := {"hammer": "Drop it on any tile: clears it and the 4 around it.", "sparkler": "A fork of sparks.", "flowerpot": "Fountain, then 7 fireballs.", "snake": "The ash snake eats 10 tiles.", "wala": "A chain of 15 pops.", "rail": "Runs a row, then back along the next.", "skyshot": "12 stars, 4 on goal tiles.", "seven": "7 comets, 3 on goals, each clears a plus."}
-const MOVEP := [950, 1900, 2900]
+const MOVEP := [950, 1900, 2900]   # (old, before 23 Nov)
+# 23 Nov (agreed 20 Nov): Out of Moves has ONE price; the moves grow with the tries on THIS level
+# (tries 1-3: +5, try 4: +10, try 5 and after: +20). The count resets when the level is cleared.
+const MOVE_PRICE := 900
+func try_n() -> int:
+	return int(S.get("fails", {}).get(str(cur), 0)) + 1
+
+func buy_moves_n() -> int:
+	var t := try_n()
+	return 5 if t <= 3 else (10 if t == 4 else 20)
 const FREEAD := {"hammer": 1, "sparkler": 1}
 const MMAX := 30
 const WORDS := ["Mass!", "Theri!", "Mersal!", "Bigil!"]
@@ -217,8 +227,8 @@ func _ready() -> void:
 	# Area 1 build costs for 30 levels (35 diyas): rising from 1 to 6
 	for i in mini(A1_COST.size(), street.TASKS.size()):
 		street.TASKS[i].c = A1_COST[i]
-	if int(S.get("area", 1)) == 2:
-		street.set_area(2)
+	if int(S.get("area", 1)) >= 2:
+		street.set_area(int(S.get("area", 1)))
 	_build_game()
 	call_deferred("set_perf_step", perf_step)
 	if OS.get_cmdline_user_args().has("--perf=1"): print("TEXMEM after_game %d MB" % (Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576))
@@ -229,6 +239,7 @@ func _ready() -> void:
 	fly_layer = _layer("fly")
 	if OS.get_cmdline_user_args().has("--perf=1"): print("TEXMEM after_home %d MB" % (Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576))
 	_build_overlays()
+	_fit()
 	if OS.get_cmdline_user_args().has("--perf=1"): print("TEXMEM after_overlays %d MB" % (Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576))
 	top_layer = _layer("top")
 	ghost = TextureRect.new()
@@ -258,6 +269,31 @@ func _ready() -> void:
 func _fit() -> void:
 	var vs := get_viewport().get_visible_rect().size
 	stage.position = Vector2(0, maxf(0.0, (vs.y - 844.0) / 2.0))
+	_tall_fix(stage, 0)
+
+# 23 Nov, tall phones (his Moto): the 390x844 stage sits in the middle of a taller screen. Every full-screen
+# backdrop (the game's blurred picture, the dim behind the level card and other windows) is stretched to cover the
+# whole screen height, so no bright strips of the street show above and below. Runs only when the size changes.
+func _tall_fix(n: Node, depth: int, py := 0.0) -> void:
+	var off := stage.position.y
+	for c in n.get_children():
+		if not (c is Control):
+			continue
+		var k := c as Control
+		var bgk := k.name == "bgimg" and k.size.y >= 840.0
+		var boxk := (k.name == "box" or (k.clip_contents and k.get_node_or_null("bgimg") != null)) and k.size.x >= 380.0 and k.size.x <= 460.0 and k.size.y >= 840.0
+		if k.has_meta("tall") or bgk or boxk:
+			if not k.has_meta("tall"):
+				k.set_meta("tall", Rect2(k.position, k.size))
+			var r: Rect2 = k.get_meta("tall")
+			# the wanted span in stage space is the whole screen: -off .. 844 + off
+			var top := minf(r.position.y, -off - 2.0 - py)
+			var bot := maxf(r.position.y + r.size.y, 844.0 + off + 2.0 - py)
+			k.position.y = top
+			k.size.y = bot - top
+			if OS.get_cmdline_user_args().has("--tall=1"): print("TALL ", k.get_path(), " ", k.position, k.size, " off ", off)
+		if depth < 3:
+			_tall_fix(k, depth + 1, py + k.position.y)
 
 func _layer(n: String) -> Control:
 	var c := Control.new()
@@ -671,6 +707,9 @@ func _build_game() -> void:
 		face.mood("wow", 1.3)
 		pop_face())
 	game.meter.connect(_on_meter)
+	game.daily_ev.connect(func(k: String, n: int):
+		if not is_bonus():
+			_daily_ev(k, n))
 	tap(G.node("bQuit"), func():
 		sfx.play("swoosh", 0.4, 1.5)
 		quit_level())
@@ -1498,9 +1537,7 @@ func _build_overlays() -> void:
 			else:
 				set_t(LO.n["lMsg"], "No video right now. Try again soon.")))
 	tap(LO.n["bCoin"], func():
-		if tries.coin >= MOVEP.size():
-			return
-		var p: int = MOVEP[tries.coin]
+		var p: int = MOVE_PRICE
 		if S.coins < p:
 			set_t(LO.n["lMsg"], "Not enough coins. You have %d." % S.coins)
 			sfx.play("nope")
@@ -1508,8 +1545,13 @@ func _build_overlays() -> void:
 		S.coins -= p
 		save()
 		tries.coin += 1
-		resume(5))
+		resume(buy_moves_n()))
 	tap(LO.n["bGive"], func():
+		# this try is over: the next try on this level offers more moves for the same price
+		var fl: Dictionary = S.get("fails", {})
+		fl[str(cur)] = int(fl.get(str(cur), 0)) + 1
+		S.fails = fl
+		save()
 		lose_step(2)
 		sfx.play("swoosh", 0.4))
 	tap(LO.n["bRetry"], func():
@@ -2633,11 +2675,17 @@ func won(mv: int) -> void:
 	var key := str(cur)
 	var old: int = int(S.best.get(key, 0))
 	var c := mini(100, 50 + mv * 5)
+	# 23 Nov: stars by moves left (5+ = 3, 2-4 = 2, 0-1 = 1); a 3-star win gives 30 coins more
+	var stars := 3 if mv >= 5 else (2 if mv >= 2 else 1)
+	if stars == 3:
+		c += 30
 	var first: bool = int(cur) >= int(S.lv)
 	win_prev = int(cur)
 	if d > old:
 		S.diyas = int(S.get("diyas", 0)) + d - old
 		S.best[key] = d
+	if S.has("fails"):
+		S.fails.erase(key)
 	var c0: int = S.coins
 	S.coins += c
 	var rw = L.get("reward")
@@ -2649,12 +2697,21 @@ func won(mv: int) -> void:
 	var lt: String = L.get("ltype", "n")
 	if first and (lt == "h" or lt == "s"):
 		S.coins += 150 if lt == "s" else 100
+	# 23 Nov pacing: a reward chest every 10 levels (not on the last level of an area: that has its own reward)
+	var chest: bool = first and (int(cur) + 1) % 10 == 0 and not ((int(cur) + 1) in [30, 60, 80])
+	if chest:
+		S.coins += 200
+		add_inv("atom", 1)
+		add_inv("rocket", 2)
 	save()
 	wonC = S.coins - c0
+	_piggy_add()
+	_daily_ev("win", 1)
 	game.stopped = true
 	end_off()
 	set_t(L_win.node("wLv"), "Level %d · %s" % [int(cur) + 1, String(levels[int(cur)].name)])
 	set_t(L_win.node("wCoins"), "0")
+	_win_extra(int(cur), stars, d, c)
 	# diyas: 1 normal, 2 hard, 3 super hard, 74 apart and centred
 	var ws: Control = L_win.node("wStars")
 	for ch in ws.get_children():
@@ -2705,17 +2762,278 @@ func won(mv: int) -> void:
 			im.modulate.a = 1
 			Anim.play(im, "pin2", 0.45, 0.0, "cubic-bezier(.3,1.7,.5,1)")
 			sfx.play("lakshmi", 0.45, 1.2 + ii * 0.08, 0.0, 0.45))
-	later(1.05, func(): _count(L_win.node("wCoins"), 0, c, 0.9, 8))
+	later(1.05, func():
+		_count(WX.coin, 0, c, 0.9, 8, "+")
+		_count(WX.diya, 0, d, 0.5, 1, "+"))
 	if first and rw != null:
 		later(2.2, func():
 			toast28("%s unlocked! +%d" % [LBL.get(rw.k, rw.k), int(rw.n)])
 			sfx.play("fanfare", 0.5))
+	if chest:
+		later(2.8, func():
+			popup("Level %d chest!" % (int(cur) + 1), [["art/ui-chest.webp", "+200 coins", "You have %d" % S.coins], ["crk:b%d" % IDX.atom, "+1 Bomb", "You have %d" % inv("atom")], ["crk:b%d" % IDX.rocket, "+2 Rocket", "You have %d" % inv("rocket")]])
+			sfx.play("win", 0.6))
+
+# ================================================================== 23 Nov win screen (agreed 20 Nov, items 1 2 3 4 6)
+# 1 red ribbon "LEVEL 21 COMPLETE" + the level name   2 three stars by moves left   3 "[diya] +1 · [coin] +70"
+# 4 gold rays turning behind the ring (one picture) + small fireworks in the top corners   6 next build progress
+var WX := {}
+func _win_extra(li: int, stars: int, d: int, c: int) -> void:
+	var root: Control = screens.win
+	if WX.is_empty():
+		var serif := StoryScene.font_var("res://art/fonts/CormorantItalic.ttf", 700)
+		# rays behind the ring and the man (one picture, slowly turning)
+		var rays := TextureRect.new()
+		rays.texture = load("res://art/win/rays.png")
+		rays.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		rays.size = Vector2(640, 640)
+		rays.pivot_offset = rays.size / 2.0
+		rays.position = Vector2(195 - 320, 432 - 320)
+		rays.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(rays)
+		root.move_child(rays, L_win.nodes[5].get_index())
+		WX.rays = rays
+		# fireworks layer
+		var fx := PicStreet.PicFx.new()
+		fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		fx.size = Vector2(390, 844)
+		root.add_child(fx)
+		WX.fx = fx
+		# the red ribbon at the top
+		var rib := Panel.new()
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color("#C8102E")
+		sb.border_color = Color("#FFD36A")
+		sb.set_border_width_all(2)
+		sb.set_corner_radius_all(4)
+		sb.shadow_color = Color(0, 0, 0, 0.35)
+		sb.shadow_size = 4
+		rib.add_theme_stylebox_override("panel", sb)
+		rib.size = Vector2(250, 34)
+		rib.position = Vector2(70, 20)
+		rib.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(rib)
+		var rl := Label.new()
+		var ls := LabelSettings.new()
+		ls.font = serif
+		ls.font_size = 21
+		ls.font_color = Color("#FFF3D6")
+		rl.label_settings = ls
+		rl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		rl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		rl.size = rib.size
+		rib.add_child(rl)
+		WX.rib = rib
+		WX.rl = rl
+		var nm := Label.new()
+		var ln := LabelSettings.new()
+		ln.font = serif
+		ln.font_size = 17
+		ln.font_color = Color("#F6E7C8")
+		ln.shadow_color = Color(0, 0, 0, 0.5)
+		nm.label_settings = ln
+		nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		nm.size = Vector2(390, 22)
+		nm.position = Vector2(0, 56)
+		nm.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(nm)
+		WX.nm = nm
+		# three stars (middle one bigger and higher)
+		var sts: Array = []
+		for i in 3:
+			var sz := 54.0 if i == 1 else 42.0
+			var off := TextureRect.new()
+			off.texture = load("res://art/win/star_off.png")
+			off.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			off.size = Vector2(sz, sz)
+			off.position = Vector2(195 + (i - 1) * 56 - sz / 2, (84.0 if i == 1 else 94.0))
+			off.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			root.add_child(off)
+			var on := TextureRect.new()
+			on.texture = load("res://art/win/star.png")
+			on.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			on.size = off.size
+			on.pivot_offset = off.size / 2.0
+			on.position = off.position
+			on.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			root.add_child(on)
+			sts.append(on)
+		WX.stars = sts
+		# the ribbon counter: [diya] +1 · [coin] +70 (replaces the coin-only line)
+		var rw: Control = L_win.nodes[10]
+		for ch in rw.get_children():
+			if ch != boxr(rw) and ch is CanvasItem and not (ch is CssBox):
+				(ch as CanvasItem).visible = false
+		var row := HBoxContainer.new()
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		row.add_theme_constant_override("separation", 6)
+		row.size = Vector2(390, 35)
+		row.position = Vector2(0, 640)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var lc := LabelSettings.new()
+		lc.font = load("res://art/LilitaOne.ttf")
+		lc.font_size = 26
+		lc.font_color = Color.WHITE
+		lc.outline_size = 6
+		lc.outline_color = Color("#6B0F1A")
+		for part in [["art/ui-diya.webp", "diya"], ["", "dot"], ["art/ui-coin.webp", "coin"]]:
+			if part[1] == "dot":
+				var dl := Label.new()
+				dl.label_settings = lc
+				dl.text = "·"
+				row.add_child(dl)
+				continue
+			var ic := TextureRect.new()
+			ic.texture = WebLayout.tex(part[0])
+			ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			ic.custom_minimum_size = Vector2(30, 30)
+			row.add_child(ic)
+			var l := Label.new()
+			l.label_settings = lc
+			l.text = "+0"
+			row.add_child(l)
+			WX[part[1]] = l
+		root.add_child(row)
+		WX.row = row
+		# next build progress, above Next / Reward
+		var pl := Label.new()
+		var lp := LabelSettings.new()
+		lp.font = load("res://art/LilitaOne.ttf")
+		lp.font_size = 16
+		lp.font_color = Color("#FFF3D6")
+		lp.outline_size = 5
+		lp.outline_color = Color("#3a0d2e")
+		pl.label_settings = lp
+		pl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		pl.size = Vector2(390, 22)
+		pl.position = Vector2(0, 700)
+		pl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(pl)
+		var bar_bg := ColorRect.new()
+		bar_bg.color = Color(0, 0, 0, 0.45)
+		bar_bg.size = Vector2(200, 7)
+		bar_bg.position = Vector2(95, 728)
+		bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(bar_bg)
+		var bar := ColorRect.new()
+		bar.color = Color("#FFC93C")
+		bar.size = Vector2(0, 7)
+		bar.position = bar_bg.position
+		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(bar)
+		WX.pl = pl
+		WX.bar_bg = bar_bg
+		WX.bar = bar
+		# the piggy bank: a coin drops into it on every win
+		var pg := TextureRect.new()
+		pg.texture = load("res://art/web/piggy.png")
+		pg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pg.size = Vector2(46, 46)
+		pg.position = Vector2(330, 588)
+		pg.pivot_offset = Vector2(23, 30)
+		pg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(pg)
+		var cn := TextureRect.new()
+		cn.texture = WebLayout.tex("art/ui-coin.webp")
+		cn.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		cn.size = Vector2(20, 20)
+		cn.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(cn)
+		var pl2 := Label.new()
+		var lp2 := LabelSettings.new()
+		lp2.font = load("res://art/LilitaOne.ttf")
+		lp2.font_size = 14
+		lp2.font_color = Color("#FFE27A")
+		lp2.outline_size = 4
+		lp2.outline_color = Color("#3a0d2e")
+		pl2.label_settings = lp2
+		pl2.size = Vector2(60, 18)
+		pl2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		pl2.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(pl2)
+		WX.pg = pg
+		WX.cn = cn
+		WX.pl2 = pl2
+		# the old cartoon line is replaced by the ribbon
+		L_win.node("wLv").visible = false
+	WX.rl.text = "LEVEL %d COMPLETE" % (li + 1)
+	WX.nm.text = String(levels[li].name)
+	WX.diya.text = "+0"
+	WX.coin.text = "+0"
+	var rays: TextureRect = WX.rays
+	rays.modulate.a = 0.0
+	create_tween().tween_property(rays, "modulate:a", 1.0, 0.8).set_delay(0.3)
+	if WX.has("rt") and WX.rt:
+		WX.rt.kill()
+	WX.rt = create_tween().set_loops()
+	WX.rt.tween_property(rays, "rotation", TAU, 40.0).from(0.0)
+	# stars drop in one by one
+	for i in 3:
+		var st: TextureRect = WX.stars[i]
+		st.visible = false
+		if i < stars:
+			later(0.55 + i * 0.32, func():
+				st.visible = true
+				st.scale = Vector2.ONE * 2.2
+				st.modulate.a = 0.0
+				var t := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+				t.tween_property(st, "scale", Vector2.ONE, 0.35)
+				t.parallel().tween_property(st, "modulate:a", 1.0, 0.15)
+				t.tween_callback(func():
+					WX.fx.sparkle(st.position + st.size / 2.0, 14)
+					sfx.play("lakshmi", 0.35, 1.3 + i * 0.12)))
+	# a coin drops into the piggy bank
+	var cn: TextureRect = WX.cn
+	var pl2: Label = WX.pl2
+	cn.visible = false
+	pl2.modulate.a = 0.0
+	var full := int(S.get("piggy", 0)) >= PIG_MAX
+	pl2.text = "FULL!" if full else "+%d" % PIG_ADD
+	pl2.position = Vector2(323, 570)
+	later(2.1, func():
+		cn.visible = true
+		cn.modulate.a = 1.0
+		cn.position = Vector2(343, 540)
+		var t := create_tween()
+		t.tween_property(cn, "position:y", 598.0, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		t.tween_callback(func():
+			cn.visible = false
+			sfx.coin(5)
+			var pg: TextureRect = WX.pg
+			var b := create_tween()
+			b.tween_property(pg, "scale", Vector2(1.18, 0.86), 0.08)
+			b.tween_property(pg, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_BACK)
+			var f := create_tween()
+			f.tween_property(pl2, "modulate:a", 1.0, 0.2)
+			f.parallel().tween_property(pl2, "position:y", 556.0, 0.6)
+			f.tween_property(pl2, "modulate:a", 0.0, 0.6).set_delay(0.6)))
+	# next build line (hidden once the area's builds are all done)
+	home_ui.sync_in()
+	var sn: int = street.step
+	var show := sn < street.TASKS.size()
+	for k in ["pl", "bar_bg", "bar"]:
+		(WX[k] as CanvasItem).visible = show
+	if show:
+		var T: Dictionary = street.TASKS[sn]
+		var tn: String = String(T.n).trim_prefix("Build the ")
+		var need := int(T.c)
+		var have := int(street.diyas)
+		if have >= need:
+			WX.pl.text = "Ready to build: %s!" % tn
+		else:
+			var m := need - have
+			WX.pl.text = "Next build: %s · %d more diya%s" % [tn, m, "" if m == 1 else "s"]
+		WX.bar.size.x = 200.0 * clampf(float(have) / maxf(1.0, need), 0.0, 1.0)
 
 func _count(c: Control, a: int, b: int, dur: float, steps: int, pre := "") -> void:
 	var st := {"n": 0}
 	create_tween().tween_method(func(k: float):
 		var v := a + int(round((b - a) * k * (2 - k)))
-		set_t(c, pre + str(v))
+		if c is Label:
+			(c as Label).text = pre + str(v)
+		else:
+			set_t(c, pre + str(v))
 		var q := int(floor(k * steps))
 		if q > st.n:
 			st.n = q
@@ -2727,6 +3045,10 @@ func _win_bursts(i: int) -> void:
 	var L := [["skyshot", 0.16, 0.95, 0.3], ["finale", 0.14, 0.95, 0.0], ["wala", 0.12, 1.0, 0.1], ["lakshmi", 0.14, 0.9, 0.0]]
 	var q: Array = L[i % L.size()]
 	sfx.play(q[0], q[1], q[2], 0.0, 0.0, q[3])
+	# 23 Nov: a small firework in an empty top corner with each firework sound
+	if WX.has("fx"):
+		var left := i % 2 == 0
+		WX.fx.firework(Vector2(randf_range(40, 90) if left else randf_range(300, 350), randf_range(150, 210)))
 	_after(2.2 + randf() * 1.4, func(): _win_bursts(i + 1))
 
 func _win_next() -> void:
@@ -2765,7 +3087,7 @@ func _win_x2() -> void:
 		S.coins += c
 		save()
 		L_win.node("bX2").visible = false
-		create_tween().tween_method(func(k: float): set_t(L_win.node("wCoins"), str(int(round(c + c * k)))), 0.0, 1.0, 0.7)
+		create_tween().tween_method(func(k: float): WX.coin.text = "+%d" % int(round(c + c * k)), 0.0, 1.0, 0.7)
 		sfx.play("fanfare", 0.5))
 
 # ================================================================== bonus round (Coin Blast)
@@ -2919,12 +3241,16 @@ func _lose_goals() -> void:
 
 func lost_ui() -> void:
 	LO.n["bAd"].visible = tries.ad < 1
+	set_t(LO.n["bAd"], "Watch Ad · +5")
 	ad_pad(LO.n["bAd"])
+	var bm := buy_moves_n()
+	set_t(LO.n["big"], "+%d Moves" % bm)
+	set_t(LO.n["bCoin"], "Buy +%d" % bm)
 	var bc: Control = LO.n["bCoin"]
-	var has_p: bool = tries.coin < MOVEP.size()
+	var has_p := true
 	bc.visible = has_p
 	if has_p:
-		var p: int = MOVEP[tries.coin]
+		var p: int = MOVE_PRICE
 		set_t(LO.n["tag"], "      %d" % p)
 		_inline(bc, LO.n["tag"])
 		set_t(LO.n["lMsg"], "You have %d coins" % S.coins if S.coins < p else "")
@@ -3028,13 +3354,13 @@ func home() -> void:
 
 func street_play() -> void:
 	if int(S.lv) >= area_cap():
-		toast28("Finish the builds to open Area 2!" if street.area == 1 else "Area 3 is coming soon!")
+		toast28("Area 4, GHILLI Delivery Hub, is coming soon!" if street.area >= 3 else "Finish the builds to open Area %d!" % (street.area + 1))
 		return
 	open_card(mini(int(S.lv), levels.size() - 1))
 
 # areas: Area 1 = levels 1-30 (Sivakasi Street), Area 2 = levels 31-60 (Ghilli Crackers, Bunder Street, Chennai)
 func area_levels() -> Vector2i:
-	return Vector2i(0, 30) if street.area == 1 else Vector2i(30, 60)
+	return Vector2i(0, 30) if street.area == 1 else (Vector2i(30, 60) if street.area == 2 else Vector2i(60, 80))
 
 const A1_COST := [1, 2, 2, 3, 3, 4, 4, 5, 5, 6]
 func area_cap() -> int:
@@ -3066,9 +3392,39 @@ func enter_area2() -> void:
 		home_ui.show_home())
 	st.tree_exited.connect(cl.queue_free)
 
+# after the Area 2 reward (23 Nov): the Area 3 start slides (notebook, the back room door, the man in the mess),
+# then the order room picture with its 9 builds
+func enter_area3() -> void:
+	S.area = 3
+	S.step2 = int(S.get("step", 0))
+	S.step = 0
+	save()
+	home_ui.home.visible = false
+	var cl := CanvasLayer.new()
+	cl.layer = 60
+	add_child(cl)
+	var st := AreaStartScene.new()
+	st.start_area = 3
+	st.app = self
+	cl.add_child(st)
+	st.play(get_viewport().get_visible_rect().size.y)
+	back_skip = st._finish
+	# the order room is ready behind the slides, so the flash at the end lands on it
+	get_tree().create_timer(1.0).timeout.connect(func():
+		street.set_area(3)
+		home_ui.sync_in())
+	st.finished.connect(func():
+		back_skip = Callable()
+		street.set_area(3)
+		sky_layer.visible = false
+		home_ui.sync_in()
+		home_ui.show_home())
+	st.tree_exited.connect(cl.queue_free)
+
 # first open: "Grandpa's Dream" over the live street, then level 1
 func play_story(then: Callable) -> void:
-	if VIDEO and not REC and ResourceLoader.exists("res://video/story.ogv"):
+	# 23 Nov: phones (picture mode) play the story live over the street pictures; the old video only off-phone
+	if VIDEO and not PIC and not REC and ResourceLoader.exists("res://video/story.ogv"):
 		_video_story(then)
 		return
 	show_screen("street")
@@ -3302,8 +3658,8 @@ func street_sfx(n: String) -> void:
 
 # area reward: Area 1 = 500 coins, 3 rockets, 3 chakras. Area 2 = 1000 coins, 3 matchboxes, 2 atoms.
 func area_reward() -> void:
-	var a2: bool = street.area == 2
-	var c := 1000 if a2 else 500
+	var a2: bool = street.area >= 2
+	var c: int = [500, 1000, 1500][clampi(street.area, 1, 3) - 1]
 	var k1 := "matchbox" if a2 else "rocket"
 	var k2 := "atom" if a2 else "chakra"
 	var n2 := 2 if a2 else 3
@@ -3613,7 +3969,7 @@ func _enter_tree() -> void:
 	elif a.has("flow"):
 		# whole-app checks: -- --flow=1 --s_lv=3 --s_diyas=2 --s_step=1 --s_agreed=1 --tap=6 --act=panel|tut|build|shop|daily|bag|set --shot=png --wait=S
 		save_path = "user://save_dev.json"
-		var d := {"agreed": int(a.get("s_agreed", 0)), "lv": int(a.get("s_lv", 0)), "diyas": int(a.get("s_diyas", 0)), "step": int(a.get("s_step", 0)), "coins": int(a.get("s_coins", 300)), "tut": int(a.get("s_tut", 0)), "area": int(a.get("s_area", 1)), "story": 1, "end1": int(a.get("s_area", 1)) - 1}
+		var d := {"agreed": int(a.get("s_agreed", 0)), "lv": int(a.get("s_lv", 0)), "diyas": int(a.get("s_diyas", 0)), "step": int(a.get("s_step", 0)), "coins": int(a.get("s_coins", 300)), "tut": int(a.get("s_tut", 0)), "area": int(a.get("s_area", 1)), "story": 1, "end1": 1 if int(a.get("s_area", 1)) > 1 else 0, "end2": 1 if int(a.get("s_area", 1)) > 2 else 0}
 		# diyas are worked out from the levels won (best) minus the builds done
 		var bst := {}
 		var lvs := Levels.all()
@@ -3676,6 +4032,11 @@ func _flow(a: Dictionary) -> void:
 
 func _dev(a: Dictionary) -> void:
 	await get_tree().process_frame
+	# dev: --snap=3,8,15 --snapto=/tmp/x screenshots at those seconds, whatever the test does
+	if a.has("snap"):
+		for k in String(a.snap).split(","):
+			var tk := float(k)
+			get_tree().create_timer(tk).timeout.connect(func(): get_viewport().get_texture().get_image().save_png("%s-%04.1f.png" % [a.get("snapto", "/tmp/snap"), tk]))
 	for m in [L_agree.root]:
 		open_modal(m, false)
 	S.agreed = 1
@@ -3795,7 +4156,7 @@ func _dev(a: Dictionary) -> void:
 				continue
 			if screens.win.visible:
 				await get_tree().create_timer(2.5).timeout
-				print("AUTO win level ", int(cur) + 1, " coins ", S.coins, " lv ", S.lv)
+				print("AUTO win level ", int(cur) + 1, " left ", endMv, " coins ", S.coins, " lv ", S.lv)
 				played += 1
 				_win_next()
 				await get_tree().create_timer(1.0).timeout
@@ -3814,7 +4175,7 @@ func _dev(a: Dictionary) -> void:
 					_card_play()
 				continue
 			if LO.root.visible:
-				print("AUTO lost level ", int(cur) + 1, " -> +5 coins? ", S.coins)
+				print("AUTO lost level ", int(cur) + 1, " goal left ", game.goal)
 				played += 1
 				lose_step(2)
 				await get_tree().create_timer(0.5).timeout
@@ -3882,6 +4243,12 @@ func _dev(a: Dictionary) -> void:
 		open_modal(L_card.root, false)
 		open_modal(L_hard.root, false)
 		play_story(func(): start(0))
+		if a.has("shots"):
+			for k in String(a.get("at", "4,10,17,21,25,30,34")).split(","):
+				var tk := float(k)
+				get_tree().create_timer(tk).timeout.connect(func(): get_viewport().get_texture().get_image().save_png("%s-%04.1f.png" % [a.shots, tk]))
+		if a.has("quit"):
+			get_tree().create_timer(float(a.get("after", 40.0))).timeout.connect(get_tree().quit)
 	elif t == "area2":
 		# dev / preview video: Area 1 done -> Chennai start card -> all 10 shop builds -> Area 2 end -> reward
 		open_modal(L_card.root, false)
@@ -3980,11 +4347,17 @@ func _dev(a: Dictionary) -> void:
 		S.step = 99
 		S.end1 = 0
 		show_screen("street")
-		if a.get("area", "1") == "2":
+		if a.get("area", "1") == "2" or a.get("area", "1") == "3":
+			var ar := int(a.area)
 			S.end1 = 1
-			S.end2 = 0
-			street.set_area(2)
-			street.step = street.TASKS.size()
+			S.end2 = 0 if ar == 2 else 1
+			S.end3 = 0
+			S.area = ar
+			street.set_area(ar)
+			if street is PicStreet:
+				street.skip_to(street.TASKS.size())
+			else:
+				street.step = street.TASKS.size()
 			sky_layer.visible = false
 		home_ui.sync_in()
 		home_ui.home.visible = false
@@ -4056,13 +4429,101 @@ func _build_sheets() -> void:
 			"sh_set": L_ss = L
 			"sh_bag": L_sb = L
 
+# ================================================================== 23 Nov: ways to earn coins (agreed 20 Nov)
+# Daily tasks with our specials: 3 a day = 50, 100, 150 coins + 300 for finishing all three.
+const DTASKS := [
+	{"id": "rocket", "t": "Make 5 Rockets", "k": "make_rocket", "n": 5},
+	{"id": "chakra", "t": "Fire 3 Ground Chakras", "k": "fire_chakra", "n": 3},
+	{"id": "break", "t": "Break 30 obstacles", "k": "break", "n": 30},
+	{"id": "win", "t": "Win 3 levels", "k": "win", "n": 3},
+]
+const DREW := [50, 100, 150]
+const DALL := 300
+func dtask() -> Dictionary:
+	var d: Dictionary = S.get("dtask", {})
+	if d.get("day", "") != today():
+		# three of the four, a different one left out each day
+		var dd := Time.get_date_dict_from_system()
+		var skip := (int(dd.day) + int(dd.month)) % DTASKS.size()
+		var ids: Array = []
+		for i in DTASKS.size():
+			if i != skip:
+				ids.append(DTASKS[i].id)
+		d = {"day": today(), "ids": ids, "p": {}, "got": {}, "all": 0}
+		S.dtask = d
+	return d
+
+func _dt_def(id: String) -> Dictionary:
+	for t in DTASKS:
+		if t.id == id:
+			return t
+	return {}
+
+func _daily_ev(k: String, n: int) -> void:
+	var d := dtask()
+	var ready := false
+	for id in d.ids:
+		var T := _dt_def(id)
+		if T.k == k:
+			var before := int(d.p.get(id, 0))
+			d.p[id] = mini(int(T.n), before + n)
+			if before < int(T.n) and int(d.p[id]) >= int(T.n):
+				ready = true
+	if ready and screens.has("game") and screens.game.visible:
+		toast28("Daily task done! Claim it in Daily.")
+	if home_ui:
+		home_ui.refresh_extra()
+
+func dtask_ready() -> int:
+	var d := dtask()
+	var n := 0
+	for id in d.ids:
+		if int(d.p.get(id, 0)) >= int(_dt_def(id).n) and not d.got.has(id):
+			n += 1
+	if d.got.size() >= 3 and not int(d.get("all", 0)):
+		n += 1
+	return n
+
+# Piggy bank (undiyal) on the home screen under Daily: +50 coins per win, full at 250; one ad breaks it.
+const PIG_ADD := 50
+const PIG_MAX := 250
+func _piggy_add() -> void:
+	S.piggy = mini(PIG_MAX, int(S.get("piggy", 0)) + PIG_ADD)
+
+func piggy_tap() -> void:
+	var p := int(S.get("piggy", 0))
+	if p < PIG_MAX:
+		toast28("Piggy bank: %d of %d coins. Win %d more level%s to fill it!" % [p, PIG_MAX, (PIG_MAX - p + PIG_ADD - 1) / PIG_ADD, "" if PIG_MAX - p <= PIG_ADD else "s"])
+		return
+	show_ad(func(ok: bool):
+		if not ok:
+			return
+		var c0: int = S.coins
+		S.coins = int(S.coins) + PIG_MAX
+		S.piggy = 0
+		save()
+		sfx.play("ob_pot", 0.9)
+		sfx.play("win", 0.6)
+		popup("Piggy bank broken!", [["art/piggy.png", "+%d coins" % PIG_MAX, "You have %d" % S.coins]])
+		if home_ui:
+			home_ui.refresh()
+			home_ui.refresh_extra())
+
+# Shop: watch an ad for 50 coins, up to 3 a day
+const SHOP_AD := 50
+func shop_ads_left() -> int:
+	var d: Dictionary = S.get("shopad", {})
+	if d.get("day", "") != today():
+		return 3
+	return 3 - int(d.get("n", 0))
+
 func daily_can() -> bool:
 	return S.get("daily", {}).get("last", "") != today()
 
 func sheet(n: String) -> void:
 	sh_name = n
 	sfx.play("swoosh", 0.5)
-	var ttl: String = {"shop": "Shop", "daily": "Daily reward", "bag": "My crackers", "set": "Settings"}[n]
+	var ttl: String = {"shop": "Shop", "daily": "Daily rewards & tasks", "bag": "My crackers", "set": "Settings"}[n]
 	set_t(L_sh.node("sTitle"), ttl)
 	for c in sh_body.get_children():
 		c.queue_free()
@@ -4175,6 +4636,30 @@ func _shop_rows() -> float:
 		lbl(p).position.x = 0
 		lbl(p).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	y += 30
+	var ha := _text_row(L_sh, 7, y)
+	set_t(ha, "Free coins")
+	y += 23
+	var left := shop_ads_left()
+	var ra := _srow(L_sh, 8, y, "art/ui-coin.webp", "+%d coins" % SHOP_AD, "Watch a video. %d left today." % left)
+	var ba := kid(ra, "button")
+	_sbtn(ba, "Watch" if left > 0 else "Tomorrow", left > 0, false)
+	tap(ba, func():
+		if shop_ads_left() <= 0:
+			sfx.play("nope")
+			return
+		show_ad(func(ok: bool):
+			if not ok:
+				return
+			var d: Dictionary = S.get("shopad", {})
+			if d.get("day", "") != today():
+				d = {"day": today(), "n": 0}
+			d.n = int(d.n) + 1
+			S.shopad = d
+			S.coins = int(S.coins) + SHOP_AD
+			save()
+			sfx.play("fanfare", 0.5)
+			sheet("shop")))
+	y += float(ra.get_meta("h")) + 10
 	var h3 := _text_row(L_sh, 7, y)
 	set_t(h3, "Start boosters (3 each)")
 	y += 23
@@ -4273,7 +4758,48 @@ func _daily_rows() -> float:
 		save()
 		sfx.play("win", 0.6)
 		sheet("daily"))
-	return 258.0
+	return _dtask_rows(270.0)
+
+func _dtask_rows(y: float) -> float:
+	var d := dtask()
+	var h := _text_row(L_sh, 7, y)
+	set_t(h, "Daily tasks")
+	y += 24
+	for i in d.ids.size():
+		var id: String = d.ids[i]
+		var T := _dt_def(id)
+		var p := int(d.p.get(id, 0))
+		var done := p >= int(T.n)
+		var got: bool = d.got.has(id)
+		var r := _srow(L_sh, 8, y, "art/ui-coin.webp", String(T.t), "+%d coins" % DREW[i])
+		var b := kid(r, "button")
+		_sbtn(b, "Done" if got else ("Claim" if done else "%d/%d" % [p, int(T.n)]), done and not got, false)
+		var rew: int = DREW[i]
+		tap(b, func():
+			var dd := dtask()
+			if dd.got.has(id) or int(dd.p.get(id, 0)) < int(_dt_def(id).n):
+				return
+			dd.got[id] = 1
+			S.coins = int(S.coins) + rew
+			save()
+			sfx.play("fanfare", 0.5)
+			sheet("daily"))
+		y += float(r.get_meta("h")) + 8
+	var all_ok: bool = d.got.size() >= 3
+	var ra := _srow(L_sh, 8, y, "art/ui-chest.webp", "All three tasks", "+%d coins" % DALL)
+	var bb := kid(ra, "button")
+	_sbtn(bb, "Done" if int(d.get("all", 0)) else ("Claim" if all_ok else "%d/3" % d.got.size()), all_ok and not int(d.get("all", 0)), false)
+	tap(bb, func():
+		var dd := dtask()
+		if dd.got.size() < 3 or int(dd.get("all", 0)):
+			return
+		dd.all = 1
+		S.coins = int(S.coins) + DALL
+		save()
+		sfx.play("win", 0.6)
+		sheet("daily"))
+	y += float(ra.get_meta("h")) + 10
+	return y
 
 func _bag_rows() -> float:
 	var y := 0.0

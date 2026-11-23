@@ -234,7 +234,8 @@ func _shot(n: int) -> void:
 		2: _home(id)
 		3: _notebook(id)
 		4: _promise(id)
-		5: _title(id)
+		5: _how(id)
+		6: _title(id)
 		_: _finish()
 
 func _later(s: float, id: int, f: Callable) -> void:
@@ -258,6 +259,11 @@ func _dark_street(id: int) -> void:
 		street.camP = Vector3(0, 24, 84)
 		street.camL = Vector3(0, 0, 30)
 		street.cam_to(Vector3(-1, 7.5, 54), Vector3(-2, 2.2, 26), 6.8)
+	if street is PicStreet:
+		# 23 Nov: on phones the story plays over the same street pictures the player builds on, at dusk
+		street.cam_home(true)
+		var ps: PicStreet = street
+		create_tween().tween_method(ps.night, 0.0, 0.62, 1.6)
 	motes.rate = 6.0
 	_later(0.9, id, func(): say("Sivakasi.  The town that lights up every Diwali.", id, 2.7))
 	_later(3.9, id, func(): say("But Grandpa's old street had gone dark.", id, 2.6))
@@ -301,7 +307,10 @@ func _notebook(id: int) -> void:
 	_later(6.3, id, func(): motes.burst(Vector2(280, H / 2 - 60), 26))
 	_later(7.6, id, func(): _shot(4))
 
-# 4. the promise: the notebook closes, the street brightens, the factory glows like a dream
+# 4. the promise (23 Nov): the notebook closes, the street brightens, the Crackers Factory appears as a big gold
+# blueprint (art/story/factory_dream.png, made from the factory's own build sticker), drawn from the ground up.
+# The man stands to the left so he never covers it, and says plainly what he will do.
+var dream: Control
 func _promise(id: int) -> void:
 	var t := _tw()
 	t.tween_property(book, "open", 0.0, 0.45)
@@ -309,22 +318,137 @@ func _promise(id: int) -> void:
 	t.parallel().tween_property(book, "modulate:a", 0.0, 0.35)
 	t.tween_callback(func(): book.visible = false)
 	_sfx("story_page", 0.6, 1.15)
-	_tw().tween_property(dim, "color:a", 0.0, 1.0).set_delay(0.4)
+	_tw().tween_property(dim, "color:a", 0.5, 1.0).set_delay(0.4)
 	_tw().tween_property(grade, "color:a", 0.18, 3.0).set_delay(0.6)
-	if street:
+	if street is PicStreet:
+		var ps: PicStreet = street
+		ps.slide_to(ps.pics.size() - 1, Callable())
+	elif street:
 		street.cam_to(Vector3(0, 9.5, -24), Vector3(0, 4.6, -57), 2.6)
-		_later(0.9, id, func():
-			street.ghost(true)
-			_sfx("story_dream", 0.9))
+		_later(0.9, id, func(): street.ghost(true))
+	_later(0.9, id, func():
+		_dream_in()
+		_sfx("story_dream", 0.9))
 	motes.rate = 14.0
 	man.base = "idle"
 	man.mood("smile", 99)
-	man.position.x = 2
+	man.position.x = -34
+	man.scale = Vector2.ONE * 0.8
 	var m := _tw()
-	m.tween_property(man, "position:y", H - BOT - 236, 1.0).set_delay(2.0).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	_later(2.6, id, func(): man.mood("cheer", 1.2))
-	_later(2.3, id, func(): say("“I'll finish what you started…\none diya at a time.”", id, 3.6))
-	_later(6.6, id, func(): _shot(5))
+	m.tween_property(man, "position:y", H - BOT - 196, 1.0).set_delay(2.6).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_later(3.2, id, func(): man.mood("cheer", 1.2))
+	_later(3.0, id, func(): say("“Thatha, I'll rebuild your street…\nand your Crackers Factory.”", id, 4.6))
+	_later(8.2, id, func(): _shot(5))
+
+func _dream_in() -> void:
+	if dream:
+		return
+	var tex: Texture2D = load("res://art/story/factory_dream.png")
+	var w := 262.0
+	var h := w * tex.get_height() / tex.get_width()
+	# a clip box that grows upwards: the blueprint is drawn from the ground up
+	dream = Control.new()
+	dream.clip_contents = true
+	dream.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var top := maxf(BAR + 8.0, (H - BOT - 150.0 - h) / 2.0 + 30.0)
+	dream.position = Vector2(390.0 - w - 8.0, top + h)
+	dream.size = Vector2(w, 0)
+	add_child(dream)
+	move_child(dream, man.get_index())
+	var r := TextureRect.new()
+	r.texture = tex
+	r.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	r.stretch_mode = TextureRect.STRETCH_SCALE
+	r.size = Vector2(w, h)
+	r.position = Vector2(0, -h)
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	r.modulate = Color(1.35, 1.3, 1.15)
+	dream.add_child(r)
+	var t := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	t.tween_method(func(k: float):
+		dream.position.y = top + h * (1.0 - k)
+		dream.size.y = h * k
+		r.position.y = -h * (1.0 - k), 0.0, 1.0, 2.2)
+	# a soft breathing glow once it is drawn
+	t.tween_callback(func():
+		var g := create_tween().set_loops(4)
+		g.tween_property(r, "modulate", Color(1.6, 1.5, 1.25), 0.9)
+		g.tween_property(r, "modulate", Color(1.35, 1.3, 1.15), 0.9))
+	for i in 6:
+		_later(0.4 + i * 0.35, sid, func(): motes.burst(Vector2(390.0 - w * 0.5 - 8.0, top + h * (1.0 - (i + 1) / 6.0)), 10))
+
+# 5. (23 Nov) how the game works, in one line: win levels, earn diyas, build the street
+func _how(id: int) -> void:
+	var t := _tw()
+	t.tween_property(man, "position:y", H + 40, 0.6).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	t.parallel().tween_property(cap, "modulate:a", 0.0, 0.3)
+	if dream:
+		_tw().tween_property(dream, "modulate:a", 0.25, 0.6)
+	_tw().tween_property(dim, "color:a", 0.55, 0.6)
+	var box := Control.new()
+	box.size = Vector2(390, 200)
+	box.position = Vector2(0, H / 2 - 120)
+	box.modulate.a = 0.0
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(box)
+	var items := [["crk:b6", "Win levels"], ["art/ui-diya.webp", "Earn diyas"], ["art/task-1.webp", "Build the street"]]
+	var ls := LabelSettings.new()
+	ls.font = load("res://art/LilitaOne.ttf")
+	ls.font_size = 17
+	ls.font_color = CREAM
+	ls.outline_size = 6
+	ls.outline_color = Color("#3a1a08")
+	for i in 3:
+		var x := 18.0 + i * 124.0
+		var bg := Panel.new()
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0.14, 0.08, 0.2, 0.85)
+		sb.border_color = GOLD
+		sb.set_border_width_all(3)
+		sb.set_corner_radius_all(16)
+		bg.add_theme_stylebox_override("panel", sb)
+		bg.position = Vector2(x, 0)
+		bg.size = Vector2(106, 106)
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(bg)
+		var ic := TextureRect.new()
+		ic.texture = WebLayout.tex(items[i][0])
+		ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		ic.position = Vector2(x + 13, 13)
+		ic.size = Vector2(80, 80)
+		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(ic)
+		var l := Label.new()
+		l.label_settings = ls
+		l.text = items[i][1]
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD
+		l.position = Vector2(x - 6, 114)
+		l.size = Vector2(118, 50)
+		box.add_child(l)
+		if i < 2:
+			var ar := Label.new()
+			ar.label_settings = ls
+			ar.text = "→"
+			ar.position = Vector2(x + 104, 36)
+			ar.size = Vector2(22, 30)
+			box.add_child(ar)
+		# each step pops in after the last
+		ic.pivot_offset = Vector2(40, 40)
+		ic.scale = Vector2.ONE * 0.2
+		_later(0.5 + i * 0.6, id, func():
+			create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT).tween_property(ic, "scale", Vector2.ONE, 0.45)
+			_sfx("story_ting", 0.5, 1.0 + i * 0.12))
+	_tw().tween_property(box, "modulate:a", 1.0, 0.5).set_delay(0.2)
+	_later(0.6, id, func(): say("Every level you win gives a diya.\nDiyas rebuild Grandpa's street.", id, 4.0))
+	_later(5.0, id, func():
+		var o := _tw()
+		o.tween_property(box, "modulate:a", 0.0, 0.4)
+		o.tween_callback(box.queue_free)
+		if dream:
+			_tw().tween_property(dream, "modulate:a", 0.0, 0.4)
+		_shot(6))
 
 # 5. title card (from v2): "AREA 1", gold lines, "Sivakasi Street" with a light sweep
 func _title(id: int) -> void:
@@ -344,7 +468,7 @@ func _title(id: int) -> void:
 	sh.position.x = -120
 	_tw().tween_property(sh, "position:x", 420.0, 1.1).set_delay(1.2)
 	_sfx("story_chime", 0.6, 1.0, 0.5)
-	_later(3.3, id, func(): _shot(6))
+	_later(3.3, id, func(): _shot(shot + 1))
 
 func _finish() -> void:
 	if done:
@@ -359,6 +483,9 @@ func _finish() -> void:
 	t.tween_callback(func():
 		if street:
 			street.ghost(false)
+			if street is PicStreet:
+				(street as PicStreet).story_clear()
+				street.cam_home(true)
 		# behind the full flash: hide the card, picture and shade, so the flash fades straight onto the home screen
 		for c in get_children():
 			if c != flash and c is CanvasItem:

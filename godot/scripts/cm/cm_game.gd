@@ -13,6 +13,7 @@ signal fly(k, x: float, y: float)     # a goal piece flies to the HUD (colours);
 signal cheer(c: int)
 signal big()
 signal meter(n: int)
+signal daily_ev(k: String, n: int)   # 23 Nov daily tasks: make_rocket, fire_chakra, break
 
 var gspeed := 1.2   # web GSPEED: speed x1 = 1.2, x2 = 1.65, x3 = 2.2
 var mN := 0
@@ -605,7 +606,7 @@ func makes(r: int, c: int) -> bool:
 
 func calm_lv() -> float:
 	var i: int = lv.get("idx", 0)
-	return 0.8 if i < 10 else (0.7 if i < 30 else 0.6)
+	return 0.8 if i < 10 else (0.7 if i < 30 else 0.95)
 
 func nudge(cells: Array, keep_clean: bool) -> bool:
 	for t in 70:
@@ -843,6 +844,8 @@ func hit_ob(e: Dictionary, p: Array, blast_: bool) -> void:
 # broke. Now the cell empties, so the crackers above fall in and new ones come from the top. Gold floor (fl) stays.
 func _ob_gone(e: Dictionary, p: Array) -> void:
 	var fixed_ob: bool = e.has("ob") and FIX.has(e.ob.t)
+	if e.has("ob") and String(e.ob.t) != "gold":
+		daily_ev.emit("break", 1)
 	e.erase("ob")
 	var r: int = p[0]
 	var c: int = p[1]
@@ -961,6 +964,7 @@ func blast(g: Array, pref) -> void:
 				burst(cx(p[1]), cy(p[0]), ["#FFD24A", "#FFFFFF", "#FF7A1A"], 18, 260)
 				flash = maxf(flash, 0.25)
 				mk = true
+				daily_ev.emit("make_" + String(type), 1)
 				add_score(150)
 			else:
 				hit(p[0], p[1], {"d": 0.02 + i * 0.016})
@@ -1107,6 +1111,8 @@ func shape_sc(r: int, c: int) -> Dictionary:
 
 func luck(born: Array) -> void:
 	var p: float = lv.get("luck", 0.0)
+	if int(lv.get("idx", 0)) >= 30:
+		p = 0.0   # 23 Nov: from level 31 new crackers are never set up to match
 	if p <= 0.0 or ended or over or casc >= CHAIN_CAP or randf() > p:
 		return
 	var sp: Array = []
@@ -2140,6 +2146,7 @@ func _ellipse(c: Vector2, rx: float, ry: float, col: Color) -> void:
 
 # specials2.js Ground Chakra: spins, clears its 2x2, flies around the board, dives on the nearest goal tile
 func fly_chakra(r: int, c: int) -> void:
+	daily_ev.emit("fire_chakra", 1)
 	var u = float(U)
 	var x0 = cx(c)
 	var y0 = cy(r)
@@ -3222,7 +3229,8 @@ func c_fire(r: int, c: int, e: Dictionary) -> void:
 		c_pot(r, c, 5, {})
 
 # fx.js hintMove / showHint
-func hint_move():
+# 23 Nov: hint_move(true) = player hint: a plain 3-in-a-row first (squares and special-makers only if none)
+func hint_move(plain: bool = false):
 	for r in R:
 		for c in C:
 			var e = b[r][c]
@@ -3235,10 +3243,18 @@ func hint_move():
 			return cb
 	if teach != null:
 		return {"r": teach[0], "c": teach[1], "dr": teach[2], "dc": teach[3]}
-	var spm = spmoves()
+	var spm = [] if plain else spmoves()
 	if not spm.is_empty():
 		var z = spm[randi() % spm.size()]
 		return {"r": z.r, "c": z.c, "dr": z.dr, "dc": z.dc}
+	if plain:
+		var pl = _plain_move()
+		if pl != null:
+			return pl
+		spm = spmoves()
+		if not spm.is_empty():
+			var z2 = spm[randi() % spm.size()]
+			return {"r": z2.r, "c": z2.c, "dr": z2.dr, "dc": z2.dc}
 	var best = null
 	var bs = 0
 	for r in R:
@@ -3268,10 +3284,57 @@ func hint_move():
 					best = {"r": r, "c": c, "dr": d[0], "dc": d[1]}
 	return best
 
+# a swap that makes only a plain line of 3 (no square, no special)
+func _plain_move():
+	var out: Array = []
+	for r in R:
+		for c in C:
+			for d in [[0, 1], [1, 0]]:
+				var e = at2(r, c)
+				var f = at2(r + d[0], c + d[1])
+				if e == null or f == null or stuck(e) or stuck(f) or e.k < 0 or f.k < 0 or e.k >= 6 or f.k >= 6 or e.k == f.k:
+					continue
+				var t: int = e.k
+				e.k = f.k
+				f.k = t
+				var ms := find()
+				var ok := not ms.is_empty()
+				for m in ms:
+					if m.sq or m.h >= 4 or m.v >= 4 or (m.h >= 3 and m.v >= 3):
+						ok = false
+				f.k = e.k
+				e.k = t
+				if ok:
+					out.append({"r": r, "c": c, "dr": d[0], "dc": d[1]})
+	return null if out.is_empty() else out[randi() % out.size()]
+
+# every tile of the match the swap makes (the 2 swapped tiles included)
+func match_cells(h: Dictionary) -> Array:
+	var e = at2(h.r, h.c)
+	var f = at2(h.r + h.dr, h.c + h.dc)
+	var out: Array = [[h.r, h.c], [h.r + h.dr, h.c + h.dc]]
+	if e == null or f == null:
+		return out
+	var t: int = e.k
+	e.k = f.k
+	f.k = t
+	for m in find():
+		var mine := false
+		for p in m.cells:
+			if (p[0] == h.r and p[1] == h.c) or (p[0] == h.r + h.dr and p[1] == h.c + h.dc):
+				mine = true
+		if mine:
+			for p in m.cells:
+				if not ((p[0] == h.r and p[1] == h.c) or (p[0] == h.r + h.dr and p[1] == h.c + h.dc)):
+					out.append(p)
+	f.k = e.k
+	e.k = t
+	return out
+
 func show_hint() -> void:
 	if hl != null or busy or over:
 		return
-	var h = hint_move()
+	var h = hint_move(true)
 	if h == null:
 		return
 	if h.has("tap"):
@@ -3279,7 +3342,7 @@ func show_hint() -> void:
 		return
 	if at2(h.r, h.c) == null or at2(h.r + h.dr, h.c + h.dc) == null:
 		return
-	hl = [[h.r, h.c], [h.r + h.dr, h.c + h.dc]]
+	hl = match_cells(h)
 
 func _draw_hl(u: float) -> void:
 	if hl == null:
@@ -3402,6 +3465,9 @@ func skyshot(r: int, c: int, col: int, dr: int, dc: int, own := true) -> void:
 		finish(0.1 + L.size() * 0.055 + 0.75))
 
 # 1000-Wala: a chain of 15 pops hopping from tile to tile
+# 1000-Wala (23 Nov, new look): a red cracker string is laid along a path through 15 tiles, then a fast chain of
+# ~28 bangs runs down it (flash, sparks, smoke puff, a small shake on the tile it passes), with the crackle, ~1.7 s.
+# Same 15 tiles as before, so levels play the same.
 func wala(r: int, c: int, dr: int, dc: int) -> void:
 	var x := cx(c)
 	var y := cy(r)
@@ -3415,30 +3481,87 @@ func wala(r: int, c: int, dr: int, dc: int) -> void:
 				L.append([a, bb])
 	L.shuffle()
 	L = L.slice(0, 15)
-	var st := {"px": x, "py": y}
-	at(0.22, func():
+	# order the tiles into a path: always the nearest next tile
+	var path: Array = []
+	var cr := [r, c]
+	while not L.is_empty():
+		var bi := 0
+		var bd := 1e9
+		for n in L.size():
+			var d: float = absf(L[n][0] - cr[0]) + absf(L[n][1] - cr[1])
+			if d < bd:
+				bd = d
+				bi = n
+		cr = L[bi]
+		path.append(cr)
+		L.remove_at(bi)
+	var pts: Array = [Vector2(x, y)]
+	for p in path:
+		pts.append(Vector2(cx(p[1]), cy(p[0])))
+	var seg: Array = [0.0]
+	for n in range(1, pts.size()):
+		seg.append(seg[n - 1] + (pts[n] as Vector2).distance_to(pts[n - 1]))
+	var tot: float = maxf(1.0, seg[seg.size() - 1])
+	var at_d := func(d: float) -> Vector2:
+		for n in range(1, pts.size()):
+			if d <= seg[n]:
+				var k: float = (d - seg[n - 1]) / maxf(1.0, seg[n] - seg[n - 1])
+				return (pts[n - 1] as Vector2).lerp(pts[n], k)
+		return pts[pts.size() - 1]
+	var LAY := 0.4
+	var RUN := 1.3
+	var st := {"burnt": 0.0}
+	at(0.18, func():
 		b[r][c] = null
 		ring(x, y, "#E8123C", 70, 7)
-		for n in L.size():
-			var p: Array = L[n]
-			at(n * 0.085, func():
-				var sx: float = st.px
-				var sy: float = st.py
-				var tx := cx(p[1])
-				var ty := cy(p[0])
-				st.px = tx
-				st.py = ty
-				obj(func(t, dt):
-					var k := minf(t / 0.1, 1.0)
-					var X := sx + (tx - sx) * k
-					var Y := sy + (ty - sy) * k - sin(k * PI) * 38.0
-					draw_line(Vector2(X - 6, Y - 3), Vector2(X + 6, Y + 3), Color("#E8123C"), 7.0)
-					draw_line(Vector2(sx, sy), Vector2(X, Y), Color("#FFC62B"), 2.0)
-					if k >= 1.0:
-						hit(p[0], p[1], {"d": 0.0})
-						return false
-					return true, 0.13)))
-	finish(0.22 + 15 * 0.085 + 0.7)
+		snd("wala", {"v": 0.8}))
+	# the string: drawn while it is laid, then it burns away from the start as the bangs run
+	obj(func(t, dt):
+		var lay: float = clampf((t - 0.18) / LAY, 0.0, 1.0) * tot
+		var burn: float = st.burnt
+		if lay <= burn:
+			return t < 0.18 + LAY + RUN + 0.1
+		var steps := int((lay - burn) / 7.0) + 1
+		var prev: Vector2 = at_d.call(burn)
+		for q in steps:
+			var dd: float = burn + (lay - burn) * (q + 1) / steps
+			var p2: Vector2 = at_d.call(dd)
+			draw_line(prev, p2, Color("#5A0A14"), 5.0)
+			draw_line(prev, p2, Color("#E8123C"), 3.0)
+			prev = p2
+		# little crackers on the string
+		var n := int((lay - burn) / 13.0)
+		for q in n:
+			var pp: Vector2 = at_d.call(burn + q * 13.0 + 6.0)
+			draw_rect(Rect2(pp.x - 3, pp.y - 5, 6, 10), Color("#C8102E"))
+			draw_rect(Rect2(pp.x - 3, pp.y - 5, 6, 2), Color("#FFD24A"))
+		return t < 0.18 + LAY + RUN + 0.1, 0.18 + LAY + RUN + 0.2)
+	# the chain of bangs
+	var NB := 28
+	var hit_at: Array = []
+	for p in range(1, pts.size()):
+		hit_at.append(seg[p])
+	var hi := {"n": 0}
+	for q in NB:
+		var dd: float = tot * (q + 1) / NB
+		at(0.18 + LAY + RUN * (q + 1) / NB, func():
+			st.burnt = dd
+			var pp: Vector2 = at_d.call(dd)
+			pop(pp.x + rnd(-5, 5), pp.y + rnd(-5, 5), "#FF4B6E", 0.45)
+			spark(pp.x, pp.y, 5, "#FFD24A", 260.0, 80.0)
+			puff(pp.x, pp.y - 4, "#E9E2D8", 9.0)
+			flash = maxf(flash, 0.06)
+			if q % 4 == 0:
+				snd("z_crackle", {"v": 0.35, "rate": rnd(0.9, 1.2)})
+			# the tiles the bangs have reached
+			while int(hi.n) < hit_at.size() and float(hit_at[int(hi.n)]) <= dd + 0.5:
+				var p: Array = path[int(hi.n)]
+				var t0 = at2(p[0], p[1])
+				if t0 != null:
+					t0.shakeT = 0.15
+				hit(p[0], p[1], {"d": 0.0})
+				hi.n = int(hi.n) + 1)
+	finish(0.18 + LAY + RUN + 0.6)
 
 # Rail Cracker: races along its row (or column), turns at the end and comes back on the next one
 func d_rail(r: int, c: int, dr: int, dc: int) -> void:

@@ -127,16 +127,32 @@ func site_of(i: int) -> Vector3:
 func screen_pos(p3: Vector3) -> Vector2:
 	return Vector2(p3.x, p3.y)
 
+# Area 3 (23 Nov): GHILLI's order room behind the shop (pictures from scripts/street/backroom.gd, a3.json).
+# Costs add up to the 25 diyas that levels 61-80 give (16 normal + 3 Hard x2 + Super Hard x3).
+const A3_COST := [2, 2, 2, 3, 3, 3, 3, 3, 4]
+const A3_KIND := ["stall", "house", "house", "stall", "stall", "house", "lamp", "farm", "stall"]
+
 func set_area(a: int) -> void:
-	if a == area or a != 2:
+	if a == area or a < 2 or a > 3:
 		return
-	area = 2
-	TASKS = ShopArea.TASKS.duplicate(true)
+	area = a
+	if a == 2:
+		TASKS = ShopArea.TASKS.duplicate(true)
+	else:
+		TASKS = Backroom.TASKS.duplicate(true)
+		for i in TASKS.size():
+			TASKS[i].c = A3_COST[i]
+			TASKS[i]["kind"] = A3_KIND[i]
 	SHOW = false
 	won = false
 	busy = false
 	step = 0
-	_load(2)
+	_load(a)
+
+func kind_of(T: Dictionary) -> String:
+	if T.has("kind"):
+		return T.kind
+	return super.kind_of(T)
 
 func skip_to(n: int) -> void:
 	step = mini(n, TASKS.size())
