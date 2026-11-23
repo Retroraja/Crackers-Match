@@ -26,6 +26,8 @@ func _ready() -> void:
 	var cam: Camera3D
 	if a.get("mode", "lane") == "lane":
 		cam = await lane(sv)
+	elif a.get("mode") == "road":
+		cam = road_view(sv)
 	else:
 		cam = map(sv)
 	for i in 6:
@@ -99,14 +101,22 @@ func dusty_van(par: Node3D, pos: Vector3, rot_y: float, s: float) -> Node3D:
 	v.rotation.z = 0.035
 	return v
 
-# GHILLI van after build 1: red body, cream roof
+# GHILLI van after build 1: body repainted red (hue of the coloured texels), rest kept
 func ghilli_van(par: Node3D, pos: Vector3, rot_y: float, s: float) -> Node3D:
 	var v := put(par, "cars/van", pos, s, rot_y)
-	recolor(v, func(m: BaseMaterial3D, n: String):
-		var c := m.albedo_color
-		if c.s > 0.25 and c.v > 0.3:
-			m.albedo_color = Color("#d8262e")
-		m.roughness = 0.5)
+	recolor(v, func(m: BaseMaterial3D, _n: String):
+		if m.albedo_texture:
+			var img: Image = m.albedo_texture.get_image()
+			if img.is_compressed():
+				img.decompress()
+			img.convert(Image.FORMAT_RGBA8)
+			for y in img.get_height():
+				for x in img.get_width():
+					var c := img.get_pixel(x, y)
+					if c.s > 0.3 and c.b > c.r and c.b > c.g:
+						img.set_pixel(x, y, Color.from_hsv(0.995, 0.85, clampf(c.v * 0.95, 0.3, 0.92)))
+			m.albedo_texture = ImageTexture.create_from_image(img)
+		m.roughness = 0.3)
 	return v
 
 # ------------------------------------------------------------------ mock 1: GHILLI side lane, old van
@@ -457,3 +467,134 @@ func place_beach(g: Node3D, on: bool, _side: int) -> void:
 			put(g, "res://art/city/detail-parasol-a.glb", p, 8.0, randf() * TAU)
 		lamps(g, Vector3(-16, 0, 4), Vector3(16, 0, 4), 5.0)
 		people(g, Vector3(0, 0.1, 0), 24, 12.0)
+
+
+# ------------------------------------------------------------------ test 23 Nov: LOW view behind the van (like his reference)
+# black outline shell (inverted hull) on every mesh = sharp, edgy cartoon edges
+var OUTL: StandardMaterial3D
+
+func outline(o: Node3D, w := 0.03) -> void:
+	if OUTL == null:
+		OUTL = StandardMaterial3D.new()
+		OUTL.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		OUTL.albedo_color = Color("#20140c")
+		OUTL.cull_mode = BaseMaterial3D.CULL_FRONT
+		OUTL.grow = true
+	var m: StandardMaterial3D = OUTL.duplicate()
+	m.grow_amount = w
+	var list: Array = o.find_children("*", "MeshInstance3D", true, false)
+	if o is MeshInstance3D:
+		list.append(o)
+	for c in list:
+		(c as MeshInstance3D).material_overlay = m
+
+func shiny(o: Node3D, rough := 0.35) -> void:
+	recolor(o, func(m: BaseMaterial3D, _n: String):
+		m.roughness = rough
+		m.metallic_specular = 0.5)
+
+func gbox(par: Node3D, size: Vector3, pos: Vector3, c: String, ow := 0.05) -> MeshInstance3D:
+	var b := box(par, size, pos, c)
+	b.material_override.roughness = 0.55
+	outline(b, ow)
+	return b
+
+func gopuram(g: Node3D) -> void:
+	# temple wall + gate tower (gopuram) + shrine; tiers with niches, kalasams on top
+	var wallc := "#f1dfb8"
+	gbox(g, Vector3(13, 3.2, 0.8), Vector3(0, 1.6, 0), wallc)
+	for x in range(-6, 7, 2):
+		gbox(g, Vector3(0.9, 0.5, 1.0), Vector3(x, 3.45, 0), "#c8402e", 0.03)
+	for i in 7:
+		var k := 1.0 - i * 0.11
+		var w := 9.0 * k
+		var d := 5.0 * k
+		var y := 3.2 + i * 1.75
+		gbox(g, Vector3(w, 1.5, d), Vector3(0, y + 0.75, 0), ["#f4c45a", "#e8873a", "#4fb0c6", "#e8873a", "#f4c45a", "#d9534f", "#f4c45a"][i], 0.045)
+		gbox(g, Vector3(w + 0.5, 0.25, d + 0.5), Vector3(0, y + 1.5, 0), "#fff1cf", 0.03)
+		for j in int(w / 1.4):
+			var x := -w / 2 + 0.9 + j * 1.4
+			gbox(g, Vector3(0.6, 0.9, 0.2), Vector3(x, y + 0.75, d / 2 + 0.05), ["#c8402e", "#2f7f9e", "#3e9b4f"][(i + j) % 3], 0.02)
+	gbox(g, Vector3(3.2, 1.4, 2.0), Vector3(0, 16.2, 0), "#d9534f")
+	for x in [-1.0, 0.0, 1.0]:
+		gbox(g, Vector3(0.35, 0.9, 0.35), Vector3(x, 17.3, 0), "#ffd23a", 0.02)
+	# gate opening
+	gbox(g, Vector3(3.0, 4.2, 0.3), Vector3(0, 2.1, 2.6), "#4a2a16", 0.03)
+
+func road_view(sv: SubViewport) -> Camera3D:
+	sv.transparent_bg = false
+	root = Node3D.new()
+	sv.add_child(root)
+	var we := WorldEnvironment.new()
+	var env := Environment.new()
+	var sky := Sky.new()
+	var pm := ProceduralSkyMaterial.new()
+	pm.sky_top_color = Color("#3d9be6")
+	pm.sky_horizon_color = Color("#bfe6ff")
+	pm.ground_horizon_color = Color("#bfe6ff")
+	pm.ground_bottom_color = Color("#7fbf4a")
+	pm.sky_curve = 0.12
+	sky.sky_material = pm
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color("#cfdcf0")
+	env.ambient_light_energy = 0.42
+	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+	env.adjustment_enabled = true
+	env.adjustment_contrast = 1.12
+	env.adjustment_saturation = 1.18
+	we.environment = env
+	root.add_child(we)
+	var sun := DirectionalLight3D.new()
+	sun.light_color = Color("#fff0d6")
+	sun.light_energy = 1.0
+	sun.shadow_enabled = true
+	sun.shadow_blur = 0.3
+	sun.directional_shadow_max_distance = 120
+	sun.rotation = Vector3(deg_to_rad(-38), deg_to_rad(-140), 0)
+	root.add_child(sun)
+	# ground: red-earth verges, grass, asphalt road going into the screen
+	box(root, Vector3(300, 0.2, 400), Vector3(0, -0.1, -150), "#7fbf4a")
+	box(root, Vector3(13, 0.06, 400), Vector3(0, 0.03, -150), "#c98b5a")
+	var rd := box(root, Vector3(8, 0.08, 400), Vector3(0, 0.06, -150), "#4d535c")
+	rd.material_override.roughness = 0.8
+	for e in [-3.7, 3.7]:
+		box(root, Vector3(0.22, 0.1, 400), Vector3(e, 0.07, -150), "#f2efe4")
+	for i in 40:
+		box(root, Vector3(0.25, 0.1, 2.4), Vector3(0, 0.07, 4 - i * 6.0), "#f6d23a")
+	# kerb stones, black and white like Indian roads
+	for i in 60:
+		for e in [-4.3, 4.3]:
+			gbox(root, Vector3(0.5, 0.3, 1.6), Vector3(e, 0.15, 6 - i * 3.2), "#f4f4f0" if i % 2 == 0 else "#2a2a2a", 0.02)
+	# temple on the left, ahead
+	var t := Node3D.new()
+	t.position = Vector3(float(a.get("tx", -11.0)), 0, float(a.get("tz", -42.0)))
+	t.rotation.y = deg_to_rad(float(a.get("tr", 38.0)))
+	root.add_child(t)
+	gopuram(t)
+	# trees and palms both sides, buildings far right
+	seed(5)
+	for i in 26:
+		var side := -1 if i % 2 == 0 else 1
+		var z := 2.0 - i * 6.5 + randf_range(-2, 2)
+		var x := side * randf_range(8.0, 16.0)
+		if side < 0 and z < -25 and z > -60:
+			continue
+		var tr := put(root, "nature/" + ["tree_palmTall", "tree_palmBend", "tree_oak", "tree_palm"][randi() % 4], Vector3(x, 0, z), randf_range(4.5, 6.5), randf() * TAU)
+		recolor(tr, _leaf)
+		outline(tr, 0.02)
+	for b in [["building-c", 18, -40], ["building-d", 20, -60], ["building-a", 17, -80], ["building-g", 22, -100]]:
+		var o := city(root, b[0], Vector3(b[1], 0, b[2]), 7.0, -PI / 2)
+		outline(o, 0.02)
+	# GHILLI van: from behind, big, bottom right
+	var v := ghilli_van(root, V3(a.get("van", "2.0,0.3,3.0")), float(a.get("vr", "0.0")), float(a.get("vs", "1.5")))
+	shiny(v, 0.5)
+	outline(v, 0.025)
+	var cam := Camera3D.new()
+	root.add_child(cam)
+	cam.fov = float(a.get("fov", 52))
+	cam.position = V3(a.get("p", "0.2,4.6,12.5"))
+	cam.look_at(V3(a.get("l", "-1.2,1.2,-30")), Vector3.UP)
+	cam.current = true
+	return cam
