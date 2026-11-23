@@ -28,6 +28,10 @@ func _ready() -> void:
 		cam = await lane(sv)
 	elif a.get("mode") == "street":
 		cam = await street_view(sv)
+		if a.has("drive"):
+			await drive(sv, cam)
+			get_tree().quit()
+			return
 	elif a.get("mode") == "road":
 		cam = road_view(sv)
 	else:
@@ -625,6 +629,7 @@ func road_view(sv: SubViewport) -> Camera3D:
 # ------------------------------------------------------------------ test 2 (23 Nov): the SAME Area 2 Chennai street,
 # low camera behind the GHILLI van, a plaster-textured gopuram temple on the left pavement
 var TEXW: Texture2D
+var VAN: Node3D
 var TEXN: Texture2D
 var TEXS: Texture2D
 
@@ -717,8 +722,8 @@ func street_view(sv: SubViewport) -> Camera3D:
 		temple(t)
 	else:
 		hall(t)
-	if a.get("fest", "0") == "1":
-		festive(t)
+	if int(a.get("fest", "0")) > 0:
+		festive(t, int(a.get("fest", "0")))
 	# the far side of the street was never built in Area 2 (behind its camera): a row of city buildings
 	var far := [["building-c", -60, 31], ["building-a", -46, 31], ["building-d", -74, 31], ["building-g", -88, 31],
 		["building-l", -60, -3], ["building-n", -74, -3], ["building-i", -88, -3], ["building-m", -104, 12]]
@@ -729,7 +734,7 @@ func street_view(sv: SubViewport) -> Camera3D:
 	for x in [-52, -66, -80, -94]:
 		recolor(put(bz, "nature/tree_palmTall", Vector3(x, 0.18, 26), 9.0, randf() * TAU), _leaf)
 	if not a.has("novan"):
-		grey_van(bz, V3(a.get("van", "6,0.3,10.5")), float(a.get("vr", "-1.45")), float(a.get("vs", "1.7")))
+		VAN = grey_van(bz, V3(a.get("van", "6,0.3,10.5")), float(a.get("vr", "-1.45")), float(a.get("vs", "1.7")))
 	var cam := st.cam
 	cam.fov = float(a.get("fov", 50))
 	cam.position = V3(a.get("p", "16,4.2,11.5"))
@@ -746,17 +751,49 @@ func hall(g: Node3D) -> void:
 	tbox(g, Vector3(4.2, 0.9, 0.3), Vector3(0, 6.6, 1.2), "#7a1f2b")
 
 # decorations after the Build: bulb strings, flag bunting, banana trees at the gate, a crowd
-func festive(g: Node3D) -> void:
+func festive(g: Node3D, n := 4) -> void:
+	# stage 1 bulbs, 2 flags, 3 banana trees, 4 crowd (each Build pop-in shows one more)
 	lamps(g, Vector3(-8.5, 0, 0.6), Vector3(8.5, 0, 0.6), 3.9)
 	lamps(g, Vector3(-2.6, 0, 2.3), Vector3(2.6, 0, 2.3), 4.6)
 	for i in 6:
 		var y := 5.0 + i * 1.45
 		var w := 5.0 * (1.0 - i * 0.1) / 2 + 0.3
 		lamps(g, Vector3(-w, 0, 2.2 - i * 0.2), Vector3(w, 0, 2.2 - i * 0.2), y + 0.2)
-	bunting(g, Vector3(-8, 0, 3.5), Vector3(0, 0, 6.5), 4.6)
-	bunting(g, Vector3(8, 0, 3.5), Vector3(0, 0, 6.5), 4.6)
-	for x in [-1.6, 1.6]:
-		var t := put(g, "nature/tree_palm", Vector3(x, 0, 3.0), 2.6, randf() * TAU)
-		recolor(t, _leaf)
-	seed(3)
-	people(g, Vector3(0, 0, 5.5), 10, 3.0, 1.6)
+	if n >= 2:
+		bunting(g, Vector3(-8, 0, 3.5), Vector3(0, 0, 6.5), 4.6)
+		bunting(g, Vector3(8, 0, 3.5), Vector3(0, 0, 6.5), 4.6)
+	if n >= 3:
+		for x in [-1.6, 1.6]:
+			var t := put(g, "nature/tree_palm", Vector3(x, 0, 3.0), 2.6, 0.7 * x)
+			recolor(t, _leaf)
+	if n >= 4:
+		seed(3)
+		people(g, Vector3(0, 0, 5.5), 10, 3.0, 1.6)
+
+
+# 3D drive clip: the van drives off down the street, the camera follows and settles further on.
+# -- --drive=N --out=dir  (frames d0000.png ...)
+func drive(sv: SubViewport, cam: Camera3D) -> void:
+	var v: Node3D = null
+	for c in cam.get_parent().get_children():
+		pass
+	v = VAN
+	var n := int(a.drive)
+	var p0 := cam.position
+	var v0 := v.position
+	var look0 := V3(a.get("l", "-30,2.0,12"))
+	for i in n:
+		var t := float(i) / (n - 1)
+		var k := t * t * (3.0 - 2.0 * t)       # ease in-out
+		var acc := t * t                         # van speeds up
+		var dx := -55.0 * acc
+		v.position = v0 + Vector3(dx, 0, 0)
+		# camera follows with a lag, rising a bit
+		var cdx := -11.0 * k
+		cam.position = p0 + Vector3(cdx, 1.5 * k, -1.2 * k)
+		cam.look_at(look0 + Vector3(cdx * 0.5, 1.0 * k, -2.0 * k), Vector3.UP)
+		for f in 2:
+			await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		sv.get_texture().get_image().save_png("%s/d%04d.png" % [a.out, i])
+	print("PIC drive done ", n)
