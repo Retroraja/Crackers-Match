@@ -103,6 +103,26 @@ func dusty_van(par: Node3D, pos: Vector3, rot_y: float, s: float) -> Node3D:
 	v.rotation.z = 0.035
 	return v
 
+# the grey van he liked (screen 1), washed: same grey, no dust, a little shine
+func grey_van(par: Node3D, pos: Vector3, rot_y: float, s: float) -> Node3D:
+	var v := put(par, "cars/van", pos, s, rot_y)
+	recolor(v, func(m: BaseMaterial3D, _n: String):
+		if m.albedo_texture:
+			var img: Image = m.albedo_texture.get_image()
+			if img.is_compressed():
+				img.decompress()
+			img.convert(Image.FORMAT_RGBA8)
+			for y in img.get_height():
+				for x in img.get_width():
+					var c := img.get_pixel(x, y)
+					var g := c.get_luminance()
+					var d := Color(g, g, g).lerp(Color("#9a9a96"), 0.55)
+					img.set_pixel(x, y, c.lerp(d, 0.88))
+			m.albedo_texture = ImageTexture.create_from_image(img)
+		m.roughness = 0.42
+		m.metallic = 0.0)
+	return v
+
 # GHILLI van after build 1: body repainted red (hue of the coloured texels), rest kept
 func ghilli_van(par: Node3D, pos: Vector3, rot_y: float, s: float) -> Node3D:
 	var v := put(par, "cars/van", pos, s, rot_y)
@@ -327,12 +347,12 @@ func _leaf(m: BaseMaterial3D, n: String) -> void:
 	elif n.contains("wood") or n.contains("bark") or n.contains("trunk"):
 		m.albedo_color = Color("#8a6a4a")
 
-func people(g: Node3D, c: Vector3, n: int, r: float) -> void:
+func people(g: Node3D, c: Vector3, n: int, r: float, sc := 3.2) -> void:
 	var kinds := ["female-a", "female-b", "female-c", "female-d", "female-e", "male-a", "male-b", "male-c", "male-d", "male-e"]
 	for i in n:
 		var ang := randf() * TAU
 		var p := c + Vector3(cos(ang), 0, sin(ang)) * randf_range(0.0, r)
-		put(g, "people/character-" + kinds[randi() % kinds.size()], p, 3.2, randf() * TAU)
+		put(g, "people/character-" + kinds[randi() % kinds.size()], p, sc, randf() * TAU)
 
 func bunting(g: Node3D, p0: Vector3, p1: Vector3, h: float) -> void:
 	var cols := ["#ff3b3b", "#ffcc00", "#2fb34a", "#2f7fff", "#ff7a00", "#d63bd6"]
@@ -693,7 +713,12 @@ func street_view(sv: SubViewport) -> Camera3D:
 	t.rotation.y = deg_to_rad(float(a.get("tr", "150")))
 	t.scale = Vector3.ONE * float(a.get("ts", "1.0"))
 	bz.add_child(t)
-	temple(t)
+	if a.get("place", "temple") == "temple":
+		temple(t)
+	else:
+		hall(t)
+	if a.get("fest", "0") == "1":
+		festive(t)
 	# the far side of the street was never built in Area 2 (behind its camera): a row of city buildings
 	var far := [["building-c", -60, 31], ["building-a", -46, 31], ["building-d", -74, 31], ["building-g", -88, 31],
 		["building-l", -60, -3], ["building-n", -74, -3], ["building-i", -88, -3], ["building-m", -104, 12]]
@@ -703,9 +728,35 @@ func street_view(sv: SubViewport) -> Camera3D:
 			o.rotation.y = PI / 2
 	for x in [-52, -66, -80, -94]:
 		recolor(put(bz, "nature/tree_palmTall", Vector3(x, 0.18, 26), 9.0, randf() * TAU), _leaf)
-	var v := ghilli_van(bz, V3(a.get("van", "6,0.3,10.5")), float(a.get("vr", "-1.45")), float(a.get("vs", "1.7")))
+	if not a.has("novan"):
+		grey_van(bz, V3(a.get("van", "6,0.3,10.5")), float(a.get("vr", "-1.45")), float(a.get("vs", "1.7")))
 	var cam := st.cam
 	cam.fov = float(a.get("fov", 50))
 	cam.position = V3(a.get("p", "16,4.2,11.5"))
 	cam.look_at(V3(a.get("l", "-30,2.0,12")), Vector3.UP)
 	return cam
+
+
+# next stop: a wedding hall (Kenney building with awning, plaster wall in front)
+func hall(g: Node3D) -> void:
+	var b := city(g, "building-c", Vector3(0, 0, -5), 8.0, 0.0)
+	put(g, "res://art/city/detail-awning-wide.glb", Vector3(0, 0, -0.5), 8.0, 0.0)
+	for side in [-1, 1]:
+		tbox(g, Vector3(5.0, 2.2, 0.6), Vector3(side * 6.5, 1.1, 2), "#e8d7b0", true)
+	tbox(g, Vector3(4.2, 0.9, 0.3), Vector3(0, 6.6, 1.2), "#7a1f2b")
+
+# decorations after the Build: bulb strings, flag bunting, banana trees at the gate, a crowd
+func festive(g: Node3D) -> void:
+	lamps(g, Vector3(-8.5, 0, 0.6), Vector3(8.5, 0, 0.6), 3.9)
+	lamps(g, Vector3(-2.6, 0, 2.3), Vector3(2.6, 0, 2.3), 4.6)
+	for i in 6:
+		var y := 5.0 + i * 1.45
+		var w := 5.0 * (1.0 - i * 0.1) / 2 + 0.3
+		lamps(g, Vector3(-w, 0, 2.2 - i * 0.2), Vector3(w, 0, 2.2 - i * 0.2), y + 0.2)
+	bunting(g, Vector3(-8, 0, 3.5), Vector3(0, 0, 6.5), 4.6)
+	bunting(g, Vector3(8, 0, 3.5), Vector3(0, 0, 6.5), 4.6)
+	for x in [-1.6, 1.6]:
+		var t := put(g, "nature/tree_palm", Vector3(x, 0, 3.0), 2.6, randf() * TAU)
+		recolor(t, _leaf)
+	seed(3)
+	people(g, Vector3(0, 0, 5.5), 10, 3.0, 1.6)
