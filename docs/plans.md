@@ -1,4 +1,9 @@
-# Agreed plans — NOT built yet (wait for his "go")
+# Agreed plans
+
+BUILT on 23 Nov (level-80 APK, see current-state.md): win screen, tall-screen gaps, Area 3 (in the game, levels
+61-80, end leads to Area 4 Delivery Hub), out-of-moves help, ways to earn coins, Coin Blast every 5th, hard levels,
+1000 Wala look, board shapes, gold/hint fix, obstacle look (diya + gift), pacing, story fixes.
+Sections below are kept for the details. Area 4 = GHILLI Delivery Hub (docs/area4.md), Madurai = Area 5.
 
 ## Win screen (agreed 20 Nov) — add only items 1, 2, 3, 4, 6. The man stays exactly as he is.
 1. Top text: small red ribbon at the very top "LEVEL 21 COMPLETE" (story serif, art/fonts/CormorantItalic.ttf),
@@ -52,7 +57,7 @@ strips above/below the 390x844 stage).
   build. Order send-outs = 2D animations over the picture (parcel sticker flying out, slip pinned on the board).
 - Expected size: ~5-10 MB per new area.
 
-## Area 4 Madurai — second shop. Not designed yet.
+## Area 4 = GHILLI Delivery Hub (docs/area4.md, agreed 23 Nov). Madurai moved to Area 5. Not built yet.
 
 ## Saved to-do
 - Approved video "area2-start-and-12-builds.mp4" should be copied into previews/ when convenient.

@@ -5,7 +5,8 @@
   crackers will light up every home." Intro plays once on first open (phones: video/story.ogv, ~30 s, Skip top-right).
 - Area 1 Sivakasi Street (30 levels, 10 builds, ends with the Crackers Factory; dusk, fireworks, notebook tick,
   "NEXT: Bunder Street, Chennai"). Area 2 GHILLI CRACKERS shop on Bunder Street, Chennai (levels 31-60, 12 builds).
-  Area 3 Busy Days at GHILLI, Area 4 Madurai (see plans.md).
+  Area 3 Busy Days at GHILLI (order room, levels 61-80, 9 builds), Area 4 GHILLI Delivery Hub (docs/area4.md),
+  Area 5 Madurai.
 - Builds cost diyas; levels give diyas (1 normal, 2 hard, 3 super hard). Every build can be finished once the
   area's last level is won.
 

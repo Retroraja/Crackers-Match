@@ -10,7 +10,7 @@ Indian Diwali-crackers match-3 for Android by RetroRaja Games (Rajarajan). Game 
 5. `game-design.md` — story, areas, difficulty, obstacles, look of windows and the man.
 
 ## Repo
-- Branch: `claude/build-28` (this is the live one). Game: `godot/`. Old web/Android version: `app/` (not used now).
+- Branch: `claude/project-thread-nyydf2` (PR #1, the live one since 23 Nov; it holds all of claude/build-28). Game: `godot/`. Old web/Android version: `app/` (not used now).
 - APK: push to the branch -> GitHub Actions "Godot APK" (`.github/workflows/godot.yml`) -> release `godot-dev`,
   file `CrackersMatchGodot.apk`. Commit message with `[preview]` = no build.
   Changes outside `godot/` start the OLD "Build APK" workflow — use `[preview]` for doc-only commits.
