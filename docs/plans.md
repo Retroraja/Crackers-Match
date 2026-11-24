@@ -45,6 +45,11 @@
     saying it works.
     Detail (agreed 16:29): the time/battery strip shows at the top ONLY while the ad is open (the game hides it
     during play); the ad's X sits just below that strip; everything else behind the ad is black.
+15. Portals (agreed 24 Nov 16:32): split board, a glowing hole at the bottom of a left-board column sends whatever
+    falls in to the top of a right-board column. Level 28 = first portal level, plain (learn it). Then only 2 levels
+    mix portals with the bring-down goal: ~46 portal + potli bag, ~71 portal + pambaram (the piece must go down the
+    left board, through the portal, then down the right board to count).
+16. How often bag / pambaram: bag 6, 16, 26, then 36, 46, 56, 66, 76; pambaram 41, 51, 61, 71 (5 apart from the bag).
     TEACHING (level 6): intro card "New: Potli Bag" + bag picture + "Clear the crackers under the bags. Bring them to
     the bottom!"; hand demo once (one swap right under a bag, the bag drops a cell; any touch stops it); first bag out
     toast "Bag collected! 2 more."
