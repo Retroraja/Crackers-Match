@@ -825,9 +825,9 @@ func hit_ob(e: Dictionary, p: Array, blast_: bool) -> void:
 		if t == "coin":
 			sfx.coin(randi() % 8)
 		elif dead:
-			sfx.play("thud", 1.0, 1.0 - OT[t].hp * 0.06)
+			sfx.ob("thud", 1.7, 1.0 - OT[t].hp * 0.06)
 		else:
-			sfx.play("paper", 0.7, 1.1)
+			sfx.ob("paper", 1.4, 1.1)
 	if t == "coin":
 		deb.bits(x, y, 9, ["#FFD23F", "#FFF3B0", "#F5A623"], 5, 1)
 		spark(x, y, 10, ["#FFE27A", "#FFFFFF"], 200)
@@ -869,7 +869,7 @@ func _hit_brk(e: Dictionary, p: Array, blast_: bool) -> void:
 	e.safe = clock + 0.3
 	if sfx:
 		var nm: String = BRK_SND[t][1 if dead else 0]
-		sfx.play(nm, 1.8 if t == "bangle" else 1.0, randf_range(0.96, 1.05))
+		sfx.ob(nm, 1.8, randf_range(0.96, 1.05))   # 24 Nov: all obstacles loud (bangle = plate smash)
 	var src = blast_src
 	if blast_ and src != null:
 		brk.boom(x, y, U * 0.98)
@@ -901,7 +901,7 @@ func hit_fl(r: int, c: int) -> void:
 		spark(x, y, 16, ["#FFF3B0", "#FFD24A", "#FFFFFF"], 240)
 		ring(x, y, "#FFE58A", S * 0.8, 4)
 	if sfx:
-		sfx.play("paper", 0.6)
+		sfx.ob("paper", 1.3)
 	if f.hp <= 0:
 		fl.erase(key)
 		if f.t == "gold":

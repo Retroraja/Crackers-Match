@@ -161,6 +161,22 @@ func match_sound(cascade: int, big: bool) -> void:
 		for i in 3:
 			play("pop", 0.35, 1.6 + i * 0.25, 0.08 + i * 0.055, 0.2)
 
+# 24 Nov: an obstacle sound. Played loud, and the cracker blasts that are sounding right then dip to 45% for
+# a moment, so the crackers never hide the obstacles.
+func ob(n: String, v: float = 1.0, pitch: float = 1.0) -> void:
+	if not fx_on:
+		return
+	for a in pool:
+		if a.playing and a.stream == streams.get("blastnew") and not a.has_meta("dip"):
+			a.set_meta("dip", 1)
+			var v0 := a.volume_db
+			var tw := create_tween()
+			tw.tween_property(a, "volume_db", v0 - 7.0, 0.04)
+			tw.tween_interval(0.25)
+			tw.tween_property(a, "volume_db", v0, 0.2)
+			tw.tween_callback(func(): a.remove_meta("dip"))
+	play(n, v, pitch)
+
 # sound.js extras
 func chime(i: int) -> void:
 	play("chime%d" % (i % 3))
