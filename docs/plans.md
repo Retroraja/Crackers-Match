@@ -50,6 +50,8 @@
     mix portals with the bring-down goal: ~46 portal + potli bag, ~71 portal + pambaram (the piece must go down the
     left board, through the portal, then down the right board to count).
 16. How often bag / pambaram: bag 6, 16, 26, then 36, 46, 56, 66, 76; pambaram 41, 51, 61, 71 (5 apart from the bag).
+17. Rangoli goal: DROPPED (24 Nov 16:44). Every version tried (tile patterns, paint spreading on the floor, hidden 3x3
+    revealed) made the board look worse. Do not bring it back unless he asks.
     TEACHING (level 6): intro card "New: Potli Bag" + bag picture + "Clear the crackers under the bags. Bring them to
     the bottom!"; hand demo once (one swap right under a bag, the bag drops a cell; any touch stops it); first bag out
     toast "Bag collected! 2 more."
