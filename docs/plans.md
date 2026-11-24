@@ -43,6 +43,8 @@
     starts lower. Fix: (a) the ad fills the whole screen, (b) the phone's status bar stays visible so the ad's X is
     never hidden, (c) plain black behind the ad so the game never shows through. Check the X on his phone before
     saying it works.
+    Detail (agreed 16:29): the time/battery strip shows at the top ONLY while the ad is open (the game hides it
+    during play); the ad's X sits just below that strip; everything else behind the ad is black.
     TEACHING (level 6): intro card "New: Potli Bag" + bag picture + "Clear the crackers under the bags. Bring them to
     the bottom!"; hand demo once (one swap right under a bag, the bag drops a cell; any touch stops it); first bag out
     toast "Bag collected! 2 more."
