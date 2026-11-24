@@ -51,6 +51,10 @@
 16. How often bag / pambaram: bag 6, 16, 26, then 36, 46, 56, 66, 76; pambaram 41, 51, 61, 71 (5 apart from the bag).
 17. Rangoli goal: DROPPED (24 Nov 16:44). Every version tried (tile patterns, paint spreading on the floor, hidden 3x3
     revealed) made the board look worse. Do not bring it back unless he asks.
+19. BUG (his video 24 Nov 16:48): the back arrow at the top left of a level (bQuit) and "Exit level" in the gear menu
+    (_gs "exit") call quit_level() at once: no question, the level's progress is lost. Fix: both, and the phone's
+    back button during a level, open a small card "Leave level?" / "Your moves and progress in this level will be
+    lost." with a big green Keep playing and a red Leave; the level pauses behind it.
 18. Still waiting from him: more fixes while he plays all 80 levels; Area 4 (GHILLI Delivery Hub, docs/area4.md) to be
     built for the same next APK.
 

@@ -38,6 +38,7 @@ Next build list (all agreed, not built) — the full detail is in docs/plans.md 
 14. Ad screen: full screen, status strip visible only during the ad, X just below it, black behind.
 15. Portals: first at 28 (plain); 46 portal + bag, 71 portal + pambaram.
 16. Rangoli: dropped.
+17. BUG: level back arrow / Exit level quit at once. Add a "Leave level?" card (Keep playing / Leave).
 Next APK = this list + Area 4 (GHILLI Delivery Hub, docs/area4.md), built only on my "build".
 I'm playing all 80 levels and will add more fixes.
 ---
