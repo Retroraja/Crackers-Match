@@ -39,6 +39,10 @@
     SIZE ON THE BOARD (agreed 24 Nov 16:15, previews/bag-pambaram-on-board.png): both the same size as the crackers,
     standing on the tile floor like the green bomb (pambaram nail tip touches the bottom of the tile); chunky
     pambaram (toy3d.gd scale 1.35 wide, short nail); bag keeps its soft shadow, only narrower.
+14. Ad screen (his screenshot 24 Nov 16:23): our game's top bar peeks through above the ad, then a black band; the ad
+    starts lower. Fix: (a) the ad fills the whole screen, (b) the phone's status bar stays visible so the ad's X is
+    never hidden, (c) plain black behind the ad so the game never shows through. Check the X on his phone before
+    saying it works.
     TEACHING (level 6): intro card "New: Potli Bag" + bag picture + "Clear the crackers under the bags. Bring them to
     the bottom!"; hand demo once (one swap right under a bag, the bag drops a cell; any touch stops it); first bag out
     toast "Bag collected! 2 more."
