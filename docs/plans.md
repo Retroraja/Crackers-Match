@@ -1,3 +1,21 @@
+# NEXT BUILD LIST (from his play of levels 1-16, 24 Nov). Agreed, NOT built. He keeps adding while he plays
+# all 80 levels; the next build comes together with Area 4. Build ONLY when he says "build".
+1. Obstacle sounds (DONE in code, commit 2043eaf, not in an APK): bangle = china plate smash, louder
+   (tools/plate_sound.py, tools/ob_loud.py); every obstacle sound cleaned and louder; crackers dip under them (sfx.ob).
+2. Title screen: no bakery. Crackers scene: night over Grandpa's street, fireworks over the Crackers Factory,
+   cracker boxes in front, big "Crackers Match" logo.
+3. Daily tasks too high: 20 / 30 / 50 + 100 for all three (200 a day, was 600).
+4. Daily + Piggy icons: same top-left spot, a little away from the screen edge, moved ~30 px lower, about 20%
+   bigger (Daily 54 -> 64, Piggy 44 -> 64, same size), each on a round glowing badge, pulse when something to collect.
+5. Piggy bank clear: "120/250" under it; tap opens a card "Win levels to fill it. When it's full, watch a short
+   video and get 250 coins."; AD badge on it when full.
+6. Win screen less crowded: drop the "Next build" line and the piggy icon; everything in one card with a gold border;
+   keep ribbon, stars, man, reward line, buttons.
+7. Level card: after Next it opens over the dimmed home street (like from home), not the dark level screen; the dim
+   covers the full screen (no bright strips top and bottom on his phone).
+8. Coin Blast win: like the win screen: red "COIN BLAST!" ribbon, gold rays, coin pile counting up, coins raining,
+   Next + AD Reward x2 (doubles the coins).
+
 # Agreed plans
 
 BUILT on 23 Nov (level-80 APK, see current-state.md): win screen, tall-screen gaps, Area 3 (in the game, levels
