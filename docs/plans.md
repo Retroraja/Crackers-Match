@@ -55,6 +55,23 @@
     (_gs "exit") call quit_level() at once: no question, the level's progress is lost. Fix: both, and the phone's
     back button during a level, open a small card "Leave level?" / "Your moves and progress in this level will be
     lost." with a big green Keep playing and a red Leave; the level pauses behind it.
+20. Mayil Matchbox (agreed 24 Nov 18:37), replaces the "Golden Matchbox" card on the level card:
+    - LOOK: peacock-blue and purple box, silver and gold edges, small peacock-feather mark (one ready-made picture,
+      not the colour bundle, not all yellow). Name "Mayil Matchbox". Card text "Legendary cracker · Level 101".
+    - UNLOCK: Level 101 (was 100).
+    - WHERE: a booster on the level card (picked before play, placed on the board at the start). Never made from a match.
+    - POWER (a goal cracker, not a tile cleaner): swap it with a cracker -> peacock lightning (1) hits EVERY goal
+      obstacle on the board once (2-hit crate loses a layer, newspaper / gift box breaks), (2) clears every cracker
+      of the swapped colour. Normal Colour Matchbox stays as it is (1 colour, obstacles only next to cleared crackers).
+    - HOW TO GET IT: still to pick from: 1 free at level 101 with an intro card; small chance in the every-10-levels
+      chest; 7-day daily-task streak reward; shop 2,500 coins (no real money).
+    - Next step: a picture of the new box for him to approve.
+21. Area 4 builds preview (24 Nov, previews/area4-mock/area4-all-9-builds.mp4, not agreed yet): builds 1-4 pop in
+    on the still home view (no zoom, gold glow + sparkle), 5-9 deliveries in the temple-video style (temple, Kalyana
+    Mahal wedding hall, school, flats, Marina party + lighthouse). Order board now stands on the footpath in front of
+    the shop (was hidden). Open: the packing table (build 3) is partly behind the board; move it left by the van?
+    Tools: godot/tools/pic/a4_mock.gd (--built=N, --place=wedding|school|apts|marina, seed fixed so palms don't jump),
+    godot/tools/pic/a4_builds_video.py.
 18. Still waiting from him: more fixes while he plays all 80 levels; Area 4 (GHILLI Delivery Hub, docs/area4.md) to be
     built for the same next APK.
 

@@ -13,6 +13,7 @@ var a := {}
 var root: Node3D
 
 func _ready() -> void:
+	seed(7)  # same palms / props in every picture (else they jump between frames)
 	for s in OS.get_cmdline_user_args():
 		if s.begins_with("--") and "=" in s:
 			a[s.substr(2, s.find("=") - 2)] = s.substr(s.find("=") + 1)
@@ -722,8 +723,17 @@ func street_view(sv: SubViewport) -> Camera3D:
 	t.rotation.y = deg_to_rad(float(a.get("tr", "150")))
 	t.scale = Vector3.ONE * float(a.get("ts", "1.0"))
 	bz.add_child(t)
-	if a.get("place", "temple") == "temple":
+	var pl: String = a.get("place", "temple")
+	if pl == "temple":
 		temple(t)
+	elif pl == "school":
+		school(t)
+	elif pl == "apts":
+		apts(t)
+	elif pl == "marina":
+		marina(t)
+	elif pl == "wedding":
+		wedding(t)
 	else:
 		hall(t)
 	if int(a.get("fest", "0")) > 0:
@@ -839,10 +849,22 @@ func hub_view(sv: SubViewport) -> Camera3D:
 	st.process_mode = Node.PROCESS_MODE_DISABLED
 	var bz: Node3D = st.bazaar
 	const K := "res://art/a3/kit/%s.glb"
+	# --built=N: home view after N builds (1 van fixed, 2 board, 3 table, 4 bikes, 5-9 deliveries)
+	var nb := int(a.get("built", "9"))
+	if a.has("built"):
+		a["stamps"] = str(clampi(nb - 4, 0, 5))
 	# 2 order board on the wall left of the shutter: cork board with order slips, DELIVERED stamps
 	var ob := Node3D.new()
 	ob.position = V3(a.get("board", "-3.75,2.1,0.35"))
 	bz.add_child(ob)
+	ob.visible = nb >= 2
+	ob.scale = Vector3.ONE * float(a.get("bscale", "1.0"))
+	ob.rotation.y = float(a.get("brot", "0"))
+	if a.has("bstand"):
+		# standing order board on the footpath: two wooden legs + a small red ORDERS header
+		for x in [-0.62, 0.62]:
+			box(ob, Vector3(0.09, 1.9, 0.09), Vector3(x, -0.75, -0.06), "#6b3e22")
+		box(ob, Vector3(0.9, 0.24, 0.05), Vector3(0, 0.72, 0.01), "#d8262e")
 	tex_box(ob, Vector3(1.5, 1.1, 0.06), Vector3.ZERO, "res://art/a3/cork.jpg")
 	box(ob, Vector3(1.62, 1.22, 0.04), Vector3(0, 0, -0.02), "#6b3e22")
 	for i in 6:
@@ -856,6 +878,7 @@ func hub_view(sv: SubViewport) -> Camera3D:
 	var pt := Node3D.new()
 	pt.position = V3(a.get("table", "-2.2,0.19,1.55"))
 	bz.add_child(pt)
+	pt.visible = nb >= 3
 	put(pt, K % "table", Vector3.ZERO, 2.4, 0.0)
 	for b in [[-0.4, 0.0, 0.3], [0.35, 0.1, -0.4], [0.0, 0.0, 1.2]]:
 		put(pt, K % "cardboardBoxClosed", Vector3(b[0], 1.82, b[1]), 2.2, b[2])
@@ -864,12 +887,17 @@ func hub_view(sv: SubViewport) -> Camera3D:
 		put(pt, K % "cardboardBoxClosed", Vector3(1.35, i * 0.62, 0.25), 2.6, i * 0.3)
 	# 1 the grey van at the kerb, 4 two delivery bikes behind it
 	if not a.has("novan"):
-		grey_van(bz, V3(a.get("van", "-2.6,0.3,5.2")), float(a.get("vr", "1.5708")), float(a.get("vs", "1.6")))
-	put(bz, "gen/bike", V3(a.get("bike1", "2.6,0.0,4.7")), 1.0, 0.35)
-	put(bz, "gen/bike", V3(a.get("bike2", "3.6,0.0,4.8")), 1.0, 0.4)
-	# customer queue along the footpath, facing the counter
+		if nb >= 1:
+			grey_van(bz, V3(a.get("van", "-2.6,0.3,5.2")), float(a.get("vr", "1.5708")), float(a.get("vs", "1.6")))
+		else:
+			dusty_van(bz, V3(a.get("van", "-2.6,0.3,5.2")), float(a.get("vr", "1.5708")), float(a.get("vs", "1.6")))
+	if nb >= 4:
+		put(bz, "gen/bike", V3(a.get("bike1", "2.6,0.0,4.7")), 1.0, 0.35)
+		put(bz, "gen/bike", V3(a.get("bike2", "3.6,0.0,4.8")), 1.0, 0.4)
+	# customer queue along the footpath, facing the counter (grows with each delivery)
 	var kinds := ["female-a", "male-c", "female-c", "male-e", "female-b", "male-a"]
-	for i in kinds.size():
+	var nq := kinds.size() if not a.has("built") else clampi(1 + nb - 4, 1, 6)
+	for i in nq:
 		var o := put(bz, "people/character-" + kinds[i], V3(a.get("q0", "3.3,0.19,2.0")) + Vector3(i * 0.7, 0, (i % 2) * 0.1), 2.5, -PI / 2 + 0.25)
 		var ap: AnimationPlayer = o.find_child("AnimationPlayer", true, false)
 		if ap and ap.has_animation("idle"):
@@ -914,3 +942,144 @@ func sunset(st, bz: Node3D, shop: bool) -> void:
 	LS = 0.35
 	lamps(bz, Vector3(-3.9, 0, 1.5), Vector3(3.9, 0, 1.5), 3.05)
 	lamps(bz, Vector3(-3.9, 0, 0.4), Vector3(3.9, 0, 0.4), 4.45)
+
+
+# ---- 24 Nov: the other delivery places, same spot and camera as the temple (front faces local +z)
+func sign3d(g: Node3D, txt: String, pos: Vector3, size := 96, col := "#ffffff") -> void:
+	var l := Label3D.new()
+	l.text = txt
+	l.font = load("res://fonts/Sora-800.ttf")
+	l.font_size = size
+	l.pixel_size = 0.006
+	l.modulate = Color(col)
+	l.outline_size = 0
+	l.shaded = false
+	l.position = pos
+	g.add_child(l)
+
+func cwall(g: Node3D, c1: String, c2: String, gate := 3.4) -> void:
+	# compound wall left and right of a gate, painted stripes, two gate pillars
+	var half := gate / 2.0
+	for side in [-1, 1]:
+		var w := 8.5 - half
+		var cx: float = side * (half + w / 2.0)
+		tbox(g, Vector3(w, 1.9, 0.5), Vector3(cx, 0.95, 0), "#e8dcc4", true)
+		for i in int(w / 1.0):
+			tbox(g, Vector3(0.46, 1.3, 0.06), Vector3(cx - w / 2.0 + 0.5 + i * 1.0, 1.0, 0.28), c1 if i % 2 == 0 else c2)
+		tbox(g, Vector3(w + 0.1, 0.25, 0.7), Vector3(cx, 2.0, 0), "#f3ead6")
+		tbox(g, Vector3(0.8, 3.0, 0.8), Vector3(side * (half + 0.2), 1.5, 0), "#efe3c8", true)
+		tbox(g, Vector3(1.0, 0.3, 1.0), Vector3(side * (half + 0.2), 3.1, 0), c1)
+
+func arch(g: Node3D, txt: String, board: String, half := 1.9, h := 4.2) -> void:
+	tbox(g, Vector3(half * 2 + 1.4, 1.0, 0.35), Vector3(0, h, 0.1), board)
+	tbox(g, Vector3(half * 2 + 1.6, 0.14, 0.45), Vector3(0, h + 0.56, 0.1), "#f3ead6")
+	tbox(g, Vector3(0.3, h, 0.3), Vector3(-half - 0.5, h / 2.0, 0.1), "#efe3c8")
+	tbox(g, Vector3(0.3, h, 0.3), Vector3(half + 0.5, h / 2.0, 0.1), "#efe3c8")
+	sign3d(g, txt, Vector3(0, h, 0.3), 64)
+
+func school(g: Node3D) -> void:
+	# two-floor yellow school block with green windows, flag pole, wall + gate arch
+	tbox(g, Vector3(15, 7.4, 6), Vector3(0, 3.7, -6.5), "#f2c94c")
+	tbox(g, Vector3(15.6, 0.4, 6.6), Vector3(0, 7.6, -6.5), "#d9a93a")
+	for fl in 2:
+		for i in 6:
+			var x := -6.0 + i * 2.4
+			tbox(g, Vector3(1.4, 1.5, 0.1), Vector3(x, 1.9 + fl * 3.6, -3.45), "#2f8f5b")
+			tbox(g, Vector3(1.6, 0.14, 0.2), Vector3(x, 1.08 + fl * 3.6, -3.42), "#ffffff")
+	tbox(g, Vector3(15.2, 0.25, 6.2), Vector3(0, 3.7, -6.5), "#e0b13e")
+	tbox(g, Vector3(2.2, 2.6, 0.12), Vector3(0, 1.3, -3.42), "#7a4a24")
+	tbox(g, Vector3(7.0, 1.0, 0.2), Vector3(0, 6.6, -3.38), "#ffffff")
+	sign3d(g, "GOVT. SCHOOL", Vector3(0, 6.6, -3.25), 96, "#1d4f9c")
+	# flag pole
+	tbox(g, Vector3(0.14, 7.0, 0.14), Vector3(5.2, 3.5, -1.6), "#e6e6e6")
+	var fl := box(g, Vector3(1.5, 1.0, 0.04), Vector3(5.97, 6.4, -1.6), "#ff8a1e")
+	fl.material_override = mat("#ff8a1e", 0.2)
+	box(g, Vector3(1.5, 0.33, 0.05), Vector3(5.97, 6.4, -1.6), "#ffffff")
+	box(g, Vector3(1.5, 0.33, 0.05), Vector3(5.97, 6.07, -1.6), "#2a9d3a")
+	cwall(g, "#2f6fd6", "#f2c94c")
+	arch(g, "SCHOOL", "#2f6fd6")
+	for x in [-6.0, 6.5]:
+		recolor(put(g, "nature/tree_palm", Vector3(x, 0, -2.0), 3.0, x), _leaf)
+
+func apts(g: Node3D) -> void:
+	# two apartment blocks behind a wall, gate arch with the name
+	city(g, "building-l", Vector3(-5.0, 0, -9.0), 7.0, 0.0)
+	city(g, "building-l", Vector3(5.0, 0, -9.0), 7.0, 0.0)
+	cwall(g, "#7a4fc9", "#f3ead6")
+	arch(g, "FLATS", "#7a4fc9", 1.9, 4.0)
+	for x in [-7.0, -3.5, 3.5, 7.0]:
+		put(g, "nature/pot_large", Vector3(x, 0, 0.9), 2.0)
+
+func marina(g: Node3D) -> void:
+	# beach party: sand, blue sea behind, a striped party tent with a stage, palms
+	box(g, Vector3(40, 0.08, 16), Vector3(0, 0.04, -5), "#e9d29a")
+	var sea := box(g, Vector3(120, 0.04, 80), Vector3(0, 0.02, -53), "#2a7fb5")
+	sea.material_override = mat("#3a93c8", 0.15)
+	for i in 3:
+		box(g, Vector3(60, 0.05, 0.3), Vector3(0, 0.05, -13.5 - i * 1.6), "#e8f4fb")
+	# tent: 4 poles + striped roof
+	for p in [Vector3(-4, 0, 0.5), Vector3(4, 0, 0.5), Vector3(-4, 0, -4.5), Vector3(4, 0, -4.5)]:
+		tbox(g, Vector3(0.22, 3.6, 0.22), p + Vector3(0, 1.8, 0), "#f3ead6")
+	for i in 8:
+		box(g, Vector3(1.0, 0.18, 5.6), Vector3(-3.5 + i * 1.0, 3.7, -2.0), "#d8262e" if i % 2 == 0 else "#ffffff")
+	box(g, Vector3(8.4, 0.5, 0.12), Vector3(0, 3.45, 0.86), "#d8262e")
+	# stage + banner
+	tbox(g, Vector3(6.4, 0.6, 3.2), Vector3(0, 0.3, -3.0), "#8a5a34")
+	# Marina lighthouse behind on the right: tall tower, red and white bands, lamp room
+	for i in 8:
+		var r := 1.5 - i * 0.07
+		var c := MeshInstance3D.new()
+		var cm := CylinderMesh.new()
+		cm.top_radius = r - 0.07
+		cm.bottom_radius = r
+		cm.height = 2.0
+		c.mesh = cm
+		c.material_override = pmat("#d8262e" if i % 2 == 0 else "#f6efe2")
+		c.position = Vector3(8.5, 1.0 + i * 2.0, -10.0)
+		g.add_child(c)
+	tbox(g, Vector3(2.4, 0.3, 2.4), Vector3(8.5, 16.15, -10.0), "#3a3a3a")
+	var lr := box(g, Vector3(1.3, 1.3, 1.3), Vector3(8.5, 16.95, -10.0), "#ffe08a")
+	lr.material_override = mat("#ffe08a", 2.5)
+	tbox(g, Vector3(1.7, 0.5, 1.7), Vector3(8.5, 17.85, -10.0), "#d8262e")
+	tbox(g, Vector3(6.6, 1.0, 0.2), Vector3(0, 2.6, -4.6), "#1f9e9a")
+	sign3d(g, "MARINA PARTY", Vector3(0, 2.6, -4.45), 80)
+	for x in [-9.0, -6.5, 7.0, 9.5]:
+		recolor(put(g, "nature/tree_palmBend", Vector3(x, 0, -3.0 + absf(x) * 0.2), 4.0, x * 0.7), _leaf)
+	for p in [Vector3(-7.5, 0, 1.0), Vector3(7.8, 0, 0.5)]:
+		put(g, "res://art/city/detail-parasol-a.glb", p, 6.0, p.x)
+	LR = 0.12
+	LS = 0.6
+	lamps(g, Vector3(-4, 0, 0.6), Vector3(4, 0, 0.6), 3.4)
+	bunting(g, Vector3(-9, 0, 0.8), Vector3(-4, 0, 0.6), 3.6)
+	bunting(g, Vector3(4, 0, 0.6), Vector3(9, 0, 0.8), 3.6)
+
+
+func wedding(g: Node3D) -> void:
+	# Kalyana Mahal: big cream hall, maroon name band, pillared porch, banana trees + marigold garlands at the gate
+	tbox(g, Vector3(16, 8.0, 7), Vector3(0, 4.0, -7.5), "#f3e6c8", true)
+	tbox(g, Vector3(16.6, 0.5, 7.6), Vector3(0, 8.25, -7.5), "#c9a77a")
+	tbox(g, Vector3(9.0, 1.4, 0.3), Vector3(0, 6.8, -3.85), "#7a1f2b")
+	sign3d(g, "KALYANA MAHAL", Vector3(0, 6.8, -3.65), 120, "#ffd86a")
+	for i in 5:
+		var x := -6.4 + i * 3.2
+		if absf(x) > 1.0:
+			tbox(g, Vector3(1.4, 1.6, 0.1), Vector3(x, 6.6, -3.95), "#8fb7c9")
+	# porch
+	tbox(g, Vector3(8.0, 0.4, 3.0), Vector3(0, 5.0, -2.6), "#e6d2a8")
+	for x in [-3.6, -1.2, 1.2, 3.6]:
+		tbox(g, Vector3(0.45, 4.8, 0.45), Vector3(x, 2.4, -1.4), "#fff3d6")
+	tbox(g, Vector3(2.6, 3.2, 0.12), Vector3(0, 1.6, -3.95), "#6b2a1a")
+	cwall(g, "#7a1f2b", "#e9c46a")
+	arch(g, "WEDDING", "#7a1f2b")
+	# banana trees at the gate posts
+	for x in [-2.4, 2.4]:
+		recolor(put(g, "nature/tree_palm", Vector3(x, 0, 0.7), 2.4, x), _leaf)
+	# marigold garlands (orange-yellow) on the porch and the arch
+	var LR0 := LR
+	LR = 0.13
+	LS = 0.35
+	for y in [4.7, 4.3]:
+		lamps(g, Vector3(-4.0, 0, -1.2), Vector3(4.0, 0, -1.2), y)
+	lamps(g, Vector3(-2.4, 0, 0.35), Vector3(2.4, 0, 0.35), 3.6)
+	LR = LR0
+	LS = 1.2
