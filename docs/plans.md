@@ -15,6 +15,33 @@
    covers the full screen (no bright strips top and bottom on his phone).
 8. Coin Blast win: like the win screen: red "COIN BLAST!" ribbon, gold rays, coin pile counting up, coins raining,
    Next + AD Reward x2 (doubles the coins).
+9. Free bar crackers move off the hard levels: unlock at 12, 22, 32, 42, 52, 62, 72 (+3 free each) instead of
+   10, 20, 30... (hammer stays 5). Hard levels keep their moves and the 2-hit crates as they are now (agreed 24 Nov).
+10. Board shapes in Area 1 too (hook before level 30): 13 two islands, 17 pillars, 22 ring, 27 skyline. Not on
+    Hard (15/20/25/30) or intro levels (11/18/23). Same obstacle types and moves, targets a little smaller, kept easy.
+11. Islands = U shape (agreed 24 Nov): the 2-column empty strip runs down the middle, but the LAST 2 ROWS are one
+    full joined row, so matches cross at the bottom. Level 32 changes to this, and Area 1 level 13 uses it.
+12. New goal "Blast X crackers" (agreed 24 Nov): e.g. "Blast 25 red crackers"; goal panel shows that cracker with a
+    count; every cracker of that colour cleared counts, specials included. For early levels and breathers.
+13. New goal "Bring down the potli bags" (agreed 24 Nov): a 3D-look red velvet potli bag with gold string and a soft
+    gold glow, fits inside its cell (sketch previews/potli3d.png). Not matchable or breakable, specials pass it; falls
+    when cells below clear; can be swapped. Bag drops out with a gold flash + coin jingle, goal counts down; more bags
+    drop in from the top until done. First at level 6, then every 10 levels (16, 26, 36...). Later: pambaram (spinning
+    top) from Area 2, ~level 41, same rule; on reaching the bottom it spins and knocks out the 2 crackers beside it.
+    EXIT (changed 24 Nov 16:01, his words: no coin animation, it would cost FPS): when the bag reaches the bottom
+    row it wiggles a little with a sound, then the whole bag flies up to the bag goal in the target panel. Nothing
+    is cleared, nothing drawn below the board.
+    GOAL PANEL: red bag icon with a count (e.g. 3); the arriving bag lands on it, it pulses, 3 -> 2 -> 1 -> tick.
+    PAMBARAM (same goal type, from Area 2 ~41): real 3D render (godot/tools/pic/toy3d.gd, previews/pambaram-3d.png):
+    round top painted red / yellow / red (his flag colours), wooden cap, bare wooden cone, iron nail tip, like his
+    reference photo. Exit: at the bottom row it spins fast for a short flash, then the whole pambaram flies to the
+    goal. It does NOT clear anything. The bag art should also be redone as a real 3D render the same way.
+    SIZE ON THE BOARD (agreed 24 Nov 16:15, previews/bag-pambaram-on-board.png): both the same size as the crackers,
+    standing on the tile floor like the green bomb (pambaram nail tip touches the bottom of the tile); chunky
+    pambaram (toy3d.gd scale 1.35 wide, short nail); bag keeps its soft shadow, only narrower.
+    TEACHING (level 6): intro card "New: Potli Bag" + bag picture + "Clear the crackers under the bags. Bring them to
+    the bottom!"; hand demo once (one swap right under a bag, the bag drops a cell; any touch stops it); first bag out
+    toast "Bag collected! 2 more."
 
 # Agreed plans
 
