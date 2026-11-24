@@ -23,22 +23,21 @@
     full joined row, so matches cross at the bottom. Level 32 changes to this, and Area 1 level 13 uses it.
 12. New goal "Blast X crackers" (agreed 24 Nov): e.g. "Blast 25 red crackers"; goal panel shows that cracker with a
     count; every cracker of that colour cleared counts, specials included. For early levels and breathers.
-13. New goal "Bring down the potli bags" (agreed 24 Nov): a 3D-look red velvet potli bag with gold string and a soft
-    gold glow, fits inside its cell (sketch previews/potli3d.png). Not matchable or breakable, specials pass it; falls
-    when cells below clear; can be swapped. Bag drops out with a gold flash + coin jingle, goal counts down; more bags
-    drop in from the top until done. First at level 6, then every 10 levels (16, 26, 36...). Later: pambaram (spinning
-    top) from Area 2, ~level 41, same rule; on reaching the bottom it spins and knocks out the 2 crackers beside it.
-    EXIT (changed 24 Nov 16:01, his words: no coin animation, it would cost FPS): when the bag reaches the bottom
-    row it wiggles a little with a sound, then the whole bag flies up to the bag goal in the target panel. Nothing
-    is cleared, nothing drawn below the board.
-    GOAL PANEL: red bag icon with a count (e.g. 3); the arriving bag lands on it, it pulses, 3 -> 2 -> 1 -> tick.
-    PAMBARAM (same goal type, from Area 2 ~41): real 3D render (godot/tools/pic/toy3d.gd, previews/pambaram-3d.png):
-    round top painted red / yellow / red (his flag colours), wooden cap, bare wooden cone, iron nail tip, like his
-    reference photo. Exit: at the bottom row it spins fast for a short flash, then the whole pambaram flies to the
-    goal. It does NOT clear anything. The bag art should also be redone as a real 3D render the same way.
-    SIZE ON THE BOARD (agreed 24 Nov 16:15, previews/bag-pambaram-on-board.png): both the same size as the crackers,
-    standing on the tile floor like the green bomb (pambaram nail tip touches the bottom of the tile); chunky
-    pambaram (toy3d.gd scale 1.35 wide, short nail); bag keeps its soft shadow, only narrower.
+13. New goal "Bring down" — potli bag + pambaram (agreed 24 Nov):
+    - Piece: not matchable or breakable, specials pass it; falls when the cells below clear; can be swapped.
+    - EXIT (his words, no coin animation, it would cost FPS): bag at the bottom row wiggles a little with a sound, then
+      the whole bag flies up to its goal icon. Pambaram at the bottom row spins fast for a short flash, then the whole
+      pambaram flies to its goal. Neither clears anything. Nothing is drawn below the board (no holes, trays, arrows).
+    - More pieces drop in from the top until the goal count is done.
+    - GOAL PANEL: bag / pambaram icon with a count; the arriving piece lands on it, it pulses, 3 -> 2 -> 1 -> tick.
+    - ART: real 3D renders (godot/tools/pic/toy3d.gd). Pambaram: round top painted red / yellow / red (his flag
+      colours), wooden cap, bare wooden cone, short iron nail, chunky (scale 1.35 wide) (previews/pambaram-3d.png).
+      Bag: red velvet potli, gold string, to be redone as a real 3D render the same way (sketch previews/potli3d.png).
+    - SIZE (agreed 16:15, previews/bag-pambaram-on-board.png): same size as the crackers, standing on the tile floor like
+      the green bomb (pambaram nail tip touches the bottom of the tile); bag keeps its soft shadow, only narrower.
+    - TEACHING (level 6): intro card "New: Potli Bag" + picture + "Clear the crackers under the bags. Bring them to the
+      bottom!"; hand demo once (one swap right under a bag, the bag drops a cell; any touch stops it); first bag out:
+      toast "Bag collected! 2 more." Same pattern for the pambaram at 41.
 14. Ad screen (his screenshot 24 Nov 16:23): our game's top bar peeks through above the ad, then a black band; the ad
     starts lower. Fix: (a) the ad fills the whole screen, (b) the phone's status bar stays visible so the ad's X is
     never hidden, (c) plain black behind the ad so the game never shows through. Check the X on his phone before
@@ -52,9 +51,8 @@
 16. How often bag / pambaram: bag 6, 16, 26, then 36, 46, 56, 66, 76; pambaram 41, 51, 61, 71 (5 apart from the bag).
 17. Rangoli goal: DROPPED (24 Nov 16:44). Every version tried (tile patterns, paint spreading on the floor, hidden 3x3
     revealed) made the board look worse. Do not bring it back unless he asks.
-    TEACHING (level 6): intro card "New: Potli Bag" + bag picture + "Clear the crackers under the bags. Bring them to
-    the bottom!"; hand demo once (one swap right under a bag, the bag drops a cell; any touch stops it); first bag out
-    toast "Bag collected! 2 more."
+18. Still waiting from him: more fixes while he plays all 80 levels; Area 4 (GHILLI Delivery Hub, docs/area4.md) to be
+    built for the same next APK.
 
 # Agreed plans
 
