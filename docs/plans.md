@@ -3,6 +3,10 @@
 #    choosing the time of day (morning / afternoon / evening / night). tools/pic/title_night.py.
 #  - Shop icon on home: same 64 px glowing badge as Daily/Piggy, same height as Daily, mirrored on the right
 #    (Test button moves under it). Waiting for his OK.
+#  - Area 3 parcel labels -> Chennai (his choice 25 Nov, option 1): big top label "CHENNAI", small labels
+#    T. Nagar, Mylapore, Adyar, Anna Nagar, Velachery (no Madurai/Salem/Kanchipuram/Vellore; Madurai stays the
+#    Area 5 surprise). Re-render the Area 3 order-room pictures (same look, only the labels) and check the Area 3
+#    start/end lines say Chennai, not "more towns".
 #  - Win screen: he does not like the new one-card look (purple-brown background + gold border). Even the old one
 #    was better. To talk first.
 # BUILT 25 Nov (100-level APK, see current-state.md): every item of the NEXT BUILD LIST below except 17 (rangoli,
