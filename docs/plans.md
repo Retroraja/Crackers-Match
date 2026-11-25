@@ -7,8 +7,8 @@
 #    T. Nagar, Mylapore, Adyar, Anna Nagar, Velachery (no Madurai/Salem/Kanchipuram/Vellore; Madurai stays the
 #    Area 5 surprise). Re-render the Area 3 order-room pictures (same look, only the labels) and check the Area 3
 #    start/end lines say Chennai, not "more towns".
-#  - Win screen: he does not like the new one-card look (purple-brown background + gold border). Even the old one
-#    was better. To talk first.
+#  - Win screen: DONE in code 25 Nov (his pick option 1): old look, no card/border, no piggy/next-build line,
+#    Next + Reward buttons 40 px higher (not at the screen's bottom edge).
 # BUILT 25 Nov (100-level APK, see current-state.md): every item of the NEXT BUILD LIST below except 17 (rangoli,
 # dropped) and 20's power (Mayil Matchbox only shows on the level card, art = Colour Matchbox in peacock colours,
 # shine + feather eye, approved 25 Nov 12:03). Area 4 (items 21/25/26) is in the game. Not checked on a phone yet.

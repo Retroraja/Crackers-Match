@@ -2939,21 +2939,10 @@ func _win_extra(li: int, stars: int, d: int, c: int) -> void:
 		root.add_child(rays)
 		root.move_child(rays, L_win.nodes[5].get_index())
 		WX.rays = rays
-		# 25 Nov: everything sits in ONE card with a gold border (less crowded)
-		var card := Panel.new()
-		var cs := StyleBoxFlat.new()
-		cs.bg_color = Color(0.16, 0.04, 0.24, 0.55)
-		cs.border_color = Color("#FFD23F")
-		cs.set_border_width_all(4)
-		cs.set_corner_radius_all(30)
-		cs.shadow_color = Color(1.0, 0.78, 0.2, 0.35)
-		cs.shadow_size = 10
-		card.add_theme_stylebox_override("panel", cs)
-		card.position = Vector2(8, 8)
-		card.size = Vector2(374, 828)
-		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		root.add_child(card)
-		root.move_child(card, rays.get_index())
+		# 25 Nov (his pick, option 1): the old look, no card and no border; the Next / Reward buttons sit higher,
+		# not at the bottom edge of the screen
+		for k in ["bNext", "bX2"]:
+			L_win.node(k).position.y -= 40.0
 		# fireworks layer
 		var fx := PicStreet.PicFx.new()
 		fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
