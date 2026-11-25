@@ -83,6 +83,12 @@
     FPS RULE (he insists, for this and EVERY change in this list): must not lower FPS or performance. Only moving
     ready-made pictures (pooled sprites), no new particle systems, no live drawing, no extra lights/shaders; check
     the FPS counter on the phone stays where it is now (~69-71).
+24. Test tools (25 Nov, his test version only, not hidden): a "Test" button on home opens a Builds card -
+    area tabs 1-4, a button per build (jumps to just before it and plays its animation, tap again to replay),
+    "Play all builds", "Area start" / "Area end", "+100 diyas". Plus "Go to level" (number box, opens that level,
+    earlier levels/builds marked done) and a small "Win now" button in the level top bar (next to back/settings)
+    that ends the level as a win. Uses what is already in the game, no FPS cost.
+25. Area 4 levels: 81-100 (20 levels for 9 builds, like Area 3) - to confirm with him.
 18. Still waiting from him: more fixes while he plays all 80 levels; Area 4 (GHILLI Delivery Hub, docs/area4.md) to be
     built for the same next APK.
 
