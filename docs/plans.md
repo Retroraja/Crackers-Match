@@ -15,6 +15,8 @@
 #    Ask: small lit flame or not.
 #  - 1000 Wala (waiting for his OK): a real cracker-string picture across the tiles it hits, bursting one by one
 #    (flash + smoke puff pictures), string gets shorter; no drawn lines.
+#  - Area 2 slide (his pick option 1, 25 Nov): keep the 2 pictures (shop front builds 1-6, inside builds 7-12) but
+#    make the move clear: after build 6 a short fade + "Inside the shop!" card, then picture 2 (pic_street _place).
 #  - Win screen: DONE in code 25 Nov (his pick option 1): old look, no card/border, no piggy/next-build line,
 #    Next + Reward buttons 40 px higher (not at the screen's bottom edge).
 # BUILT 25 Nov (100-level APK, see current-state.md): every item of the NEXT BUILD LIST below except 17 (rangoli,
