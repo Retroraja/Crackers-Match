@@ -72,6 +72,9 @@
     the shop (was hidden). Open: the packing table (build 3) is partly behind the board; move it left by the van?
     Tools: godot/tools/pic/a4_mock.gd (--built=N, --place=wedding|school|apts|marina, seed fixed so palms don't jump),
     godot/tools/pic/a4_builds_video.py.
+22. BUG (25 Nov, level 44 screenshot): in-level coin pill (bottom-left, node gCoins in cm_app.gd) - "61140" runs
+    out of the pill. Fix: the pill grows to fit the number (up to 7 digits), number stays inside with padding;
+    check the same on the level card (lCoins) and home (tCoin) with big numbers.
 18. Still waiting from him: more fixes while he plays all 80 levels; Area 4 (GHILLI Delivery Hub, docs/area4.md) to be
     built for the same next APK.
 
