@@ -17,6 +17,8 @@
 #    (flash + smoke puff pictures), string gets shorter; no drawn lines.
 #  - Area 2 slide (his pick option 1, 25 Nov): keep the 2 pictures (shop front builds 1-6, inside builds 7-12) but
 #    make the move clear: after build 6 a short fade + "Inside the shop!" card, then picture 2 (pic_street _place).
+#  - Cracker meter tip (level 2): DONE in code 25 Nov: "Drag the cracker onto the board!" moved down under the
+#    meter (toast28 y 150 -> 208) so the meter stays visible.
 #  - Win screen: DONE in code 25 Nov (his pick option 1): old look, no card/border, no piggy/next-build line,
 #    Next + Reward buttons 40 px higher (not at the screen's bottom edge).
 # BUILT 25 Nov (100-level APK, see current-state.md): every item of the NEXT BUILD LIST below except 17 (rangoli,

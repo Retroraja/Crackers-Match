@@ -1382,7 +1382,8 @@ var _meter_rep := false
 func meter_demo() -> void:
 	if mRew == null or drag != null or demo or game == null or game.over or ending or S.seen.has("meter_done"):
 		return
-	toast28("Drag the cracker onto the board!")
+	# 25 Nov: a little lower, under the Cracker meter (it covered the meter at y 150)
+	toast28("Drag the cracker onto the board!", 208.0)
 	_drag_demo_from(G.node("mRew"), mRew, true)
 
 var demo_tw: Tween
@@ -1875,7 +1876,7 @@ func _build_toast() -> void:
 	toast.modulate.a = 0
 	top_layer.add_child(toast)
 
-func toast28(m: String) -> void:
+func toast28(m: String, ty := 150.0) -> void:
 	for c in toast.get_children():
 		c.queue_free()
 	var d: Array = JSON.parse_string(FileAccess.get_file_as_string("res://ui/t28.json"))
@@ -1886,7 +1887,7 @@ func toast28(m: String) -> void:
 	var two := w > 360.0
 	w = minf(w, 360.0)
 	var h: float = n.r[3] + (int(n.txt.fs) * 1.25 if two else 0.0)
-	n.r = [195.0 - w / 2.0, 150.0, w, h]
+	n.r = [195.0 - w / 2.0, ty, w, h]
 	n.erase("tf")
 	n.txt.s = m
 	n.txt.ta = "center"
