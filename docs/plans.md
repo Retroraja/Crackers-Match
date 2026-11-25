@@ -8,6 +8,13 @@
 #    T. Nagar, Mylapore, Adyar, Anna Nagar, Velachery (no Madurai/Salem/Kanchipuram/Vellore; Madurai stays the
 #    Area 5 surprise). Re-render the Area 3 order-room pictures (same look, only the labels) and check the Area 3
 #    start/end lines say Chennai, not "more towns".
+#  - Seven Shot: DONE in code 25 Nov: same blast/animation, but the 7 shells stay inside the board (rise to the top
+#    rows, hang with a spark, fall onto targets). Not yet seen in a video.
+#  - Diya obstacle (talk done, waiting for his OK): real 3D clay diya like the pambaram render, ~80% of the tile,
+#    standing on the tile base line, small soft shadow, nothing outside the tile; cracked + stack versions too.
+#    Ask: small lit flame or not.
+#  - 1000 Wala (waiting for his OK): a real cracker-string picture across the tiles it hits, bursting one by one
+#    (flash + smoke puff pictures), string gets shorter; no drawn lines.
 #  - Win screen: DONE in code 25 Nov (his pick option 1): old look, no card/border, no piggy/next-build line,
 #    Next + Reward buttons 40 px higher (not at the screen's bottom edge).
 # BUILT 25 Nov (100-level APK, see current-state.md): every item of the NEXT BUILD LIST below except 17 (rangoli,

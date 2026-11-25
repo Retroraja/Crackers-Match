@@ -3710,18 +3710,31 @@ func seven(r: int, c: int) -> void:
 		spr(18, x + (sin(t * 60.0) * 1.5 if q < 0.9 else 0.0), y, u * 1.25 * (1.0 + sin(t * 40.0) * 0.03 * (1.0 - q)))
 		return t < 1.6, 1.62)
 	var cols := ["#FFD24A", "#7CF0FF", "#FF6BD6"]
+	# 25 Nov: the shells stay INSIDE the board: they rise to the top rows, hang there with a spark (you can see all
+	# 7 waiting), then fall from there onto their targets (was: off the top of the screen and back)
+	var top_y := OY + u * 0.7
+	var hang: Array = []
+	for i in 7:
+		hang.append(Vector2(clampf(x + rnd(-u * 2.6, u * 2.6), OX + u * 0.5, OX + C * u - u * 0.5), top_y + rnd(-u * 0.25, u * 0.35)))
 	for i in 7:
 		var col := Color(cols[i % 3])
-		var vx := rnd(-60, 60)
-		at(0.15 + i * 0.1, func():
+		var hp: Vector2 = hang[i]
+		var t_up := 0.15 + i * 0.1
+		var t_down := 1.15 + i * 0.13
+		at(t_up, func():
 			snd("rocket", {"off": 0.05, "v": 0.35, "rate": 1.3 + i * 0.04, "cut": 0.25})
 			puff(x, y - u * 0.55, "#FFFFFF", 8)
 			obj(func(t, dt):
-				var px: float = x + vx * t / 0.4
-				var py: float = y - u * 0.55 - (t / 0.4) * (y + 80)
-				fx.append({"k": "spark", "x": px, "y": py, "vx": rnd(-20, 20), "vy": rnd(30, 80), "col": col if i % 2 else Color.WHITE, "a": 0.0, "l": 0.3})
+				var f := minf(t / 0.4, 1.0)
+				var e3 := 1.0 - (1.0 - f) * (1.0 - f)
+				var px: float = x + (hp.x - x) * e3
+				var py: float = (y - u * 0.55) + (hp.y - (y - u * 0.55)) * e3
+				if f < 1.0:
+					fx.append({"k": "spark", "x": px, "y": py, "vx": rnd(-20, 20), "vy": rnd(30, 80), "col": col if i % 2 else Color.WHITE, "a": 0.0, "l": 0.3})
+				var pulse := 1.0 + (0.25 * sin(t * 30.0) if f >= 1.0 else 0.0)
+				draw_circle(Vector2(px, py), u * 0.3 * pulse, Color(col, 0.35))
 				draw_circle(Vector2(px, py), u * 0.14, col)
-				return t < 0.4, 0.42))
+				return t < t_down - t_up, t_down - t_up + 0.02))
 	var all: Array = c_cells([[r, c]])
 	var goals: Array = all.slice(0, 3)
 	var rest: Array = []
@@ -3740,18 +3753,20 @@ func seven(r: int, c: int) -> void:
 	T7.shuffle()
 	for i in T7.size():
 		var p: Array = T7[i]
+		var hp2: Vector2 = hang[i % 7]
 		at(1.15 + i * 0.13, func():
 			var x1 := cx(p[1])
 			var y1 := cy(p[0])
-			var x0 := x1 + rnd(-u * 1.5, u * 1.5)
+			var x0 := hp2.x
 			var colr := Color("#FFE58A") if p in goals else Color("#9FE8FF")
 			snd("swoosh", {"v": 0.25, "rate": 1.2})
 			obj(func(t, dt):
 				var f := minf(t / 0.55, 1.0)
 				var e2 := f * f
 				var px := x0 + (x1 - x0) * e2
-				var py := -40.0 + (y1 + 40.0) * e2
-				draw_polyline_colors(PackedVector2Array([Vector2(px - (x1 - x0) * 0.3, py - u * 2.4), Vector2(px, py)]), PackedColorArray([Color(1, 0.94, 0.7, 0), colr]), u * 0.3, true)
+				var py := hp2.y + (y1 - hp2.y) * e2
+				var tl := minf(u * 2.4, py - hp2.y + u * 0.2)
+				draw_polyline_colors(PackedVector2Array([Vector2(px - (x1 - x0) * 0.3 * tl / (u * 2.4), py - tl), Vector2(px, py)]), PackedColorArray([Color(1, 0.94, 0.7, 0), colr]), u * 0.3, true)
 				draw_circle(Vector2(px, py), u * 0.45, Color(colr, 0.45))
 				draw_circle(Vector2(px, py), u * 0.25, Color.WHITE)
 				if f >= 1.0:
