@@ -1,3 +1,10 @@
+# NEXT FIXES (25 Nov, after the 100-level APK):
+#  - Title: picture = option 1 angle (front of the Crackers Factory, no people, no cracker pictures); he is
+#    choosing the time of day (morning / afternoon / evening / night). tools/pic/title_night.py.
+#  - Shop icon on home: same 64 px glowing badge as Daily/Piggy, same height as Daily, mirrored on the right
+#    (Test button moves under it). Waiting for his OK.
+#  - Win screen: he does not like the new one-card look (purple-brown background + gold border). Even the old one
+#    was better. To talk first.
 # BUILT 25 Nov (100-level APK, see current-state.md): every item of the NEXT BUILD LIST below except 17 (rangoli,
 # dropped) and 20's power (Mayil Matchbox only shows on the level card, art = Colour Matchbox in peacock colours,
 # shine + feather eye, approved 25 Nov 12:03). Area 4 (items 21/25/26) is in the game. Not checked on a phone yet.
