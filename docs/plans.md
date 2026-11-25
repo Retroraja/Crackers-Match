@@ -21,8 +21,9 @@
     Hard (15/20/25/30) or intro levels (11/18/23). Same obstacle types and moves, targets a little smaller, kept easy.
 11. Islands = U shape (agreed 24 Nov): the 2-column empty strip runs down the middle, but the LAST 2 ROWS are one
     full joined row, so matches cross at the bottom. Level 32 changes to this, and Area 1 level 13 uses it.
-12. New goal "Blast X crackers" (agreed 24 Nov): e.g. "Blast 25 red crackers"; goal panel shows that cracker with a
-    count; every cracker of that colour cleared counts, specials included. For early levels and breathers.
+12. New goal "Blast X crackers" (agreed 24 Nov, changed 25 Nov): e.g. "Blast 25 red crackers"; goal panel shows that
+    cracker with a count; every cracker of that colour cleared counts, specials included. ONLY ADDED as an extra goal
+    to about 1 level in 5 (levels 3-100). EXISTING GOALS STAY EXACTLY AS THEY ARE; no level becomes Blast-X-only.
 13. New goal "Bring down" — potli bag + pambaram (agreed 24 Nov):
     - Piece: not matchable or breakable, specials pass it; falls when the cells below clear; can be swapped.
     - EXIT (his words, no coin animation, it would cost FPS): bag at the bottom row wiggles a little with a sound, then
@@ -88,7 +89,11 @@
     "Play all builds", "Area start" / "Area end", "+100 diyas". Plus "Go to level" (number box, opens that level,
     earlier levels/builds marked done) and a small "Win now" button in the level top bar (next to back/settings)
     that ends the level as a win. Uses what is already in the game, no FPS cost.
-25. Area 4 levels: 81-100 (20 levels for 9 builds, like Area 3) - to confirm with him.
+25. Area 4 = levels 81-100 (confirmed 25 Nov), 20 levels for its 9 builds, like Area 3.
+26. Area 4 home layout (25 Nov): EVERY build must be clearly visible when he taps Build. Order board stands on the
+    footpath in front of the shop (a4_mock: --bstand=1 --bscale=1.4 --board=-0.6,1.75,3.2 --brot=0.9); packing table
+    moved to the right side of the shop (--table=1.6,0.19,2.9), the left spot by the van was hidden by the board.
+    Builds 1-4 pop in on the still home view (gold glow + sparkle), no camera zoom.
 18. Still waiting from him: more fixes while he plays all 80 levels; Area 4 (GHILLI Delivery Hub, docs/area4.md) to be
     built for the same next APK.
 
