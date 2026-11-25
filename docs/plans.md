@@ -1,3 +1,6 @@
+# BUILT 25 Nov (100-level APK, see current-state.md): every item of the NEXT BUILD LIST below except 17 (rangoli,
+# dropped) and 20's power (Mayil Matchbox only shows on the level card, art = Colour Matchbox in peacock colours,
+# shine + feather eye, approved 25 Nov 12:03). Area 4 (items 21/25/26) is in the game. Not checked on a phone yet.
 # NEXT BUILD LIST (from his play of levels 1-16, 24 Nov). Agreed, NOT built. He keeps adding while he plays
 # all 80 levels; the next build comes together with Area 4. Build ONLY when he says "build".
 1. Obstacle sounds (DONE in code, commit 2043eaf, not in an APK): bangle = china plate smash, louder

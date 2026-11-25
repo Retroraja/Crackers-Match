@@ -12,6 +12,7 @@ class_name AreaStartScene
 var pic: TextureRect
 var start_area := 2
 const CAPS3 := ["“Thatha, your next step…\nlight up more towns.”", "Orders need space…\ntime to open the back room!", "“Orders are coming.\nLet's set up this room!”"]
+const CAPS4 := ["Orders from all over Chennai…\nthe temple festival!", "Weddings, schools, parties…\neveryone wants GHILLI crackers.", "“Our old van can do it.\nLet's fix it and start delivering!”"]
 const CAPS := ["The first load of crackers\nis ready for Chennai!", "Chennai.  Bunder Street,\nwhere the big city buys its crackers.", "“Our first shop…\na little rusty, but it's ours.”"]
 
 func play(height: float) -> void:
@@ -27,8 +28,8 @@ func play(height: float) -> void:
 	area = start_area - 1   # the notebook: steps before this area show their tick
 	super.play(height)
 	(card.get_node("a") as Label).text = "A R E A   %d" % start_area
-	(card.get_node("t") as Label).text = "Bunder Street, Chennai" if start_area == 2 else "Busy Days at GHILLI"
-	(card.get_node("u") as Label).text = "our first shop in the big city" if start_area == 2 else "the first steps to more towns"
+	(card.get_node("t") as Label).text = ["Bunder Street, Chennai", "Busy Days at GHILLI", "GHILLI Delivery Hub"][clampi(start_area, 2, 4) - 2]
+	(card.get_node("u") as Label).text = ["our first shop in the big city", "the first steps to more towns", "deliveries all over Chennai"][clampi(start_area, 2, 4) - 2]
 	grade.visible = false
 	# a happy moment: the cheerful game music instead of the story theme, no wind
 	amb.stop()
@@ -63,11 +64,11 @@ func _slide(id: int, n: int) -> void:
 		pic.scale = Vector2.ONE
 		create_tween().tween_property(pic, "scale", Vector2.ONE * 1.06, 4.2).set_trans(Tween.TRANS_SINE))
 	t.tween_property(dim, "color:a", 0.0, 0.45)
-	var caps: Array = CAPS if start_area == 2 else CAPS3
+	var caps: Array = CAPS if start_area == 2 else (CAPS3 if start_area == 3 else CAPS4)
 	_later(0.6, id, func(): say(caps[n - 1], id, 3.0))
 	if start_area == 3 and n == 2:
 		_sfx("story_page", 0.5, 0.6, 0.3)   # the old door creaks open
-	if start_area == 3 and n == 3:
+	if start_area >= 3 and n == 3:
 		# the man pops up from the bottom, rolls up his sleeves (cheer), then the title
 		man.base = "idle"
 		man.mood("smile", 99)

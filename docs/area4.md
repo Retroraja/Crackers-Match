@@ -1,6 +1,6 @@
 # Area 4: GHILLI Delivery Hub (agreed 23 Nov 2026)
 
-Pictures only. Nothing is hooked into the game yet.
+In the game since 25 Nov (levels 81-100). Home camera and positions: tools/pic/a4_render.sh.
 
 ## Home view
 - One fixed scene: the GHILLI shop front, seen from a corner side angle at about first-floor height, looking along the footpath.

@@ -155,6 +155,7 @@ static func make_level(o: Dictionary, idx: int) -> Dictionary:
 	var big: Array = []
 	var hide: Array = []
 	var pre: Array = []
+	var toys: Array = []
 	var SPK := {"1": 6, "2": 10, "3": 14, "4": 8}
 	for r in rows.size():
 		var row: String = rows[r]
@@ -176,11 +177,14 @@ static func make_level(o: Dictionary, idx: int) -> Dictionary:
 			elif ch == "K": big.append({"t": "cab", "r": r, "c": c, "w": 2, "h": 2, "n": 6, "v": ""})
 			elif CAB_V.has(ch): big.append({"t": "cab", "r": r, "c": c, "w": 2, "h": 2, "n": 6, "v": CAB_V[ch]})
 			elif SPK.has(ch): pre.append([r, c, SPK[ch]])
+			elif ch == "v": toys.append([r, c, "bag"])     # 25 Nov: potli bag (bring down)
+			elif ch == "t": toys.append([r, c, "top"])     # 25 Nov: pambaram (bring down)
 		shape.append(sh)
 	var L := {"name": o.name, "moves": o.moves, "colors": o.colors, "shape": shape, "ob": ob, "big": big, "goal": {}, "hide": hide,
 		"pre": pre, "luck": o.get("luck", 0.0), "teach": o.get("teach", null), "idx": idx, "combo": o.get("combo", null),
 		"intro": o.get("intro", []), "ltype": o.get("ltype", "n"), "reward": o.get("reward", null),
-		"diyas": 2 if o.get("ltype", "n") == "h" else (3 if o.get("ltype", "n") == "s" else 1)}
+		"diyas": 2 if o.get("ltype", "n") == "h" else (3 if o.get("ltype", "n") == "s" else 1),
+		"toys": toys, "portal": o.get("portal", [])}
 	for k in o.get("goal", {}):
 		L.goal[k] = o.goal[k]
 	# 18 Nov: each cabinet kind is its own goal (bottles / cups / kaapi / sweets) with its own icon
@@ -190,6 +194,13 @@ static func make_level(o: Dictionary, idx: int) -> Dictionary:
 		L.goal[gk] = L.goal.get(gk, 0) + bb.n
 	for k in ob:
 		L.goal[k] = ob[k].size()
+	# 25 Nov bring down: the goal is how many reach the bottom (more drop in from the top until it is done)
+	for t in toys:
+		if not L.goal.has(t[2]):
+			L.goal[t[2]] = int(o.get("toy_n", 3))
+	# 25 Nov "Blast X crackers": an extra goal on some levels, e.g. {"0": 25} = blast 25 red crackers
+	for k in o.get("blast", {}):
+		L.goal[str(k)] = int(o.blast[k])
 	return L
 
 static func _add(ob: Dictionary, t: String, r: int, c: int) -> void:
@@ -229,6 +240,7 @@ func start(level: Dictionary) -> void:
 		brk.lite = lite
 		add_child(brk)
 	brk.clear()
+	setup_portals()
 	fresh()
 	if floor_node:
 		floor_node.queue_free()
@@ -236,6 +248,7 @@ func start(level: Dictionary) -> void:
 		gold_node.queue_free()
 		gold_node = null
 	floor_node = _bake_floor()
+	_portal_sprites(floor_node)
 	floor_node.show_behind_parent = true
 	add_child(floor_node)
 	move_child(floor_node, 0)
@@ -359,6 +372,17 @@ func fresh() -> void:
 		var e = at2(p[0], p[1])
 		if e != null and not e.has("ob"):
 			e.k = p[2]
+	toy_spawn = 0
+	var on_board := {}
+	for p in lv.get("toys", []):
+		var e = at2(p[0], p[1])
+		if e != null and not e.has("ob"):
+			_make_toy(e, p[2])
+			on_board[p[2]] = on_board.get(p[2], 0) + 1
+	toy_kind = ""
+	for tk in on_board:
+		toy_kind = tk
+		toy_spawn = maxi(0, int(goal.get(tk, 0)) - int(on_board[tk]))
 	make_move()
 
 # b28 lesson patterns in the free top rows
@@ -1017,6 +1041,21 @@ func gravity() -> bool:
 					else: top = false
 					break
 				q -= 1
+			if src < 0 and top and _portal_in.has(c):
+				# 25 Nov portal: this column's top is fed from the bottom of a left-board column
+				var po: Array = _portal_in[c]
+				var f3 = b[po[0]][po[1]]
+				if f3 != null and mov(f3) and not (f3.fy > 0) and r >= int(po[2]):
+					b[r][c] = f3
+					b[po[0]][po[1]] = null
+					f3.fy = (r - int(po[2]) + 1) * U
+					f3.v = 0.0
+					f3.wt = 0.0
+					f3.bo = 0.0
+					f3.ported = 1
+					moved_any = true
+				r -= 1
+				continue
 			if src >= 0:
 				var f2 = b[src][c]
 				b[r][c] = f2
@@ -1030,6 +1069,9 @@ func gravity() -> bool:
 				continue
 			if top:
 				var n := tile(rk())
+				if toy_spawn > 0 and toy_kind != "" and not ended and _toys_on_board() < 2:
+					toy_spawn -= 1
+					_make_toy(n, toy_kind)
 				n.fy = ((r - bar) * U * 0.6 if bar >= 0 else (r + 1) * U + U * 0.15) + spawn * U
 				n.v = 0.0
 				n.fresh = 1
@@ -1126,7 +1168,7 @@ func luck(born: Array) -> void:
 	var near := randf() < 0.5
 	for q in born:
 		var n = b[q[0]][q[1]]
-		if n == null or n.k >= 6:
+		if n == null or n.k >= 6 or n.k < 0:
 			continue
 		var k0: int = n.k
 		for k in lv.colors:
@@ -1360,6 +1402,8 @@ func on_done() -> void:
 		make_move()
 	sync()
 	if over:
+		return
+	if toy_exit():
 		return
 	if left() == 0:
 		over = true
@@ -1636,6 +1680,8 @@ func _draw2() -> void:
 					_draw_special(e, r, k, px, py, sz)
 				elif e.k >= 0 and e.k < T.size() and T[e.k] != null:
 					draw_texture_rect(T[e.k], Rect2(px + 0.5, py + 0.5, sz - 1, sz - 1), false)
+				elif e.has("toy"):
+					_draw_toy(e, px, py, sz)
 				_draw_over(e, px, py, sz)
 				if e.get("dead", false):
 					fill_rr(px + 3, py + 3, sz - 6, sz - 6, 11, Color(1, 1, 1, 0.62))
@@ -3412,32 +3458,48 @@ func _fireball_arc(sx: float, sy: float, tx: float, ty: float, h: float, q: Arra
 			return false
 		return true, 0.5)
 
-# Sky Shot: flies up, bursts, 12 stars rain down (goal tiles first)
+# Sky Shot (25 Nov, clearer): the tube recoils, the shell climbs with a short spark trail but STAYS over the board,
+# bursts ~2 rows from the top (gold flash + ring); for a split second a small ring marks each of the 12 target tiles
+# (goal tiles gold), then 12 stars with short gold trails fall onto them one after another (~0.6 s), each pops its
+# tile with a small spark. Only ready-made pictures move (art/fx: rings, star with its trail, flash), like the tiles.
+var SKYFX := {}
+func _skyfx() -> void:
+	if SKYFX.is_empty():
+		SKYFX = {"rg": load("res://art/fx/ring_gold.png"), "rw": load("res://art/fx/ring_white.png"),
+			"st": load("res://art/fx/star_trail.png"), "fl": load("res://art/fx/flash_gold.png")}
+
 func skyshot(r: int, c: int, col: int, dr: int, dc: int, own := true) -> void:
+	_skyfx()
 	var x := cx(c)
 	var y := cy(r)
 	var u := float(U)
-	var by := 30.0
+	var by := OY + u * 2.0
 	var e = b[r][c] if own else null
 	if e != null:
-		e.shakeT = 0.2
+		e.shakeT = 0.35
+	# recoil: the tube's own shake pulse (shakeT) before the shell leaves
 	at(0.22, func():
 		if own:
 			b[r][c] = null
-		ring(x, y, "#FFFFFF", 80, 8)
+		ring(x, y, "#FFFFFF", 60, 6)
 		obj(func(t, dt):
-			var k := minf(t / 0.48, 1.0)
-			var ee := k * k
+			var k := minf(t / 0.42, 1.0)
+			var ee := 1.0 - (1.0 - k) * (1.0 - k)
 			var py := y + (by - y) * ee
-			spr(9, x, py, u * (1.5 - 0.55 * ee))
-			puff(x + rnd(-5, 5), py + 22, "#FFFFFF", rnd(7, 13))
-			for kk in 3:
-				fx.append({"k": "spark", "x": x + rnd(-5, 5), "y": py + 24, "vx": rnd(-45, 45), "vy": rnd(40, 200), "col": Color("#FF9A1F" if kk else "#FFE16B"), "a": 0.0, "l": 0.3})
-			return k < 1.0, 0.52))
-	at(0.72, func():
+			spr(9, x, py, u * (1.1 - 0.35 * ee))
+			if int(t * 60.0) % 2 == 0:
+				fx.append({"k": "spark", "x": x + rnd(-4, 4), "y": py + u * 0.4, "vx": rnd(-30, 30), "vy": rnd(60, 160), "col": Color("#FFD24A"), "a": 0.0, "l": 0.22})
+			return k < 1.0, 0.44))
+	at(0.66, func():
 		var cc0: String = COL[col] if col >= 0 and col < 6 else "#FFC62B"
-		burst(x, by, [cc0, "#FFFFFF", "#FFC62B"], 36, 330)
-		flash = maxf(flash, 0.28)
+		ring(x, by, "#FFD24A", 120, 8)
+		burst(x, by, ["#FFD24A", "#FFFFFF", cc0], 24, 260)
+		flash = maxf(flash, 0.18)
+		obj(func(t, dt):
+			var k := minf(t / 0.35, 1.0)
+			var sz := u * (1.2 + 2.6 * k)
+			draw_texture_rect(SKYFX.fl, Rect2(x - sz / 2, by - sz / 2, sz, sz), false, Color(1, 1, 1, 1.0 - k))
+			return k < 1.0, 0.36)
 		var L: Array = []
 		for rr in R:
 			for cc in C:
@@ -3445,24 +3507,47 @@ func skyshot(r: int, c: int, col: int, dr: int, dc: int, own := true) -> void:
 				if q != null and not q.get("dead", false) and (rr != r or cc != c) and ((dr == 0 and dc == 0) or (rr - r) * dr + (cc - c) * dc >= 0):
 					L.append([rr, cc])
 		L = gpick(L).slice(0, 12)
+		var gold := {}
+		for p in L:
+			var q = b[p[0]][p[1]]
+			if q != null and (q.has("ob") or fl.has("%d,%d" % [p[0], p[1]]) or goal.get(str(q.k), 0) > 0):
+				gold[str(p)] = 1
+		# the 12 target rings, shown together for a moment, each fades when its star lands
+		var land := 0.14 + 11 * 0.05 + 0.3
+		obj(func(t, dt):
+			var a := minf(1.0, t / 0.12)
+			for n in L.size():
+				var p: Array = L[n]
+				var tl := 0.14 + n * 0.05 + 0.3
+				if t > tl:
+					continue
+				var pulse := 1.0 + 0.08 * sin(t * 18.0 + n)
+				var sz := u * 0.92 * pulse
+				var tex: Texture2D = SKYFX.rg if gold.has(str(p)) else SKYFX.rw
+				draw_texture_rect(tex, Rect2(cx(p[1]) - sz / 2, cy(p[0]) - sz / 2, sz, sz), false, Color(1, 1, 1, a))
+			return t < land, land + 0.05)
 		for n in L.size():
 			var p: Array = L[n]
 			var tx := cx(p[1])
 			var ty := cy(p[0])
-			var sx := x + rnd(-34, 34)
-			var scol := Color(cc0)
-			at(0.1 + n * 0.055, func():
+			var sx := x + rnd(-u * 0.6, u * 0.6)
+			at(0.14 + n * 0.05, func():
 				obj(func(t, dt):
-					var k := minf(t / 0.36, 1.0)
+					var k := minf(t / 0.3, 1.0)
 					var px := sx + (tx - sx) * k
 					var py := by + (ty - by) * k * k
-					c_star(px, py, scol, 12.0)
-					fx.append({"k": "spark", "x": px, "y": py, "vx": rnd(-20, 20), "vy": -rnd(20, 70), "col": scol, "a": 0.0, "l": 0.22})
+					var ang := atan2(tx - sx, (ty - by) * 2.0 * k + 0.001)
+					var sw := u * 0.5
+					var sh := sw * 2.5
+					draw_set_transform(Vector2(px, py), -ang, Vector2.ONE)
+					draw_texture_rect(SKYFX.st, Rect2(-sw / 2, -sh * 0.8, sw, sh), false)
+					draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 					if k >= 1.0:
+						spark(tx, ty, 4, ["#FFD24A", "#FFFFFF"], 150)
 						hit(p[0], p[1], {"d": 0.0, "pw": 1.1})
 						return false
-					return true, 0.4))
-		finish(0.1 + L.size() * 0.055 + 0.75))
+					return true, 0.32))
+		finish(0.14 + L.size() * 0.05 + 0.75))
 
 # 1000-Wala: a chain of 15 pops hopping from tile to tile
 # 1000-Wala (23 Nov, new look): a red cracker string is laid along a path through 15 tiles, then a fast chain of
@@ -3867,3 +3952,116 @@ func c_convert_sky(r: int, c: int, k2: int) -> float:
 			c_fire(p[0], p[1], e))
 		n += 1
 	return t0 + n * gap + (0.7 if gap > 0.2 else 1.05)
+
+
+# ================================================================== 25 Nov: bring down (potli bag / pambaram) and portals
+# A toy piece is not matchable or breakable (diya flag: hits and boosters pass it), falls when the cells below clear,
+# and can be swapped. At the bottom cell of its column the bag wiggles / the pambaram spins, then it flies to its
+# goal icon (the app's fly), nothing is drawn below the board. More drop in from the top until the goal is done.
+var toy_spawn := 0
+var toy_kind := ""
+var TOY := {}
+var _portal_in := {}     # right-board column -> [r_out, c_out, r_in]
+var _portal_out := {}    # "r,c" of left-board bottom cells that feed a portal (not an exit for toys)
+
+func _make_toy(e: Dictionary, t: String) -> void:
+	if TOY.is_empty():
+		TOY = {"bag": load("res://art/toy/bag.png"), "top": load("res://art/toy/top.png")}
+	e.k = -5 if t == "bag" else -6
+	e.toy = t
+	e.diya = true
+
+func _toys_on_board() -> int:
+	var n := 0
+	for r in R:
+		for c in C:
+			var e = b[r][c]
+			if e != null and e.has("toy") and not e.get("gone", false):
+				n += 1
+	return n
+
+func setup_portals() -> void:
+	_portal_in = {}
+	_portal_out = {}
+	for p in lv.get("portal", []):
+		_portal_in[int(p[3])] = [int(p[0]), int(p[1]), int(p[2])]
+		_portal_out["%d,%d" % [p[0], p[1]]] = 1
+
+# the glowing portal mouths: below the left-board cell and above the right-board cell (in the empty space between
+# the boards), plain sprites made once per level
+func _portal_sprites(holder: Node2D) -> void:
+	var P: Array = lv.get("portal", [])
+	if P.is_empty():
+		return
+	var pt: Texture2D = load("res://art/toy/portal.png")
+	var u := float(U)
+	for p in P:
+		for q in [[OX + p[1] * u, OY + (p[0] + 1) * u + u * 0.02, false], [OX + p[3] * u, OY + p[2] * u - u * 0.42, true]]:
+			var sp := Sprite2D.new()
+			sp.texture = pt
+			sp.centered = false
+			sp.position = Vector2(q[0] - 2, q[1])
+			sp.scale = Vector2((u + 4) / 160.0, u * 0.4 / 64.0)
+			sp.flip_v = q[2]
+			holder.add_child(sp)
+
+func _exit_row(c: int) -> int:
+	for r in range(R - 1, -1, -1):
+		if not hole(r, c):
+			return -1 if _portal_out.has("%d,%d" % [r, c]) else r
+	return -1
+
+func toy_exit() -> bool:
+	if ended:
+		return false
+	var any := false
+	for c in C:
+		var r := _exit_row(c)
+		if r < 0:
+			continue
+		var e = b[r][c]
+		if e == null or not e.has("toy") or e.get("firing", false) or not rest(e):
+			continue
+		any = true
+		e.firing = true
+		e.ex = clock
+		busy = true
+		_anim = true
+		if sfx:
+			sfx.play("ob_soda" if e.toy == "bag" else "swoosh", 0.55, 1.4 if e.toy == "top" else 0.9)
+		var kk: String = e.toy
+		at(0.5, func():
+			if not is_same(b[r][c], e):
+				return
+			e.gone = true
+			b[r][c] = null
+			ring(cx(c), cy(r), "#FFD24A", U * 0.7, 5)
+			if goal.get(kk, 0) > 0:
+				goal[kk] -= 1
+				fly.emit(kk, cx(c), cy(r))
+				goal_changed.emit(goal)
+			dirty = true)
+	return any
+
+func _draw_toy(e: Dictionary, px: float, py: float, sz: float) -> void:
+	var t: Texture2D = TOY.get(e.toy)
+	if t == null:
+		return
+	var a := 0.0
+	var sx := 1.0
+	if e.has("ex"):
+		_anim = true
+		var q := clampf((clock - float(e.ex)) / 0.5, 0.0, 1.0)
+		if e.toy == "bag":
+			a = sin(q * TAU * 3.0) * 0.16 * (1.0 - q * 0.5)      # a little wiggle
+		else:
+			sx = 0.55 + 0.45 * absf(cos(q * TAU * 5.0))           # fast spin (the bands flash)
+			a = sin(q * TAU * 2.0) * 0.06
+	if a == 0.0 and sx == 1.0:
+		draw_texture_rect(t, Rect2(px + 0.5, py + 0.5, sz - 1, sz - 1), false)
+		return
+	# pivot at the bottom middle of the tile (it stands on the floor)
+	var piv := Vector2(px + sz / 2, py + sz * 0.97)
+	draw_set_transform_matrix(Transform2D(a, piv) * Transform2D(0.0, Vector2(sx, 1.0), 0.0, Vector2.ZERO) * Transform2D(0.0, -Vector2(sz / 2, sz * 0.97)))
+	draw_texture_rect(t, Rect2(0.5, 0.5, sz - 1, sz - 1), false)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

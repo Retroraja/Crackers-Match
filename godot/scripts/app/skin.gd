@@ -30,6 +30,9 @@ static func btn_box(kind: String, rad := 18.0) -> Dictionary:
 	if kind == "yellow":
 		return {"bg": [lin([[0, "#FFF6C2"], [0.4, "#FFD23F"], [1, "#F59E0B"]])], "rad": [rad, rad, rad, rad], "bw": [3, 3, 3, 3], "bcol": rgba(DARK),
 			"sh": [sh(0, -5, 0, "#c76a00", true), sh(0, 5, 0, DARK)]}
+	if kind == "green":
+		return {"bg": [lin([[0, "#B8F5A0"], [0.45, "#4CC93A"], [1, "#1F8F1A"]])], "rad": [rad, rad, rad, rad], "bw": [3, 3, 3, 3], "bcol": rgba(DARK),
+			"sh": [sh(0, -5, 0, "#146312", true), sh(0, 5, 0, DARK)]}
 	if kind == "white":
 		return {"bgc": rgba("#ffffff"), "rad": [rad, rad, rad, rad], "bw": [3, 3, 3, 3], "bcol": rgba(DARK), "sh": [sh(0, 4, 0, DARK)]}
 	return {"bg": [lin([[0, "#FF8FA8"], [0.45, "#FF3D5E"], [1, "#C8102E"]])], "rad": [rad, rad, rad, rad], "bw": [3, 3, 3, 3], "bcol": rgba(DARK),

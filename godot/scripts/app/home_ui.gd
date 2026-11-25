@@ -65,6 +65,11 @@ func build(a, street: Street) -> void:
 	app.tap(LH.node("hShop"), func(): app.sheet("shop"))
 	app.tap(LH.node("hDaily"), func(): app.sheet("daily"))
 	_build_piggy()
+	# 25 Nov test tools (his test version, not hidden)
+	var tb := WebLayout.new().make({"i": 0, "id": "", "tag": "div", "r": [330, 124, 50, 28], "op": 1, "txt": LoseUI.txt("Test", "Sora-800", 13, "#ffffff")}, Vector2.ZERO)
+	home.add_child(tb)
+	UISkin.button(tb, "red")
+	app.tap(tb, app.open_test)
 	var nav := {31: "Events", 33: "Ranks", 39: "Team", 42: "Crackers"}
 	for i in nav:
 		var n: String = nav[i]
@@ -217,7 +222,7 @@ func sync_in() -> void:
 	for i in st.TASKS.size():
 		if i < n: spent += int(st.TASKS[i].c)
 		else: left += int(st.TASKS[i].c)
-	var d := maxi(0, earned - spent)
+	var d := maxi(0, earned - spent) + int(app.S.get("devd", 0))   # devd: test tool "+100 diyas"
 	if int(app.S.lv) >= app.area_cap():
 		d = maxi(d, left)
 	st.diyas = d
@@ -233,56 +238,102 @@ var pig: Control
 var pig_bar: ColorRect
 var pig_tw: Tween
 var dt_dot: Control
-func _build_piggy() -> void:
-	pig = Control.new()
-	pig.position = Vector2(10, 124)
-	pig.size = Vector2(54, 62)
-	pig.pivot_offset = Vector2(27, 40)
-	home.add_child(pig)
+var pig_lbl: Label
+var dly_glow: Control
+var pig_glow: Control
+var pig_ad: Control
+# 25 Nov: Daily and Piggy are the same size (64 px) on a round glowing badge (one picture), a little away from the
+# screen edge and ~30 px lower than before. The badge glow pulses when there is something to collect.
+func _round_icon(root: Control, at: Vector2, icon: Texture2D, txt: String) -> Control:
+	root.position = at
+	root.size = Vector2(64, 84)
+	root.pivot_offset = Vector2(32, 32)
+	var gl := TextureRect.new()
+	gl.texture = load("res://art/web/ic_badge.png")
+	gl.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	gl.size = Vector2(98, 98)
+	gl.position = Vector2(-17, -17)
+	gl.pivot_offset = Vector2(49, 49)
+	gl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	gl.name = "glow"
+	root.add_child(gl)
 	var ic := TextureRect.new()
-	ic.texture = load("res://art/web/piggy.png")
+	ic.texture = icon
 	ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	ic.position = Vector2(5, 0)
-	ic.size = Vector2(44, 44)
+	ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	ic.position = Vector2(5, 3)
+	ic.size = Vector2(54, 54)
 	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	pig.add_child(ic)
+	root.add_child(ic)
+	var l := Label.new()
+	var ls := LabelSettings.new()
+	ls.font = load("res://art/LilitaOne.ttf")
+	ls.font_size = 14
+	ls.font_color = Color.WHITE
+	ls.outline_size = 5
+	ls.outline_color = Color("#3a0d2e")
+	l.label_settings = ls
+	l.text = txt
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.position = Vector2(-13, 62)
+	l.size = Vector2(90, 20)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(l)
+	return gl
+
+func _build_piggy() -> void:
+	var hd: Control = LH.node("hDaily")
+	for c in hd.get_children():
+		(c as CanvasItem).visible = false
+	dly_glow = _round_icon(hd, Vector2(16, 88), WebLayout.tex("art/giftbox.webp"), "Daily")
+	pig = Control.new()
+	home.add_child(pig)
+	pig_glow = _round_icon(pig, Vector2(16, 182), load("res://art/web/piggy.png"), "")
+	pig_lbl = pig.get_child(2)
 	var bg := ColorRect.new()
 	bg.color = Color(0, 0, 0, 0.5)
-	bg.position = Vector2(7, 44)
-	bg.size = Vector2(40, 6)
+	bg.position = Vector2(6, 58)
+	bg.size = Vector2(52, 5)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pig.add_child(bg)
 	pig_bar = ColorRect.new()
 	pig_bar.color = Color("#FFC93C")
 	pig_bar.position = bg.position
-	pig_bar.size = Vector2(0, 6)
+	pig_bar.size = Vector2(0, 5)
 	pig_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pig.add_child(pig_bar)
-	var l := Label.new()
-	var ls := LabelSettings.new()
-	ls.font = load("res://art/LilitaOne.ttf")
-	ls.font_size = 12
-	ls.font_color = Color.WHITE
-	ls.outline_size = 4
-	ls.outline_color = Color("#3a0d2e")
-	l.label_settings = ls
-	l.text = "Piggy"
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.position = Vector2(0, 48)
-	l.size = Vector2(54, 16)
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	pig.add_child(l)
+	pig.move_child(pig_lbl, pig.get_child_count() - 1)
+	pig_ad = AppFx.badge("AD", Color("#E8123C"), Vector2(30, 20), WebLayout.font("TitanOne"), 12, 10, 2)
+	pig_ad.position = Vector2(42, -6)
+	pig_ad.visible = false
+	pig.add_child(pig_ad)
 	app.tap(pig, app.piggy_tap)
-	dt_dot = AppFx.badge("!", Color("#E8123C"), Vector2(20, 20), WebLayout.font("TitanOne"), 13, 10, 2)
-	dt_dot.position = Vector2(40, -4)
-	LH.node("hDaily").add_child(dt_dot)
+	dt_dot = AppFx.badge("!", Color("#E8123C"), Vector2(22, 22), WebLayout.font("TitanOne"), 13, 11, 2)
+	dt_dot.position = Vector2(46, -6)
+	hd.add_child(dt_dot)
+
+var _glow_tw := {}
+func _pulse(gl: Control, on: bool) -> void:
+	var tw: Tween = _glow_tw.get(gl)
+	if on and tw == null:
+		tw = gl.create_tween().set_loops()
+		tw.tween_property(gl, "scale", Vector2.ONE * 1.16, 0.55).set_trans(Tween.TRANS_SINE)
+		tw.tween_property(gl, "scale", Vector2.ONE, 0.55).set_trans(Tween.TRANS_SINE)
+		_glow_tw[gl] = tw
+	elif not on and tw != null:
+		tw.kill()
+		_glow_tw.erase(gl)
+		gl.scale = Vector2.ONE
 
 func refresh_extra() -> void:
 	if pig == null:
 		return
 	var p := int(app.S.get("piggy", 0))
-	pig_bar.size.x = 40.0 * p / float(app.PIG_MAX)
+	pig_bar.size.x = 52.0 * p / float(app.PIG_MAX)
+	pig_lbl.text = "%d/%d" % [p, int(app.PIG_MAX)]
 	var full: bool = p >= int(app.PIG_MAX)
+	pig_ad.visible = full
+	_pulse(pig_glow, full)
 	if full and pig_tw == null:
 		# full: it shakes and glows until the player breaks it
 		pig_tw = create_tween().set_loops()
@@ -298,6 +349,7 @@ func refresh_extra() -> void:
 		pig.rotation = 0
 		pig.modulate = Color.WHITE
 	dt_dot.visible = app.dtask_ready() > 0
+	_pulse(dly_glow, dt_dot.visible or app.daily_can())
 
 func refresh() -> void:
 	refresh_extra()
@@ -313,7 +365,8 @@ func refresh() -> void:
 	var bar: Control = LH.node("hBar")
 	app.resize_box(bar, Vector2(117.0 * n / st.TASKS.size(), bar.size.y))
 	app.set_t(LH.node("tDy"), str(st.diyas))
-	app.set_t(LH.node("tCoin"), str(app.S.coins))
+	# the home pill sits next to the lives pill: big numbers shrink the font a little instead (25 Nov)
+	app.fit_t(LH.node("tCoin"), str(app.S.coins), 50.0)
 	var c := st.can_do()
 	app.set_t(badge, str(c))
 	badge.visible = c > 0
@@ -327,7 +380,8 @@ func refresh() -> void:
 			la.position.x = 0
 			la.size.x = f.size.x
 			la.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		app.fit_t(f, "Build to Unlock" if st.area == 1 else "Area 3 Soon", f.size.x - 14)
+		var done: bool = st.step >= st.TASKS.size()
+		app.fit_t(f, "Build to Unlock" if not done else ("Area %d Soon" % (st.area + 1) if st.area >= 4 else "Area %d" % (st.area + 1)), f.size.x - 14)
 	else:
 		app.fit_t(f, "Level", 999)
 		LH.nodes[19].visible = true
@@ -376,9 +430,9 @@ func task_icon(i: int) -> String:
 func panel() -> void:
 	var n := mini(st.step, st.TASKS.size())
 	# 23 Nov: the window's title and progress line follow the area
-	var ar := clampi(st.area, 1, 3) - 1
-	app.set_t(LB.nodes[3], ["Sivakasi Street", "GHILLI Crackers", "Order Room"][ar])
-	app.set_t(LB.nodes[5], ["Street Progress", "Shop Progress", "Room Progress"][ar])
+	var ar := clampi(st.area, 1, 4) - 1
+	app.set_t(LB.nodes[3], ["Sivakasi Street", "GHILLI Crackers", "Order Room", "Delivery Hub"][ar])
+	app.set_t(LB.nodes[5], ["Street Progress", "Shop Progress", "Room Progress", "Hub Progress"][ar])
 	var bar: Control = LB.node("bpBar")
 	app.resize_box(bar, Vector2(232.0 * n / st.TASKS.size(), bar.size.y))
 	app.set_t(LB.node("bpCnt"), "%d/%d" % [n, st.TASKS.size()])
@@ -456,7 +510,7 @@ func panel() -> void:
 		r2.visible = true
 		r2.modulate.a = 1
 		app.set_img(app.kid(r2, "img"), task_icon(st.TASKS.size() - 1))
-		app.set_t(app.kid(r2, "span"), ["Sivakasi Street is complete!", "GHILLI Crackers is open!", "The order room is ready!"][clampi(st.area, 1, 3) - 1])
+		app.set_t(app.kid(r2, "span"), ["Sivakasi Street is complete!", "GHILLI Crackers is open!", "The order room is ready!", "Deliveries all over Chennai!"][clampi(st.area, 1, 4) - 1])
 		app.kid(r2, "button").visible = false
 
 # ---------------------------------------------------------------- while building
@@ -505,6 +559,8 @@ func _area_won_show() -> void:
 			app.enter_area2()
 		elif st.area == 2:
 			app.enter_area3()
+		elif st.area == 3 and app.levels.size() > 80:
+			app.enter_area4()
 		else:
 			show_home())
 

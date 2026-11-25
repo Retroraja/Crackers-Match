@@ -13,7 +13,8 @@ const SL := ["hammer", "sparkler", "flowerpot", "skyshot", "snake", "rail", "wal
 const LBL := {"matchbox": "Colour Matchbox", "rocket": "Rocket", "flowerpot": "Flowerpot", "chakra": "Ground Chakra", "skyshot": "Sky Shot", "sparkler": "Sparkler", "rail": "Rail Cracker", "wala": "1000-Wala", "atom": "Bomb", "hammer": "Lakshmi Vedi Hammer", "seven": "Seven Shot", "snake": "Snake Tablet"}
 const PRICE := {"matchbox": 600, "rocket": 100, "flowerpot": 900, "sparkler": 700, "chakra": 200, "rail": 1400, "skyshot": 1600, "wala": 1300, "atom": 300, "hammer": 500, "seven": 1800, "snake": 1100}
 # 23 Nov pacing: a new bar cracker about every 10 levels, the 8th near level 80 (was every 5, all by level 40)
-const UNL := {"hammer": 5, "sparkler": 10, "flowerpot": 20, "skyshot": 30, "snake": 40, "rail": 50, "wala": 60, "seven": 75}
+# 25 Nov: off the hard levels (10, 20, 30...) to 12, 22, 32... (hammer stays 5)
+const UNL := {"hammer": 5, "sparkler": 12, "flowerpot": 22, "skyshot": 32, "snake": 42, "rail": 52, "wala": 62, "seven": 72}
 const SB := ["rocket", "matchbox", "chakra", "atom"]   # in unlock order (Lv 2, 3, 5, 8)
 const SBU := {"rocket": 2, "matchbox": 3, "chakra": 5, "atom": 8}
 const PACK := {"rocket": 900, "chakra": 1200, "atom": 1500, "matchbox": 1900}
@@ -66,6 +67,10 @@ const BAN := {
 	"coco": ["Coconuts", "2 hits. The first cracks it, the second splits it open.", "art/brk/coco_2.png", null],
 	"match": ["Matchbox Stacks", "3 hits. Each hit knocks off one box. The last one sparks!", "art/brk/match_3.png", null],
 	"news": ["Newspaper Bundles", "2 hits. The first snaps the string, the second blows the papers away.", "art/brk/news_2.png", null],
+	"bag": ["New: Potli Bag", "Clear the crackers under the bags. Bring them to the bottom!", "art/toy/bag.png", null],
+	"top": ["New: Pambaram", "Clear the crackers under the tops. Bring them to the bottom!", "art/toy/top.png", null],
+	"portal": ["New: Portals", "Crackers that fall into a glowing portal come out of the other one, on the other board.", "art/toy/portal.png", null],
+	"blast": ["New goal: Blast crackers", "Clear crackers of the colour shown in the target. Specials count too!", "crk:b0", null],
 	"bangle": ["Glass Bangles", "Match next to the stack, or blast it. One hit and the bangles fly!", "art/brk/bangle_1.png", null],
 	"gift": ["Gift Parcels", "2 hits. The first tears the paper, the second bursts it open.", "art/brk/gift_2.png", null],
 	"dstack": ["Diya Stacks", "Match next to the stack, or blast it. The lamps light up, then break!", "art/brk/diya_1.png", null],
@@ -451,6 +456,27 @@ static func kid(c: Control, tag: String, nth := 0) -> Control:
 			nth -= 1
 	return null
 
+# 25 Nov bug fix: coin pills grow to fit big numbers (up to 7 digits) so the number never runs outside.
+# grow = 1 grows to the right, -1 grows to the left (keeps the right edge, for pills at the right of a card)
+func coin_t(c: Control, v: int, grow := 1) -> void:
+	set_t(c, str(v))
+	var l := lbl(c)
+	var pill: Control = c.get_parent()
+	if l == null or l.label_settings == null or pill == null:
+		return
+	if not pill.has_meta("w0"):
+		pill.set_meta("w0", pill.size.x)
+		pill.set_meta("x0", pill.position.x)
+	var tw := l.label_settings.font.get_string_size(str(v), HORIZONTAL_ALIGNMENT_LEFT, -1, l.label_settings.font_size).x + l.label_settings.outline_size
+	c.size.x = maxf(c.size.x, tw + 2)
+	l.size.x = c.size.x
+	var need := c.position.x + tw + 12.0
+	var w0: float = pill.get_meta("w0")
+	var w := maxf(w0, need)
+	resize_box(pill, Vector2(w, pill.size.y))
+	if grow < 0:
+		pill.position.x = float(pill.get_meta("x0")) - (w - w0)
+
 static func resize_box(c: Control, sz: Vector2) -> void:
 	c.size = sz
 	var b := boxr(c)
@@ -463,6 +489,12 @@ func set_img(c: Control, src: String) -> void:
 	var t := img_of(c)
 	if t:
 		t.texture = WebLayout.tex(src)
+
+static func cm_boxof(c: Control) -> Control:
+	for ch in c.get_children():
+		if ch is CssBox:
+			return ch
+	return null
 
 static func boxr(c: Control) -> ColorRect:
 	for ch in c.get_children():
@@ -529,6 +561,8 @@ func icon(k) -> String:
 		"pot", "soda", "coco", "news", "bangle", "gift": return "art/brk/%s_%d.png" % [s, 2 if s in ["coco", "news", "gift"] else 1]
 		"match": return "art/brk/match_3.png"
 		"dstack": return "art/brk/diya_1.png"
+		"bag": return "art/toy/bag.png"
+		"top": return "art/toy/top.png"
 	return "crk:b0"
 
 func goal_name(k) -> String:
@@ -536,7 +570,7 @@ func goal_name(k) -> String:
 	if s.is_valid_int():
 		return NAMES[int(s) % NAMES.size()]
 	return {"crate": "Crates", "steel": "Steel crates", "gold": "Gold floor", "cab": "Sweet plates", "cab_bottles": "Soda bottles", "cab_cups": "Tea cups", "cab_kaapi": "Kaapi sets", "coin": "Coins", "hole": "Holes", "wood": "Wooden crates", "dpot": "Clay pots", "diya": "Diyas",
-		"pot": "Clay pots", "soda": "Soda bottles", "coco": "Coconuts", "match": "Matchboxes", "news": "Newspapers", "bangle": "Bangles", "gift": "Gift parcels", "dstack": "Diya stacks"}.get(s, s)
+		"pot": "Clay pots", "soda": "Soda bottles", "coco": "Coconuts", "match": "Matchboxes", "news": "Newspapers", "bangle": "Bangles", "gift": "Gift parcels", "dstack": "Diya stacks", "bag": "Potli bags", "top": "Pambarams"}.get(s, s)
 
 func LV() -> Dictionary:
 	return BL if str(cur) == "b" else levels[int(cur)]
@@ -602,6 +636,8 @@ func _board_input() -> void:
 		if c.visible:
 			blocked = true
 	if LO and LO.root.visible:
+		blocked = true
+	if ask_box and ask_box.root.visible:
 		blocked = true
 	if L_sh and L_sh.root.visible:
 		blocked = true
@@ -712,10 +748,20 @@ func _build_game() -> void:
 			_daily_ev(k, n))
 	tap(G.node("bQuit"), func():
 		sfx.play("swoosh", 0.4, 1.5)
-		quit_level())
+		ask_leave())
 	tap(G.node("gGear"), func():
 		sfx.play("swoosh", 0.4, 1.5)
 		gset(true))
+	# 25 Nov test tool: a small "Win now" button next to back / settings (his test version)
+	var wn := WebLayout.new().make({"i": 0, "id": "", "tag": "div", "r": [78, 7, 58, 28], "op": 1, "txt": LoseUI.txt("Win now", "Sora-800", 11, "#ffffff")}, Vector2.ZERO)
+	wn.name = "bWinNow"
+	G.root.add_child(wn)
+	UISkin.button(wn, "green")
+	tap(wn, func():
+		if game and not game.over and not ending and not is_bonus() and not game.stopped:
+			game.over = true
+			game.stopped = true
+			won(game.moves))
 	tap(G.node("mRew"), _meter_drag, true)
 	tap(G.node("skip"), func():
 		if ending and game.over:
@@ -728,6 +774,27 @@ func _build_game() -> void:
 func pop_face() -> void:
 	Anim.play(G.nodes[29], "badge2", 0.5, 0.0, "ease-out")
 
+# 25 Nov bug fix: the back arrow, "Exit level" and the phone's back button no longer quit at once; they ask first.
+var ask_box: AskBox
+func ask(title: String, body: String, no_txt: String, yes_txt: String, on_yes: Callable, on_no := Callable()) -> void:
+	if ask_box == null:
+		ask_box = AskBox.new()
+		ask_box.build(top_layer, self)
+	ask_box.ask(title, body, no_txt, yes_txt, on_yes, on_no)
+
+func ask_leave() -> void:
+	if game == null or game.over or ending:
+		quit_level()
+		return
+	game.paused = true
+	_board_input()
+	ask("Leave level?", "Your moves and progress in this level will be lost.", "Keep playing", "Leave", func():
+		game.paused = false
+		quit_level(), func():
+		game.paused = false
+		_board_input())
+
+var toy_said := false
 func quit_level() -> void:
 	if game:
 		game.stopped = true
@@ -746,6 +813,7 @@ func start(i) -> void:
 	doneG = {}
 	inflight = {}
 	tries = {"ad": 0, "coin": 0}
+	toy_said = false
 	wordMv = null
 	midAd = false
 	REW = null
@@ -897,6 +965,15 @@ func fly(k, x: float, y: float) -> void:
 	flyN = 0 if t - flyLast > 0.3 else flyN + 1
 	flyLast = t
 	var d := tgt - Vector2(sx, sy)
+	if key == "bag" or key == "top":
+		# 25 Nov bring down: the first one out of the level says how many are left
+		var lft := int(game.goal.get(key, 0))
+		if not toy_said and lft > 0:
+			toy_said = true
+			toast28("%s collected! %d more." % ["Bag" if key == "bag" else "Pambaram", lft])
+		im.size = Vector2(70, 70)
+		im.pivot_offset = im.size / 2
+		im.position = Vector2(sx - 35, sy - 35)
 	inflight[key] = int(inflight.get(key, 0)) + 1
 	draw_hud()
 	var st := {"n": 0.0}
@@ -1148,7 +1225,7 @@ func slots() -> void:
 		var kk := k
 		tap(c, func(): _slot_down(kk), true)
 		slot_nodes[k] = c
-	set_t(G.node("gCoins"), str(S.coins))
+	coin_t(G.node("gCoins"), int(S.coins))
 
 # booster price pill: [coin] 500, grown to the left from its right edge
 func _price_pill(pr: Control, num: String) -> void:
@@ -1458,9 +1535,9 @@ func ad_pad(c: Control, use_img := false, other: Control = null) -> void:
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 
 func _coins_ui() -> void:
-	set_t(G.node("gCoins"), str(S.coins))
-	set_t(L_card.node("lCoins"), str(S.coins))
-	set_t(L_hard.node("lCoins"), str(S.coins))
+	coin_t(G.node("gCoins"), int(S.coins))
+	coin_t(L_card.node("lCoins"), int(S.coins), -1)
+	coin_t(L_hard.node("lCoins"), int(S.coins), -1)
 
 func ask_buy(k: String) -> void:
 	var ad: bool = FREEAD.has(k) and not midAd
@@ -1504,6 +1581,16 @@ func _build_overlays() -> void:
 	L_hard.build("res://ui/card_hard.json", stage)
 	for L in [L_card, L_hard]:
 		L.root.visible = false
+		# 25 Nov: the dim must cover the whole screen on tall phones (the root clipped it to 844 px)
+		L.root.clip_contents = false
+		for yy in [-600.0, 844.0]:
+			var ext := ColorRect.new()
+			ext.color = Color(0.051, 0.016, 0.125, 0.9)
+			ext.position = Vector2(-20, yy)
+			ext.size = Vector2(430, 600)
+			ext.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			L.root.add_child(ext)
+			L.root.move_child(ext, 0)
 		Anim.play(L.nodes[1], "spin2", 40.0, 0.0, "linear", -1)
 		tap(L.node("lClose"), func():
 			sfx.play("swoosh", 0.4)
@@ -1861,7 +1948,22 @@ func _ads_init() -> void:
 		ads.connect("ad_done", _ad_done)
 		ads.init()
 
+# 25 Nov ad screen fix: plain black behind the ad (the game never shows through), removed when the ad closes
+var ad_black: ColorRect
+func _ad_black(on: bool) -> void:
+	if on and ad_black == null:
+		ad_black = ColorRect.new()
+		ad_black.color = Color.BLACK
+		ad_black.position = Vector2(-20, -800)
+		ad_black.size = Vector2(430, 2444)
+		ad_black.mouse_filter = Control.MOUSE_FILTER_STOP
+		top_layer.add_child(ad_black)
+	elif not on and ad_black != null:
+		ad_black.queue_free()
+		ad_black = null
+
 func _ad_done(ok: bool) -> void:
+	_ad_black(false)
 	sfx.duck(0.3)
 	var cb := ad_cb
 	ad_cb = Callable()
@@ -1876,6 +1978,7 @@ func show_ad(cb: Callable) -> void:
 		toast28("Loading video...")
 		ad_cb = cb
 		sfx.duck(0.0)
+		_ad_black(true)
 		ads.showAd()
 		return
 	toast28("Loading video...")
@@ -2031,7 +2134,7 @@ func gift_sb() -> void:
 func boosters(C: WebLayout, tapped := "") -> void:
 	var first := tapped == ""
 	gift_sb()
-	set_t(C.node("lCoins"), str(S.coins))
+	coin_t(C.node("lCoins"), int(S.coins), -1)
 	var lb: Control = C.node("lBoost")
 	var hard := C == L_hard
 	# template button indexes: with a count / with a price / gold
@@ -2090,11 +2193,11 @@ func boosters(C: WebLayout, tapped := "") -> void:
 			c.pivot_offset = c.size / 2
 			c.scale = Vector2.ONE * 0.86
 			create_tween().tween_property(c, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	# golden matchbox, locked until level 100: its own wide, shiny slot so it is noticed
+	# 25 Nov: Mayil Matchbox (was Golden Matchbox), locked until level 101: its own wide, shiny slot so it is noticed
 	var gold := _gold_slot(lb, first, Vector2(1, 96))
 	tap(gold, func():
 		sfx.play("nope")
-		toast28("The Golden Matchbox unlocks at Level 100!"))
+		toast28("The Mayil Matchbox unlocks at Level 101!"))
 	var a: Control = C.node("lAd")
 	a.visible = not sb_locked("rocket") and S.ads.get("card", "") != today()
 
@@ -2118,7 +2221,7 @@ func _gold_slot(parent: Control, pop: bool, at: Vector2) -> Control:
 	var gt := glow.create_tween().set_loops()
 	gt.tween_property(glow, "modulate:a", 0.4, 0.9).set_trans(Tween.TRANS_SINE)
 	gt.tween_property(glow, "modulate:a", 1.0, 0.9).set_trans(Tween.TRANS_SINE)
-	var bx := WebLayout.box({"bg": [UISkin.lin([[0, "#5A1468"], [0.55, "#3A0B4A"], [1, "#22062E"]])], "rad": [18, 18, 18, 18],
+	var bx := WebLayout.box({"bg": [UISkin.lin([[0, "#0E4E9A"], [0.55, "#3A1A7A"], [1, "#2A0A4E"]])], "rad": [18, 18, 18, 18],
 		"bw": [3, 3, 3, 3], "bcol": UISkin.rgba("#FFD23F"), "sh": [UISkin.sh(0, 0, 0, "#8A5A00", false), UISkin.sh(0, 4, 0, "#2A0A12"), UISkin.sh(0, 0, 16, "#FFC83F")]}, Vector2(W, H))
 	bx.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(bx)
@@ -2146,7 +2249,7 @@ func _gold_slot(parent: Control, pop: bool, at: Vector2) -> Control:
 	st.tween_interval(1.6)
 	st.tween_callback(func(): shine.position.x = -80)
 	var ic := TextureRect.new()
-	ic.texture = WebLayout.tex("crk:b14")
+	ic.texture = load("res://art/toy/mayil.png")
 	ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	ic.size = Vector2(60, 60)
@@ -2173,7 +2276,7 @@ func _gold_slot(parent: Control, pop: bool, at: Vector2) -> Control:
 		t2.tween_property(tw, "scale", Vector2.ONE * 1.5, 0.45)
 		t2.tween_property(tw, "scale", Vector2.ONE * 0.3, 0.6)
 	var t := Label.new()
-	t.text = "Golden Matchbox"
+	t.text = "Mayil Matchbox"
 	var tl := LabelSettings.new()
 	tl.font = WebLayout.font("TitanOne")
 	tl.font_size = 21
@@ -2185,7 +2288,7 @@ func _gold_slot(parent: Control, pop: bool, at: Vector2) -> Control:
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(t)
 	var sub_l := Label.new()
-	sub_l.text = "Legendary cracker  \u00b7  Level 100"
+	sub_l.text = "Legendary cracker  \u00b7  Level 101"
 	var sl := LabelSettings.new()
 	sl.font = WebLayout.font("Sora-700")
 	sl.font_size = 11
@@ -2251,8 +2354,12 @@ func _card_play() -> void:
 	for k in SB:
 		if pick.has(k) and inv(k) > 0:
 			use.append(k)
+	var toy_new: bool = Q.has("bag") or Q.has("top")
 	run_banners(Q, func():
 		start(card_i)
+		if toy_new:
+			_after(1.2, toy_demo)
+		_blast_toast()
 		for j in use.size():
 			var k: String = use[j]
 			S.inv[k] = inv(k) - 1
@@ -2261,6 +2368,45 @@ func _card_play() -> void:
 					drop(k))
 		save()
 		pick = {})
+
+# 25 Nov bring down, first level with bags / pambarams: a hand shows one swap right under a piece (it drops a
+# cell); any touch stops it (hide_hand on input)
+func toy_demo() -> void:
+	if game == null or game.over or not game.resting():
+		return
+	for r in game.R:
+		for c in game.C:
+			var e = game.b[r][c]
+			if e == null or not e.has("toy"):
+				continue
+			var br := r + 1
+			if br >= game.R or game.at2(br, c) == null or game.at2(br, c).has("ob"):
+				continue
+			for d in [[0, 1], [0, -1], [1, 0], [-1, 0]]:
+				var r2: int = br + d[0]
+				var c2: int = c + d[1]
+				var f = game.at2(r2, c2)
+				var g = game.at2(br, c)
+				if f == null or f.has("ob") or f.has("toy") or g.has("toy") or f.k >= 6 or g.k >= 6 or f.k < 0 or g.k < 0:
+					continue
+				var t: int = g.k
+				g.k = f.k
+				f.k = t
+				var ok: bool = game.makes(br, c)
+				f.k = g.k
+				g.k = t
+				if ok:
+					show_hand({"r": r2, "c": c2, "dr": -d[0], "dc": -d[1]})
+					return
+
+# 25 Nov "Blast X crackers": say it once at the start of a level that has it
+func _blast_toast() -> void:
+	if game == null or is_bonus():
+		return
+	for k in game.goal:
+		if str(k).is_valid_int():
+			_after(0.8, func(): toast28("Blast %d %s crackers!" % [int(game.goal[k]), Levels.COLNAME[int(str(k)) % 6]]))
+			return
 
 func _card_closed() -> void:
 	# the card's X goes home (from the street it simply closes)
@@ -2793,6 +2939,21 @@ func _win_extra(li: int, stars: int, d: int, c: int) -> void:
 		root.add_child(rays)
 		root.move_child(rays, L_win.nodes[5].get_index())
 		WX.rays = rays
+		# 25 Nov: everything sits in ONE card with a gold border (less crowded)
+		var card := Panel.new()
+		var cs := StyleBoxFlat.new()
+		cs.bg_color = Color(0.16, 0.04, 0.24, 0.55)
+		cs.border_color = Color("#FFD23F")
+		cs.set_border_width_all(4)
+		cs.set_corner_radius_all(30)
+		cs.shadow_color = Color(1.0, 0.78, 0.2, 0.35)
+		cs.shadow_size = 10
+		card.add_theme_stylebox_override("panel", cs)
+		card.position = Vector2(8, 8)
+		card.size = Vector2(374, 828)
+		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(card)
+		root.move_child(card, rays.get_index())
 		# fireworks layer
 		var fx := PicStreet.PicFx.new()
 		fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2983,48 +3144,10 @@ func _win_extra(li: int, stars: int, d: int, c: int) -> void:
 				t.tween_callback(func():
 					WX.fx.sparkle(st.position + st.size / 2.0, 14)
 					sfx.play("lakshmi", 0.35, 1.3 + i * 0.12)))
-	# a coin drops into the piggy bank
-	var cn: TextureRect = WX.cn
-	var pl2: Label = WX.pl2
-	cn.visible = false
-	pl2.modulate.a = 0.0
-	var full := int(S.get("piggy", 0)) >= PIG_MAX
-	pl2.text = "FULL!" if full else "+%d" % PIG_ADD
-	pl2.position = Vector2(323, 570)
-	later(2.1, func():
-		cn.visible = true
-		cn.modulate.a = 1.0
-		cn.position = Vector2(343, 540)
-		var t := create_tween()
-		t.tween_property(cn, "position:y", 598.0, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		t.tween_callback(func():
-			cn.visible = false
-			sfx.coin(5)
-			var pg: TextureRect = WX.pg
-			var b := create_tween()
-			b.tween_property(pg, "scale", Vector2(1.18, 0.86), 0.08)
-			b.tween_property(pg, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_BACK)
-			var f := create_tween()
-			f.tween_property(pl2, "modulate:a", 1.0, 0.2)
-			f.parallel().tween_property(pl2, "position:y", 556.0, 0.6)
-			f.tween_property(pl2, "modulate:a", 0.0, 0.6).set_delay(0.6)))
-	# next build line (hidden once the area's builds are all done)
+	# 25 Nov: no piggy icon and no "Next build" line on the win screen (the piggy still fills, see home)
+	for k in ["pg", "cn", "pl2", "pl", "bar_bg", "bar"]:
+		(WX[k] as CanvasItem).visible = false
 	home_ui.sync_in()
-	var sn: int = street.step
-	var show := sn < street.TASKS.size()
-	for k in ["pl", "bar_bg", "bar"]:
-		(WX[k] as CanvasItem).visible = show
-	if show:
-		var T: Dictionary = street.TASKS[sn]
-		var tn: String = String(T.n).trim_prefix("Build the ")
-		var need := int(T.c)
-		var have := int(street.diyas)
-		if have >= need:
-			WX.pl.text = "Ready to build: %s!" % tn
-		else:
-			var m := need - have
-			WX.pl.text = "Next build: %s · %d more diya%s" % [tn, m, "" if m == 1 else "s"]
-		WX.bar.size.x = 200.0 * clampf(float(have) / maxf(1.0, need), 0.0, 1.0)
 
 func _count(c: Control, a: int, b: int, dur: float, steps: int, pre := "") -> void:
 	var st := {"n": 0}
@@ -3070,10 +3193,8 @@ func next_level() -> void:
 	if int(S.lv) >= mini(area_cap(), levels.size()):
 		home()
 		return
-	deb.clear()
-	hide_hand()
-	game.stopped = true
-	show_screen("game")
+	# 25 Nov: the next level card opens over the dimmed home street (like from home), not the dark level screen
+	home()
 	open_card(int(S.lv))
 
 func _win_x2() -> void:
@@ -3144,6 +3265,7 @@ func start_bonus(n: int) -> void:
 	_show_ban("art/ui-coin.webp", "Coin Blast", "Bonus level! Break as many coins as you can in 10 moves. You keep them all.", func(): start("b"))
 	sfx.play("fanfare", 0.5)
 
+var bwin: BonusWin
 func bonus_end() -> void:
 	if screens.bonusEnd.visible:
 		return
@@ -3158,22 +3280,14 @@ func bonus_end() -> void:
 	fw.run(true)
 	sfx.duck(0.12)
 	sfx.play("fanfare", 0.7)
-	var wc: Control = L_be.nodes[4]
-	wc.scale = Vector2.ONE
-	wc.remove_meta("base")
-	Anim.play(wc, "wcin", 0.55, 0.1, "cubic-bezier(.2,1.4,.4,1)")
-	Anim.play(L_be.node("beNext"), "fin", 0.4, 1.6)
-	var st := {"n": 0}
-	var tw := create_tween()
-	tw.tween_method(func(k: float):
-		set_t(L_be.node("beN"), str(int(round(got * k * (2 - k)))))
-		var q := int(floor(k * 14))
-		if q > st.n:
-			st.n = q
-			sfx.coin(q % 8)
-			if q % 4 == 0:
-				fw.burst(80 + randf() * 230, 120 + randf() * 120, false), 0.0, 1.0, 1.4)
-	tw.tween_callback(func():
+	# 25 Nov: the win-screen style card (BonusWin) replaces the old card
+	L_be.nodes[4].visible = false
+	if bwin == null:
+		bwin = BonusWin.new()
+		screens.bonusEnd.add_child(bwin)
+		bwin.build(self)
+	bwin.open(got)
+	_after(1.75, func():
 		fw.burst(195, 330, true)
 		sfx.play("pop", 0.6))
 	_after(2.5, func(): sfx.duck(0.3))
@@ -3304,7 +3418,7 @@ func _gs(a: String) -> void:
 		"x": gset(false)
 		"exit":
 			gset(false)
-			quit_level()
+			ask_leave()
 		"info":
 			gset(false)
 			banner("howto", Callable())
@@ -3354,13 +3468,17 @@ func home() -> void:
 
 func street_play() -> void:
 	if int(S.lv) >= area_cap():
-		toast28("Area 4, GHILLI Delivery Hub, is coming soon!" if street.area >= 3 else "Finish the builds to open Area %d!" % (street.area + 1))
+		# 25 Nov: a player who finished Area 3 on the level-80 APK moves on to Area 4 here
+		if street.area == 3 and street.step >= street.TASKS.size() and levels.size() > 80:
+			enter_area4()
+			return
+		toast28("Area 5, Madurai, is coming soon!" if street.area >= 4 else "Finish the builds to open Area %d!" % (street.area + 1))
 		return
 	open_card(mini(int(S.lv), levels.size() - 1))
 
 # areas: Area 1 = levels 1-30 (Sivakasi Street), Area 2 = levels 31-60 (Ghilli Crackers, Bunder Street, Chennai)
 func area_levels() -> Vector2i:
-	return Vector2i(0, 30) if street.area == 1 else (Vector2i(30, 60) if street.area == 2 else Vector2i(60, 80))
+	return [Vector2i(0, 30), Vector2i(30, 60), Vector2i(60, 80), Vector2i(80, 100)][clampi(street.area, 1, 4) - 1]
 
 const A1_COST := [1, 2, 2, 3, 3, 4, 4, 5, 5, 6]
 func area_cap() -> int:
@@ -3388,6 +3506,138 @@ func enter_area2() -> void:
 		back_skip = Callable()
 		street.set_area(2)
 		sky_layer.visible = false
+		home_ui.sync_in()
+		home_ui.show_home())
+	st.tree_exited.connect(cl.queue_free)
+
+# ================================================================== 25 Nov test tools (TestUI, his test version)
+var test_ui: TestUI
+func open_test() -> void:
+	if test_ui == null:
+		test_ui = TestUI.new()
+		top_layer.add_child(test_ui)
+		test_ui.build(self)
+	test_ui.open()
+
+func dev_build_names(a: int) -> Array:
+	var T: Array
+	if a == 1:
+		T = (JSON.parse_string(FileAccess.get_file_as_string("res://street/layout.json")) as Dictionary).tasks
+	elif a == 2:
+		T = ShopArea.TASKS
+	elif a == 3:
+		T = Backroom.TASKS
+	else:
+		T = PicStreet.A4_TASKS
+	var out: Array = []
+	for t in T:
+		out.append(String(t.n).trim_prefix("Build the "))
+	return out
+
+# switch the street to area a (the levels before it count as won, so its diyas exist)
+func _dev_area(a: int) -> void:
+	if int(street.area) != a:
+		S.area = a
+		for k in ["end1", "end2", "end3"]:
+			S[k] = 1 if int(k.substr(3)) < a else 0
+		street.set_area(a)
+		if a == 1:
+			for i in mini(A1_COST.size(), street.TASKS.size()):
+				street.TASKS[i].c = A1_COST[i]
+	var r := area_levels()
+	S.lv = maxi(int(S.lv), r.x)
+	for i in r.x:
+		if not S.best.has(str(i)):
+			S.best[str(i)] = 1
+
+# i = build index (-1 = play all builds): jump to just before it and play its animation
+func dev_build(a: int, i: int) -> void:
+	_dev_area(a)
+	show_screen("street")
+	home_ui.bp.visible = false
+	var n := 0 if i < 0 else i
+	street.won = false
+	street.SHOW = false
+	street.skip_to(n)
+	S.step = n
+	var need := 0
+	for k in range(n, street.TASKS.size() if i < 0 else n + 1):
+		need += int(street.TASKS[k].c)
+	street.diyas = need
+	S.diyas = need
+	S.devd = 0
+	save()
+	home_ui.hide_home()
+	if i < 0:
+		street.build_all()
+	else:
+		street.do_task(false)
+	home_ui._building(true)
+
+func dev_diyas(n: int) -> void:
+	S.devd = int(S.get("devd", 0)) + n
+	save()
+	home_ui.sync_in()
+	home_ui.refresh()
+
+func dev_goto(n: int) -> void:
+	var a := 1 if n <= 30 else (2 if n <= 60 else (3 if n <= 80 else 4))
+	_dev_area(a)
+	S.lv = n - 1
+	for i in n - 1:
+		if not S.best.has(str(i)):
+			S.best[str(i)] = 1
+	# the area's builds count as done for the levels before it
+	save()
+	home_ui.sync_in()
+	home()
+	open_card(n - 1)
+
+func dev_area_start(a: int) -> void:
+	if a == 1:
+		play_story(func(): home())
+		return
+	_dev_area(a - 1)
+	S.step = street.TASKS.size()
+	if a == 2: enter_area2()
+	elif a == 3: enter_area3()
+	else: enter_area4()
+
+func dev_area_end(a: int) -> void:
+	_dev_area(a)
+	street.skip_to(street.TASKS.size())
+	S.step = street.TASKS.size()
+	S["end%d" % a] = 0
+	save()
+	show_screen("street")
+	home_ui.hide_home()
+	play_area_end(func(): home_ui.show_home())
+
+# 25 Nov: after the Area 3 reward (or on the first Play for a player who finished Area 3 before): the Area 4 start
+# slides (the order flood, the places, the dusty van), then the Delivery Hub home picture with its 9 builds
+func enter_area4() -> void:
+	S.area = 4
+	S.step3 = int(S.get("step", 0))
+	S.step = 0
+	save()
+	home_ui.home.visible = false
+	var cl := CanvasLayer.new()
+	cl.layer = 60
+	add_child(cl)
+	var st := AreaStartScene.new()
+	st.start_area = 4
+	st.app = self
+	cl.add_child(st)
+	st.play(get_viewport().get_visible_rect().size.y)
+	back_skip = st._finish
+	get_tree().create_timer(1.0).timeout.connect(func():
+		street.set_area(4)
+		home_ui.sync_in())
+	st.finished.connect(func():
+		back_skip = Callable()
+		street.set_area(4)
+		sky_layer.visible = false
+		show_screen("street")
 		home_ui.sync_in()
 		home_ui.show_home())
 	st.tree_exited.connect(cl.queue_free)
@@ -3659,7 +3909,7 @@ func street_sfx(n: String) -> void:
 # area reward: Area 1 = 500 coins, 3 rockets, 3 chakras. Area 2 = 1000 coins, 3 matchboxes, 2 atoms.
 func area_reward() -> void:
 	var a2: bool = street.area >= 2
-	var c: int = [500, 1000, 1500][clampi(street.area, 1, 3) - 1]
+	var c: int = [500, 1000, 1500, 2000][clampi(street.area, 1, 4) - 1]
 	var k1 := "matchbox" if a2 else "rocket"
 	var k2 := "atom" if a2 else "chakra"
 	var n2 := 2 if a2 else 3
@@ -3856,6 +4106,9 @@ func _notification(what: int) -> void:
 		on_back()
 
 func on_back() -> void:
+	if ask_box and ask_box.root.visible:
+		ask_box.back()
+		return
 	if exit_box and exit_box.root.visible:
 		exit_box.close()
 		return
@@ -3913,12 +4166,14 @@ func on_back() -> void:
 		_win_next()
 		return
 	if screens.bonusEnd.visible:
+		if bwin:
+			bwin.hide_win()
 		fw.run(false)
 		next_level()
 		return
 	if screens.game.visible:
 		if game and not game.over and not ending and not game.stopped:
-			gset(true)
+			ask_leave()
 		return
 	if street and street.busy:
 		street.SPEED = 30.0
@@ -3982,6 +4237,10 @@ func _enter_tree() -> void:
 		call_deferred("_flow", a)
 
 func _flow(a: Dictionary) -> void:
+	if a.has("snap"):
+		for k in String(a.snap).split(","):
+			var tk := float(k)
+			get_tree().create_timer(tk).timeout.connect(func(): get_viewport().get_texture().get_image().save_png("%s-%04.1f.png" % [a.get("snapto", "/tmp/snap"), tk]))
 	if a.has("tap"):
 		await get_tree().create_timer(float(a.tap)).timeout
 		_title_tapped()
@@ -4013,6 +4272,19 @@ func _flow(a: Dictionary) -> void:
 				if a.get("go") == "card":
 					await get_tree().create_timer(3.0).timeout
 					open_card(card_i + 1)
+		elif act == "win":
+			title_s.visible = false
+			start(int(a.get("lv", 1)) - 1)
+			await get_tree().create_timer(1.0).timeout
+			won(int(a.get("mv", 8)))
+		elif act == "bwin":
+			title_s.visible = false
+			start_bonus(1)
+			await get_tree().create_timer(1.0).timeout
+			ban_done()
+			await get_tree().create_timer(1.0).timeout
+			game.goal["coin"] = 3
+			bonus_end()
 		elif act == "winnext":
 			title_s.visible = false
 			start(0)
@@ -4174,6 +4446,14 @@ func _dev(a: Dictionary) -> void:
 					print("AUTO card -> play")
 					_card_play()
 				continue
+			if a.has("toys"):
+				var tp: Array = []
+				for rr in game.R:
+					for cc in game.C:
+						var te = game.b[rr][cc]
+						if te != null and te.has("toy"):
+							tp.append([rr, cc, te.get("firing", false), te.fy])
+				print("TOYS ", tp, " goal ", game.goal, " mv ", game.moves)
 			if LO.root.visible:
 				print("AUTO lost level ", int(cur) + 1, " goal left ", game.goal)
 				played += 1
@@ -4430,15 +4710,15 @@ func _build_sheets() -> void:
 			"sh_bag": L_sb = L
 
 # ================================================================== 23 Nov: ways to earn coins (agreed 20 Nov)
-# Daily tasks with our specials: 3 a day = 50, 100, 150 coins + 300 for finishing all three.
+# Daily tasks with our specials: 3 a day = 20, 30, 50 coins + 100 for finishing all three (25 Nov).
 const DTASKS := [
 	{"id": "rocket", "t": "Make 5 Rockets", "k": "make_rocket", "n": 5},
 	{"id": "chakra", "t": "Fire 3 Ground Chakras", "k": "fire_chakra", "n": 3},
 	{"id": "break", "t": "Break 30 obstacles", "k": "break", "n": 30},
 	{"id": "win", "t": "Win 3 levels", "k": "win", "n": 3},
 ]
-const DREW := [50, 100, 150]
-const DALL := 300
+const DREW := [20, 30, 50]   # 25 Nov: was 50/100/150 + 300
+const DALL := 100
 func dtask() -> Dictionary:
 	var d: Dictionary = S.get("dtask", {})
 	if d.get("day", "") != today():
@@ -4493,7 +4773,8 @@ func _piggy_add() -> void:
 func piggy_tap() -> void:
 	var p := int(S.get("piggy", 0))
 	if p < PIG_MAX:
-		toast28("Piggy bank: %d of %d coins. Win %d more level%s to fill it!" % [p, PIG_MAX, (PIG_MAX - p + PIG_ADD - 1) / PIG_ADD, "" if PIG_MAX - p <= PIG_ADD else "s"])
+		sfx.play("swoosh", 0.4)
+		ask("Piggy bank  %d/%d" % [p, PIG_MAX], "Win levels to fill it. When it's full, watch a short video and get %d coins." % PIG_MAX, "Got it", "", Callable())
 		return
 	show_ad(func(ok: bool):
 		if not ok:

@@ -21,6 +21,8 @@ AREAS = {
     2: {"n": 12, "pics": [("a2p0", [0, 1, 2, 3, 4, 5]), ("a2p1", [6, 7, 8, 9, 10, 11])], "sky": False},
     # Area 3 (21 Nov): the back store room, one picture holds all 9 builds (tools/pic/a3_pic.gd)
     3: {"n": 9, "pics": [("a3p0", [0, 1, 2, 3, 4, 5, 6, 7, 8])], "sky": False},
+    # Area 4 (25 Nov): GHILLI Delivery Hub, one home picture holds all 9 builds (tools/pic/a4_render.sh -> a4_pics.py)
+    4: {"n": 9, "pics": [("a4p0", [0, 1, 2, 3, 4, 5, 6, 7, 8])], "sky": False},
 }
 ONLY = [int(x) for x in sys.argv[3].split(",")] if len(sys.argv) > 3 else list(AREAS)   # e.g. "3": only that area
 

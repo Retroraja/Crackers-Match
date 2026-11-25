@@ -132,12 +132,31 @@ func screen_pos(p3: Vector3) -> Vector2:
 const A3_COST := [2, 2, 2, 3, 3, 3, 3, 3, 4]
 const A3_KIND := ["stall", "house", "house", "stall", "stall", "house", "lamp", "farm", "stall"]
 
+# Area 4 (25 Nov): GHILLI Delivery Hub, levels 81-100 (25 diyas, same costs as Area 3). Builds 1-4 pop in on the
+# still home picture with a gold glow + sparkle; builds 5-9 are deliveries (see _deliver).
+const A4_TASKS := [
+	{"n": "Fix the Van", "c": 2, "ic": "🚐", "kind": "farm"},
+	{"n": "Order Board", "c": 2, "ic": "📋", "kind": "stall"},
+	{"n": "Packing Table", "c": 2, "ic": "📦", "kind": "stall"},
+	{"n": "Delivery Bikes", "c": 3, "ic": "🚲", "kind": "farm"},
+	{"n": "Temple Delivery", "c": 3, "ic": "🛕", "kind": "house", "place": "temple"},
+	{"n": "Wedding Hall Delivery", "c": 3, "ic": "💐", "kind": "house", "place": "wedding"},
+	{"n": "School Delivery", "c": 3, "ic": "🏫", "kind": "house", "place": "school"},
+	{"n": "Apartment Delivery", "c": 3, "ic": "🏢", "kind": "house", "place": "apts"},
+	{"n": "Marina Party Delivery", "c": 4, "ic": "🎉", "kind": "lamp", "place": "marina"},
+]
+
 func set_area(a: int) -> void:
-	if a == area or a < 2 or a > 3:
+	if a == area or a < 1 or a > 4:
 		return
 	area = a
-	if a == 2:
+	if a == 1:
+		var L0: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://street/layout.json"))
+		TASKS = L0.tasks
+	elif a == 2:
 		TASKS = ShopArea.TASKS.duplicate(true)
+	elif a == 4:
+		TASKS = A4_TASKS.duplicate(true)
 	else:
 		TASKS = Backroom.TASKS.duplicate(true)
 		for i in TASKS.size():
@@ -330,7 +349,12 @@ func run_next() -> void:
 		var tot := 2.2
 		SPEED = maxf(SPEED, 1.6 if FAST else 1.0)
 		var cont := func():
+			if area == 4 and T.has("place") and D.has("a4"):
+				_deliver(i, T)
+				return
 			_pop(i)
+			if area == 4:
+				_gold_glow(site_of(i))
 			sfx.emit("bk:%s:%.2f" % [kind_of(T), tot / SPEED])
 			after(tot, _task_finished)
 		if spend_cb.is_valid():
@@ -440,6 +464,168 @@ func _process(delta: float) -> void:
 		if fwT <= 0:
 			firework()
 			fwT = rnd(0.5, 0.9)
+
+# --------------------------------------------------------------- Area 4 (25 Nov)
+# a soft gold glow behind a build that pops in (one picture, fades)
+func _gold_glow(s: Vector3) -> void:
+	var g := TextureRect.new()
+	g.texture = load("res://art/fx/flash_gold.png")
+	g.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	g.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	view.add_child(g)
+	view.move_child(g, _fx.get_index())
+	var c := Vector2(s.x, s.y) - view.global_position
+	tween(1.3, func(k: float):
+		var sz := 120.0 + 260.0 * sm(minf(1.0, k * 2.0))
+		g.size = Vector2(sz, sz)
+		g.position = c - g.size / 2.0
+		g.modulate.a = sin(k * PI) * 0.9
+		if k >= 1.0:
+			g.queue_free())
+	after(0.5, func(): sparkle(s, 26))
+
+func _img(path: String) -> TextureRect:
+	var t := TextureRect.new()
+	t.texture = load(path)
+	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	t.stretch_mode = TextureRect.STRETCH_SCALE
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return t
+
+# home picture zoomed z times around picture point p (z = 1: normal)
+func _zoom(p: Vector2, z: float) -> void:
+	var c: Control = pics[cur]
+	var k := _k() * z
+	c.scale = Vector2(k, k)
+	var cpos := Vector2((view.size.x - D.w * _k()) / 2.0, (view.size.y - D.h * _k()) / 2.0) + p * _k()
+	# keep p where it was on screen for z = 1, moving it to the middle as z grows
+	var mid := view.size / 2.0
+	var at := cpos.lerp(mid, clampf((z - 1.0) / 0.6, 0.0, 1.0))
+	c.position = at - p * k
+
+# a delivery (about 5.5 s, like the approved temple video): zoom into the order board, that place's card gets a tick
+# and DELIVERED; pan to the grey van, it slides off; fade into the place, the van rolls in and the parcels pop;
+# fade back home, where the new customer and the board stamp pop in (the build's own stickers).
+func _deliver(i: int, T: Dictionary) -> void:
+	var X: Dictionary = D.a4
+	var P: Dictionary = X.places[T.place]
+	var j := i - 4
+	var BC := Vector2(D.pics[0].st[1].site[0], D.pics[0].st[1].site[1]) if D.pics[0].st.size() > 1 else Vector2(D.w * 0.4, D.h * 0.5)
+	var vr: Array = X.van.r
+	var VC := Vector2(vr[0] + vr[2] / 2.0, vr[1] + vr[3] / 2.0)
+	var c: Control = pics[cur]
+	var dim := ColorRect.new()
+	dim.color = Color(0.05, 0.02, 0.1, 0.0)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dim.size = view.size
+	view.add_child(dim)
+	view.move_child(dim, _fx.get_index())
+	var bw: float = minf(view.size.x * 0.9, 470.0)
+	var bh: float = bw * float(X.board.h) / float(X.board.w)
+	var b0 := _img("res://street/pics/a4_board%d.webp" % j)
+	var b1 := _img("res://street/pics/a4_board%d.webp" % (j + 1))
+	for bb in [b0, b1]:
+		bb.size = Vector2(bw, bh)
+		bb.position = (view.size - bb.size) / 2.0
+		bb.pivot_offset = bb.size / 2.0
+		bb.modulate.a = 0.0
+		view.add_child(bb)
+		view.move_child(bb, _fx.get_index())
+	# van layer on the home picture: the empty kerb + the van on top of it
+	var vbg := _img(X.vanbg.img)
+	vbg.position = Vector2(vr[0], vr[1])
+	vbg.size = Vector2(vr[2], vr[3])
+	vbg.visible = false
+	c.add_child(vbg)
+	var van := _img(X.van.img)
+	van.position = vbg.position
+	van.size = vbg.size
+	van.visible = false
+	c.add_child(van)
+	# 1 zoom into the board, the board panel, the tick
+	tween(0.8, func(k: float): _zoom(BC, 1.0 + 1.6 * sm(k)), 0.3)
+	tween(0.35, func(k: float): dim.color.a = 0.45 * k, 0.8)
+	tween(0.35, func(k: float):
+		b0.modulate.a = k
+		b0.scale = Vector2.ONE * (0.85 + 0.15 * k), 0.85)
+	after(1.3, func():
+		sfx.emit("pop")
+		sfx.emit("bk:stall:0.6"))
+	tween(0.3, func(k: float):
+		b1.modulate.a = k
+		b1.scale = Vector2.ONE * (1.0 + 0.06 * sin(k * PI)), 1.3)
+	after(1.45, func(): sparkle(Vector3(view.global_position.x + view.size.x / 2.0, view.global_position.y + view.size.y / 2.0, 0), 22))
+	# 2 the board goes, pan to the van, the van slides off to the left
+	tween(0.3, func(k: float):
+		b0.modulate.a = 0.0
+		b1.modulate.a = 1.0 - k
+		dim.color.a = 0.45 * (1.0 - k), 2.0)
+	tween(0.65, func(k: float):
+		var e := sm(k)
+		_zoom(BC.lerp(VC + Vector2(120, 0), e), lerpf(2.6, 1.4, e)), 2.0)
+	after(2.6, func():
+		vbg.visible = true
+		van.visible = true
+		sfx.emit("rocketS"))
+	tween(0.5, func(k: float): van.position.x = vr[0] - 1300.0 * k * k, 2.7)
+	# 3 fade into the place: the van rolls in, the parcels pop
+	var pl := Control.new()
+	pl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pl.size = Vector2(D.w, D.h)
+	pl.modulate.a = 0.0
+	var pb := _img(P.base)
+	pb.size = pl.size
+	pl.add_child(pb)
+	var pv := _img(P.van.img)
+	var pr: Array = P.van.r
+	pv.position = Vector2(pr[0], pr[1])
+	pv.size = Vector2(pr[2], pr[3])
+	pl.add_child(pv)
+	var px := _img(P.box.img)
+	var qr: Array = P.box.r
+	px.position = Vector2(qr[0], qr[1])
+	px.size = Vector2(qr[2], qr[3])
+	px.pivot_offset = Vector2(qr[2] / 2.0, qr[3])
+	px.visible = false
+	pl.add_child(px)
+	view.add_child(pl)
+	view.move_child(pl, _fx.get_index())
+	var place_k := func(z: float):
+		var k := _k() * z
+		pl.scale = Vector2(k, k)
+		pl.position = (view.size - Vector2(D.w, D.h) * k) / 2.0
+	place_k.call(1.0)
+	tween(0.3, func(k: float): pl.modulate.a = k, 3.25)
+	tween(1.6, func(k: float): place_k.call(1.0 + 0.08 * sm(k)), 3.25)
+	tween(0.65, func(k: float):
+		var e := sm(k)
+		pv.position.x = pr[0] - 1100.0 * pow(1.0 - e, 1.6)
+		pv.position.y = pr[1] - 6.0 * absf(sin(k * 22.0)) * (1.0 - e), 3.35)
+	after(3.4, func(): sfx.emit("bk:farm:0.8"))
+	after(4.05, func():
+		px.visible = true
+		px.scale = Vector2(0.3, 0.05)
+		sfx.emit("pop")
+		var s2 := pl.position + (px.position + px.pivot_offset) * pl.scale.x + view.global_position
+		dust(Vector3(s2.x, s2.y, 0), 10, 2.0)
+		sparkle(Vector3(s2.x, s2.y - 40, 0), 20))
+	tween(0.6, func(k: float):
+		var b := back(k)
+		px.scale = Vector2(lerpf(0.3, 1.0, b), lerpf(0.05, 1.0, b)), 4.05)
+	# 4 fade back home; the van is back at the kerb, the build's stickers (new customer, stamp) pop in
+	after(4.85, func():
+		vbg.queue_free()
+		van.queue_free()
+		_place(cur, 0.0))
+	tween(0.35, func(k: float):
+		pl.modulate.a = 1.0 - k
+		if k >= 1.0:
+			pl.queue_free()
+			dim.queue_free()
+			b0.queue_free()
+			b1.queue_free(), 4.85)
+	after(5.2, func(): _pop(i))
+	after(6.4, _task_finished)
 
 # --------------------------------------------------------------- 2D effects: sparkles, dust puffs, rings, fireworks
 class PicFx extends Control:

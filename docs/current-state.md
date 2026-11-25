@@ -1,4 +1,37 @@
-# Current state — level-80 APK (23 Nov 2026), branch claude/project-thread-nyydf2 (PR #1)
+# Current state — 100-level APK (25 Nov 2026), branch claude/project-thread-nyydf2 (PR #1)
+
+APK: https://github.com/Retroraja/Crackers-Match/releases/download/godot-dev/CrackersMatchGodot.apk
+
+## New in this APK (25 Nov, the whole NEXT BUILD LIST in plans.md)
+1. Obstacle sounds louder, bangle = china plate smash (2043eaf).
+2. Title: night picture of the Crackers Factory (warm windows), our crackers on show in front, logo + fireworks
+   (art/web/title_base.webp from tools/pic/title_night.py). Bakery effects/clouds off.
+3. Daily tasks 20/30/50 + 100 for all three.
+4-5. Daily + Piggy: 64 px on a round glowing badge (art/web/ic_badge.png), 16 px from the edge, ~30 px lower; glow
+   pulses when there is something to collect. Piggy shows "120/250", tap = help card, AD badge when full.
+6. Win screen in one card with a gold border; no Next build line, no piggy icon.
+7. Next opens the level card over the dimmed home street; card dim covers the full screen.
+8. Coin Blast win: scripts/app/bonus_win.gd (ribbon, rays, coin pile, count up, coin rain, Next + AD Reward x2).
+9. Bar crackers unlock at 12, 22, 32, 42, 52, 62, 72 (hammer 5).
+10-11. Board shapes 13 (U), 17 pillars, 22 ring, 27 skyline; U boards 13, 32, 65 (78 already joined).
+12. Blast X: extra goal on 4, 9, 14 ... 99 (levels.gd all(): "blast"), toast at start, intro card at 4.
+13. Bring down: potli bag (6, 16 ... 96) and pambaram (41, 51 ... 91): 3D renders art/toy/bag.png, top.png
+    (tools/pic/toy3d.gd --toy=potli|pambaram, toy_tiles.py). Map letters v / t; 2 on the board, 3 to bring down,
+    +5 moves on those levels. Engine: cm_game.gd "bring down" section (toy_exit, _draw_toy). Intro card + hand demo.
+14. Ad: black behind the ad (cm_app _ad_black), status bar shown only while the ad is open (CMAds.java bars()).
+15. Portals: levels.gd "portal" [[r_out,c_out,r_in,c_in]]: 28 plain, 46 + bag, 71 + pambaram (cm_game gravity).
+17. "Leave level?" card (scripts/app/ask_box.gd) on back arrow, Exit level and the phone's back button.
+18. Coin pills grow to fit (cm_app coin_t); home pill shrinks the font.
+19. Sky Shot: shell stays over the board, gold flash + ring, 12 target rings (gold on goals), stars with trails
+    (art/fx, tools/pic/sky_fx.py).
+20. Mayil Matchbox on the level card (art/toy/mayil.png, tools/pic/mayil_recolor.py + mayil_shine.py), Level 101.
+21. Test tools: "Test" on home (scripts/app/test_ui.gd), "Win now" in the level top bar.
+22. Area 4 GHILLI Delivery Hub, levels 81-100 (Hard 85/90/95, Super Hard 100), 9 builds (pic_street A4_TASKS,
+    costs 2,2,2,3,3,3,3,3,4). Builds 1-4 pop with gold glow; 5-9 deliveries (pic_street _deliver). Pictures:
+    tools/pic/a4_render.sh -> tools/pic/a4_pics.py. Area 4 start slides (art/story4), end -> NEXT Madurai (soon).
+    Players who finished Area 3 enter Area 4 on their next Play.
+
+# Before: level-80 APK (23 Nov 2026)
 
 APK: https://github.com/Retroraja/Crackers-Match/releases/download/godot-dev/CrackersMatchGodot.apk
 

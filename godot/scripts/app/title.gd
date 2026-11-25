@@ -34,9 +34,11 @@ func build(a) -> void:
 	cvs.add_child(fxc)
 	# the old painted front plants do not belong to the new rendered picture
 	LT.nodes[6].visible = false
-	clouds = [LT.nodes[7], LT.nodes[8]]
-	clouds[0].set_meta("cl", [46.0, 12.0])
-	clouds[1].set_meta("cl", [64.0, 40.0])
+	# 25 Nov: new night title picture (no bakery): the bakery's sun rays / smoke / petals and the day clouds are off
+	fxc.visible = false
+	LT.nodes[7].visible = false
+	LT.nodes[8].visible = false
+	clouds = []
 	fw = TitleFw.new()
 	fw.size = Vector2(390, 844)
 	add_child(fw)
@@ -67,7 +69,7 @@ func play(first_open: bool) -> void:
 	await get_tree().create_timer(2.6).timeout
 	title.visible = true
 	Anim.play(LT.nodes[2], "st_breathe", 9.0, 0.0, "ease-in-out", -1, true, {}, true)
-	fxc.run = true
+	fxc.run = false
 	create_tween().tween_property(intro, "modulate:a", 0.0, 0.6)
 	await get_tree().create_timer(0.6).timeout
 	intro.visible = false

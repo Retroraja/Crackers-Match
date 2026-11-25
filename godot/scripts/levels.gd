@@ -12,7 +12,7 @@ class_name Levels
 const C3 := [0, 1, 2]
 const C4 := [0, 1, 2, 5]
 
-static func all() -> Array:
+static func base() -> Array:
 	return [
 		{"name": "Crate Start", "moves": 20, "colors": C3, "luck": 0.5,
 		 "rows": ["##....##", "#......#", "........", "........", "........", "........", "........", ".cccccc.", "..cccc.."]},
@@ -177,5 +177,137 @@ static func all() -> Array:
 		{"name": "Night Shift", "moves": 21, "colors": C4, "luck": 0.0,
 		 "rows": ["#..#.##.", "#..#..#.", "#.....#.", "eeeeeeee", "eeeeeeee", "gggggggg", "xxxxxxxx", "XXXXXXXX", "gggggggg"]},
 		{"name": "Busy Days", "moves": 24, "colors": C4, "luck": 0.0, "ltype": "s",
+		 "rows": ["........", "........", "dddddddd", "ddd##ddd", "dX####Xd", "XX####XX", "gXX##XXg", "gggggggg", "XXXXXXXX"]},
+	]
+
+
+# ================================================================== 25 Nov build (docs/plans.md NEXT BUILD LIST)
+# Only what the list says changes; every existing goal stays as it is.
+#   v potli bag, t pambaram (bring down, goal 3 each). "portal": [[r_out, c_out, r_in, c_in], ...]
+#   "blast": {colour: n} = extra goal "Blast n crackers of that colour" (about 1 level in 5).
+const COLNAME := ["red", "blue", "green", "yellow", "purple", "orange"]
+static func all() -> Array:
+	var L: Array = base()
+	# Area 1 board shapes (item 10): 13 two islands = U shape (item 11), 17 pillars (2 short columns of no-cells), 22 ring, 27 skyline.
+	L[12].rows = ["...##...", "...##...", "..1##1..", "...##...", "www##www", "ccc##ccc", "www##www", "cccccccc", "cccccccc"]
+	L[16].rows = ["........", "........", "pp#pp#pp", "..#..#..", "pp#pp#pp", "........", "pppppppp", "ppppcccc", "cccccccc"]
+	L[21].rows = ["........", "........", "........", "XXXXXXXX", "XXX##XXX", "xxx##xxx", "xxxxxxxx", "########", "########"]
+	L[26].rows = ["#..#.##.", "#..#..#.", "#.1...2.", "........", "..pppp..", "..pppp..", "pppppppp", "pppppXXx", "gggggggg"]
+	# split boards -> U shape: the last 2 rows are one joined row (item 11): 32, 65 (78 already joins at the bottom)
+	L[31].rows[7] = "gggggggg"
+	L[31].rows[8] = "gggggggg"
+	L[64].rows[7] = "gggggggg"
+	L[64].rows[8] = "gggggggg"
+	# portals (item 15): 28 first (plain); left board top-left, right board bottom-right, 4 portals between them
+	var P4 := [[5, 0, 3, 4], [5, 1, 3, 5], [5, 2, 3, 6], [5, 3, 3, 7]]
+	L[27].rows = ["....####", "....####", "....####", "cccc....", "gggg....", "....cccc", "####gggg", "####xxxx", "####gggg"]
+	L[27].portal = P4
+	L[27].intro = ["portal"]
+	# 46 portal + potli bag, 71 portal + pambaram (the piece goes down the left board, through, down the right)
+	L[45].rows = ["v...####", "...v####", "....####", "cwcw....", "gg##....", "....cwcw", "####gxxg", "####xggx", "####gggg"]
+	L[45].portal = P4
+	L[70].rows = ["t...####", "...t####", "....####", "bbbb....", "gggg....", "....bbbb", "####gggg", "####gbbg", "####gggg"]
+	L[70].portal = P4
+	# bring down (item 13): bag 6, 16, 26 ... 96; pambaram 41, 51, 61 ... 91. Two start on the board, 3 to bring down.
+	for lv in [6, 16, 26, 36, 56, 66, 76]:
+		_toy(L[lv - 1], "v")
+	for lv in [41, 51, 61]:
+		_toy(L[lv - 1], "t")
+	for lv in [46, 71]:
+		L[lv - 1].moves = int(L[lv - 1].moves) + 5
+	L[5].intro = L[5].get("intro", []) + ["bag"]
+	L[40].intro = L[40].get("intro", []) + ["top"]
+	# Area 4 GHILLI Delivery Hub, levels 81-100
+	L.append_array(area4())
+	# Blast X (item 12): an extra goal on about 1 level in 5 (4, 9, 14 ... 99), never instead of a goal
+	for lv in range(4, 101, 5):
+		var o: Dictionary = L[lv - 1]
+		if o.has("blast"):
+			continue
+		var cols: Array = o.colors
+		var k: int = cols[(lv / 5) % cols.size()]
+		var f := 1.1 if cols.size() <= 3 else 0.85
+		var n := clampi(roundi(int(o.moves) * f / 5.0) * 5, 10, 30)
+		o.blast = {k: n}
+	L[3].intro = L[3].get("intro", []) + ["blast"]
+	return L
+
+# put 2 toys in the free top rows (columns 2 and 5, lowest free row first), +5 moves for the longer goal
+static func _toy(o: Dictionary, ch: String) -> void:
+	var rows: Array = o.rows.duplicate()
+	var put := 0
+	for want in [2, 5]:
+		var done := false
+		for r in [2, 1, 0]:
+			for dc in [0, 1, -1, 2, -2]:
+				var c: int = want + dc
+				if done or c < 0 or c > 7:
+					continue
+				var row: String = rows[r]
+				if row[c] == "." and _open_below(rows, r, c):
+					rows[r] = row.substr(0, c) + ch + row.substr(c + 1)
+					done = true
+					put += 1
+		if done:
+			continue
+	o.rows = rows
+	o.moves = int(o.moves) + 5
+
+static func _open_below(rows: Array, r: int, c: int) -> bool:
+	# the column must go on to the bottom without a no-cell gap
+	var seen_hole := false
+	for q in range(r + 1, rows.size()):
+		if String(rows[q])[c] == "#":
+			seen_hole = true
+		elif seen_hole:
+			return false
+	return true
+
+# ---------------------------------------------------------------- Area 4: GHILLI Delivery Hub (levels 81-100, 25 Nov)
+# 20 levels for its 9 builds, like Area 3. Hard 85, 90, 95, Super Hard 100, a 3-colour breather after each Hard.
+# Hard: 22-24 moves, no free start special, every second crate a 2-hit crate.
+static func area4() -> Array:
+	var C4 := [0, 1, 2, 5]
+	var C3 := [0, 1, 2]
+	return [
+		{"name": "Van Repair", "moves": 24, "colors": C4, "luck": 0.0,
+		 "rows": ["t.......", "......t.", "........", "pppppppp", "cwcwcwcw", "gggggggg", "xxxxxxxx", "gggggggg", "gggggggg"]},
+		{"name": "Order Board", "moves": 20, "colors": C4, "luck": 0.0,
+		 "rows": ["........", "........", "KkKkKkKk", "kkkkkkkk", "........", "xXxXxXxX", "gggggggg", "gggggggg", "########"]},
+		{"name": "Packing Table", "moves": 20, "colors": C4, "luck": 0.0,
+		 "rows": ["...##...", "...##...", "nnn##nnn", "nnn##nnn", "ggg##ggg", "xxx##xxx", "ggg##ggg", "gggggggg", "gggggggg"]},
+		{"name": "Brown Boxes", "moves": 20, "colors": C4, "luck": 0.0,
+		 "rows": ["........", "........", "..#..#..", "ff#ff#ff", "ff....ff", "..#..#..", "gg#gg#gg", "xxxxxxxx", "gggggggg"]},
+		{"name": "Delivery Rush", "moves": 23, "colors": C4, "luck": 0.0, "ltype": "h",
+		 "rows": ["........", "........", "ssssssss", "sXsXsXsX", "gggggggg", "XxXxXxXx", "xXxXxXxX", "gggggggg", "########"]},
+		{"name": "Bike Bells", "moves": 24, "colors": C3, "luck": 0.0,
+		 "rows": [".v......", "......v.", "........", "eeeeeeee", "eeeeeeee", "cccccccc", "gggggggg", "gggggggg", "########"]},
+		{"name": "Temple Order", "moves": 21, "colors": C4, "luck": 0.0,
+		 "rows": ["###..###", "##....##", "#......#", "...dd...", "..dxxd..", ".dxXXxd.", "..dxxd..", "#..dd..#", "##gggg##"]},
+		{"name": "Flower Garlands", "moves": 21, "colors": C4, "luck": 0.0,
+		 "rows": ["........", "........", "mmmmmmmm", "mcmcmcmc", "gggggggg", "xgxgxgxg", "gxgxgxgx", "gggggggg", "########"]},
+		{"name": "Wedding Hall", "moves": 21, "colors": C4, "luck": 0.0,
+		 "rows": ["........", "#......#", "##....##", "###..###", "##ffff##", "#ffffff#", "fxxxxxxf", "xXXXXXXx", "gggggggg"]},
+		{"name": "Kalyana Mahal", "moves": 23, "colors": C4, "luck": 0.0, "ltype": "h",
+		 "rows": ["........", "........", "BkBkBkBk", "kkkkkkkk", "xXxXxXxX", "XxXxXxXx", "gggggggg", "gggggggg", "########"]},
+		{"name": "School Bell", "moves": 24, "colors": C3, "luck": 0.0,
+		 "rows": ["t.......", "......t.", "........", "bbbbbbbb", "bbbbbbbb", "gggggggg", "cccccccc", "gggggggg", "########"]},
+		{"name": "Classroom", "moves": 21, "colors": C4, "luck": 0.0,
+		 "rows": ["........", "........", "cc#..#cc", "cc#..#cc", "pp#..#pp", "pp....pp", "XX....XX", "XXggggXX", "XXggggXX"]},
+		{"name": "Sports Day", "moves": 21, "colors": C4, "luck": 0.0,
+		 "rows": ["........", "........", "........", "eeeeeeee", "eee##eee", "ggg##ggg", "xxxxxxxx", "XXXXXXXX", "gggggggg"]},
+		{"name": "Flats Gate", "moves": 21, "colors": C4, "luck": 0.0,
+		 "rows": ["#..#.##.", "#..#..#.", "#.....#.", "........", "ssssssss", "ssssssss", "gggggggg", "xxxxxxxx", "XXXXXXXX"]},
+		{"name": "Lift Lobby", "moves": 23, "colors": C4, "luck": 0.0, "ltype": "h",
+		 "rows": ["...##...", "...##...", "nnn##nnn", "nXn##nXn", "ggg##ggg", "XxX##XxX", "xXx##xXx", "gggggggg", "gggggggg"]},
+		{"name": "Balcony Lights", "moves": 24, "colors": C3, "luck": 0.0,
+		 "rows": [".v......", "......v.", "........", "dddddddd", "dddddddd", "cccccccc", "gggggggg", "gggggggg", "########"]},
+		{"name": "Marina Road", "moves": 21, "colors": C4, "luck": 0.0,
+		 "rows": ["........", "........", "QkQkQkQk", "kkkkkkkk", "........", "xxxxxxxx", "XxXxXxXx", "gggggggg", "########"]},
+		{"name": "Beach Party", "moves": 21, "colors": C4, "luck": 0.0,
+		 "rows": ["........", "........", ".#....#.", "ff.ff.ff", "ff#ff#ff", "ff.gg.ff", "ff#gg#ff", "XXggggXX", "XXggggXX"]},
+		{"name": "Lighthouse", "moves": 21, "colors": C4, "luck": 0.0,
+		 "rows": ["###..###", "##....##", "#......#", "pppppppp", "pppppppp", "gggggggg", "pxxxxxxx", "XXXXXXXX", "gggggggg"]},
+		{"name": "Madurai Calling", "moves": 24, "colors": C4, "luck": 0.0, "ltype": "s",
 		 "rows": ["........", "........", "dddddddd", "ddd##ddd", "dX####Xd", "XX####XX", "gXX##XXg", "gggggggg", "XXXXXXXX"]},
 	]

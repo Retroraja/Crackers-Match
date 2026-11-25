@@ -892,8 +892,8 @@ func hub_view(sv: SubViewport) -> Camera3D:
 		else:
 			dusty_van(bz, V3(a.get("van", "-2.6,0.3,5.2")), float(a.get("vr", "1.5708")), float(a.get("vs", "1.6")))
 	if nb >= 4:
-		put(bz, "gen/bike", V3(a.get("bike1", "2.6,0.0,4.7")), 1.0, 0.35)
-		put(bz, "gen/bike", V3(a.get("bike2", "3.6,0.0,4.8")), 1.0, 0.4)
+		put(bz, "gen/bike", V3(a.get("bike1", "2.6,0.0,4.7")), float(a.get("bks", "1.0")), 0.35)
+		put(bz, "gen/bike", V3(a.get("bike2", "3.6,0.0,4.8")), float(a.get("bks", "1.0")), 0.4)
 	# customer queue along the footpath, facing the counter (grows with each delivery)
 	var kinds := ["female-a", "male-c", "female-c", "male-e", "female-b", "male-a"]
 	var nq := kinds.size() if not a.has("built") else clampi(1 + nb - 4, 1, 6)

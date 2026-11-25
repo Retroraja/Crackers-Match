@@ -28,19 +28,29 @@ func play(height: float) -> void:
 	var u: Label = card.get_node("u")
 	u.text = "our first shop in the big city"
 	book.end_mode = true
-	book.tick_i = area - 1
+	book.tick_i = mini(area - 1, 2)
 	if area == 2:
 		t.text = "Busy Days at GHILLI"
 		u.text = "“Orders are coming in. Get the shop ready!”"
 	elif area == 3:
 		t.label_settings.font_size = 34
 		t.text = "GHILLI Delivery Hub"
-		u.text = "deliveries all over Chennai · coming soon"
+		u.text = "deliveries all over Chennai"
+	elif area == 4:
+		t.text = "Madurai"
+		u.text = "a call from Madurai: a new GHILLI shop · coming soon"
 
 func _shot(n: int) -> void:
 	shot = n
 	sid += 1
 	var id := sid
+	if area == 4:
+		# 25 Nov: Delivery Hub done: the notebook, then NEXT · Madurai (Area 5 teaser)
+		match n:
+			1: _tick(id)
+			2: _next(id)
+			_: _finish()
+		return
 	if area == 3:
 		match n:
 			1: _room_ready(id)
@@ -388,7 +398,7 @@ func _tick(id: int) -> void:
 			_sfx("story_pen", 0.7, randf_range(0.9, 1.1), i * 0.15))
 	_later(3.0, id, func():
 		_sfx("story_chime", 0.9)
-		motes.burst(Vector2(book.position.x + 315, book.position.y + 120 + 42 * (area - 1)), 30))
+		motes.burst(Vector2(book.position.x + 315, book.position.y + 120 + 42 * mini(area - 1, 2)), 30))
 	_later(3.9, id, func():
 		book.anim("next_hi", 1.0, 0.8)
 		_sfx("story_ting", 0.6))

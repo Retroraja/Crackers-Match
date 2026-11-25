@@ -64,12 +64,33 @@ public class CMAds extends GodotPlugin {
             if (rewarded == null) { emitSignal("ad_done", false); loadAd(); return; }
             earned = false;
             rewarded.setFullScreenContentCallback(new FullScreenContentCallback() {
-                @Override public void onAdDismissedFullScreenContent() { rewarded = null; emitSignal("ad_done", earned || TEST_ADS); loadAd(); }
-                @Override public void onAdFailedToShowFullScreenContent(@NonNull AdError e) { rewarded = null; emitSignal("ad_done", false); loadAd(); }
+                @Override public void onAdDismissedFullScreenContent() { bars(a, false); rewarded = null; emitSignal("ad_done", earned || TEST_ADS); loadAd(); }
+                @Override public void onAdFailedToShowFullScreenContent(@NonNull AdError e) { bars(a, false); rewarded = null; emitSignal("ad_done", false); loadAd(); }
             });
+            // 25 Nov: the phone's time/battery strip shows ONLY while the ad is open (so the ad's X sits just below
+            // it, never hidden); black status/navigation bars and window behind, so the game never shows through
+            bars(a, true);
             rewarded.setImmersiveMode(false);
             rewarded.show(a, item -> earned = true);
         });
+    }
+
+    @SuppressWarnings("deprecation")
+    private void bars(Activity a, boolean ad) {
+        try {
+            android.view.Window w = a.getWindow();
+            View d = w.getDecorView();
+            if (ad) {
+                w.setStatusBarColor(android.graphics.Color.BLACK);
+                w.setNavigationBarColor(android.graphics.Color.BLACK);
+                w.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.BLACK));
+                d.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+            } else {
+                d.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+            }
+        } catch (Exception e) { /* never block the ad */ }
     }
 
     @UsedByGodot public void askNotify() {
