@@ -75,6 +75,14 @@
 22. BUG (25 Nov, level 44 screenshot): in-level coin pill (bottom-left, node gCoins in cm_app.gd) - "61140" runs
     out of the pill. Fix: the pill grows to fit the number (up to 7 digits), number stays inside with padding;
     check the same on the level card (lCoins) and home (tCoin) with big numbers.
+23. Sky Shot clearer (25 Nov): now it flies up behind the top bar and you can't see what happens. New: tube recoils,
+    shell climbs with a short spark trail but STAYS over the board, bursts over the board (~2 rows from the top) with a
+    gold flash + ring; for a split second a small glowing ring marks each of the 12 target tiles (4 goal tiles = gold
+    ring); then 12 stars with short gold trails fall from the burst onto the rings one after another (~0.6 s total),
+    each pops its tile with a small spark. Like the Flowerpot, which is clear.
+    FPS RULE (he insists, for this and EVERY change in this list): must not lower FPS or performance. Only moving
+    ready-made pictures (pooled sprites), no new particle systems, no live drawing, no extra lights/shaders; check
+    the FPS counter on the phone stays where it is now (~69-71).
 18. Still waiting from him: more fixes while he plays all 80 levels; Area 4 (GHILLI Delivery Hub, docs/area4.md) to be
     built for the same next APK.
 
