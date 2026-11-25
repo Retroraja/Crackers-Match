@@ -16,7 +16,8 @@ sky.alpha_composite(im)
 pic = sky.convert("RGB")
 # warm glow in the factory windows (light-blue glass in the facade area only)
 p = np.asarray(pic).astype(np.float32)
-x0, x1, y0, y1 = int(W * 0.33), int(W * 0.8), int(H * 0.38), int(H * 0.69)
+RG = [float(v) for v in sys.argv[3].split(",")] if len(sys.argv) > 3 else [0.33, 0.8, 0.38, 0.69]   # window area
+x0, x1, y0, y1 = int(W * RG[0]), int(W * RG[1]), int(H * RG[2]), int(H * RG[3])
 reg = p[y0:y1, x0:x1]
 r, g, b = reg[..., 0], reg[..., 1], reg[..., 2]
 win = (b > r + 18) & (b > 70) & (b < 200) & (g > 55)
@@ -43,7 +44,7 @@ def crk(n, s, x, y):
     pic.alpha_composite(c, (int(x - c.width / 2), int(y - c.height * 0.97)))
 row_back = [("b9", 0.62, 190, 1700), ("t3", 0.55, 345, 1690), ("b14", 0.62, 540, 1685), ("t1", 0.55, 735, 1690), ("b7", 0.62, 890, 1700)]
 row_front = [("t0", 0.68, 120, 1840), ("b10", 0.72, 315, 1855), ("b6", 0.78, 540, 1865), ("b8", 0.72, 765, 1855), ("t2", 0.68, 960, 1840)]
-for q in row_back + row_front:
+for q in ([] if len(sys.argv) > 2 else row_back + row_front):
     crk(*q)
-pic.convert("RGB").save("art/web/title_base.webp", quality=88, method=6)
+pic.convert("RGB").save(sys.argv[2] if len(sys.argv) > 2 else "art/web/title_base.webp", quality=88, method=6)
 pic.convert("RGB").resize((390, 844)).save("/tmp/s/title_prev.png")

@@ -1,6 +1,7 @@
 # NEXT FIXES (25 Nov, after the 100-level APK):
-#  - Title: picture = option 1 angle (front of the Crackers Factory, no people, no cracker pictures); he is
-#    choosing the time of day (morning / afternoon / evening / night). tools/pic/title_night.py.
+#  - Title: DONE in code 25 Nov: option 1 angle, picture by phone clock (afternoon 6-16 art/web/title_aft.webp,
+#    evening 16-19 title_eve.webp, night 19-6 title_base.webp). Fireworks = ready-made bursts (no circles, v2,
+#    tools/pic/title_bursts.py, title.gd SpriteFw), softer by day. Approved 15:23.
 #  - Shop icon on home: same 64 px glowing badge as Daily/Piggy, same height as Daily, mirrored on the right
 #    (Test button moves under it). Waiting for his OK.
 #  - Area 3 parcel labels -> Chennai (his choice 25 Nov, option 1): big top label "CHENNAI", small labels

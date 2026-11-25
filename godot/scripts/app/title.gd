@@ -14,6 +14,8 @@ var LT: WebLayout
 var LI: WebLayout
 var fxc: SceneFx
 var fw: TitleFw
+var spfw: SpriteFw
+var tod := "night"
 var clouds: Array = []
 var busyT := true
 var ready_street := true
@@ -42,6 +44,20 @@ func build(a) -> void:
 	fw = TitleFw.new()
 	fw.size = Vector2(390, 844)
 	add_child(fw)
+	# 25 Nov: the title picture follows the phone's clock: afternoon 6-16, evening 16-19, night 19-6
+	var hr: int = Time.get_datetime_dict_from_system().hour
+	for ar in OS.get_cmdline_user_args():
+		if ar.begins_with("--hour="):
+			hr = int(ar.substr(7))
+	tod = "aft" if hr >= 6 and hr < 16 else ("eve" if hr >= 16 and hr < 19 else "night")
+	var bgi: TextureRect = LT.nodes[3].get_node_or_null("bgimg")
+	if bgi and tod != "night":
+		bgi.texture = WebLayout.tex("art/title_%s.webp" % tod)
+	spfw = SpriteFw.new()
+	spfw.size = Vector2(390, 844)
+	spfw.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	spfw.strength = {"aft": 0.75, "eve": 0.9, "night": 1.0}[tod]
+	LT.nodes[2].add_child(spfw)
 	LI = WebLayout.new()
 	intro = LI.build("res://ui/st_intro.json", self)
 	intro.modulate.a = 1
@@ -82,11 +98,10 @@ func play(first_open: bool) -> void:
 func _reveal() -> void:
 	app.sfx.mus_start()
 	app.sfx.play("rocket", 0.7)
-	fw.rocket(195, 195, 844 * 0.2, 0.9, func(x: float, y: float):
+	spfw.rocket(195, 844 * 0.2, 0.9, func(x: float, y: float):
 		app.sfx.play("blast", 0.8)
 		_side_rockets()
-		fw.burst(x, y, 140, 260, TitleFw.GOLD)
-		fw.burst(x, y, 60, 140, TitleFw.GOLD)
+		spfw.big(x, y, "gold", 330)
 		for i in [10, 13]:
 			var r: Control = LT.nodes[i]
 			r.scale = Vector2.ONE
@@ -94,8 +109,8 @@ func _reveal() -> void:
 			r.modulate.a = 1
 			Anim.play(r, "st_lgin", 0.7, 0.0 if i == 10 else 0.12, "cubic-bezier(.2,1.5,.4,1)")
 		get_tree().create_timer(0.4).timeout.connect(func():
-			fw.burst(390 * 0.2, 844 * 0.17, 70, 170, TitleFw.GOLD)
-			fw.burst(390 * 0.8, 844 * 0.24, 70, 170, TitleFw.GOLD))
+			spfw.big(390 * 0.2, 844 * 0.3, "red", 190)
+			spfw.big(390 * 0.8, 844 * 0.34, "green", 190))
 		get_tree().create_timer(0.9).timeout.connect(_show_tap))
 
 func _show_tap() -> void:
@@ -116,17 +131,17 @@ func _show_tap() -> void:
 		b.parallel().tween_property(tp, "scale", Vector2.ONE, 0.6))
 	busyT = false
 
+# 25 Nov: one firework every 1-2 s: a glowing rocket trail goes up, a big ready-made burst pops, grows and fades
 func _side_rockets() -> void:
-	get_tree().create_timer(2.6 + randf() * 1.8).timeout.connect(func():
+	get_tree().create_timer(1.0 + randf() * 1.0).timeout.connect(func():
 		if not visible or not title.visible:
 			return
-		var l := randf() < 0.5
-		app.sfx.play("rocket", 0.35, 1.15)
-		var x0 := 390 * (0.18 if l else 0.82)
-		var x1 := 390 * ((0.12 + randf() * 0.12) if l else (0.76 + randf() * 0.12))
-		fw.rocket(x0, x1, 844 * (0.12 + randf() * 0.1), 0.8, func(x: float, y: float):
-			app.sfx.play("pop", 0.45)
-			fw.burst(x, y, 46, 150, TitleFw.GOLD))
+		app.sfx.play("rocket", 0.3, 1.15)
+		var x := 390.0 * (0.12 + randf() * 0.76)
+		var y := 844.0 * (0.1 + randf() * 0.28)
+		spfw.rocket(x, y, 0.75, func(bx: float, by: float):
+			app.sfx.play("pop", 0.4)
+			spfw.big(bx, by, ["gold", "red", "green", "willow", "blue"][randi() % 5], 170 + randf() * 90))
 		_side_rockets())
 
 func _title_input(e: InputEvent) -> void:
@@ -416,3 +431,69 @@ class TitleFw extends Control:
 			var c: Color = p.c
 			c.a = minf(1.0, p.l)
 			draw_circle(Vector2(p.x, p.y), p.w, c)
+
+
+# 25 Nov: title fireworks made only of ready-made pictures (art/fx/fw_*.png, tools/pic/title_bursts.py), pooled:
+# 4 bursts + 3 rocket trails, moved / scaled / faded with tweens. Same cost as before.
+class SpriteFw extends Control:
+	var strength := 1.0
+	var pool: Array = []
+	var trails: Array = []
+	var T := {}
+	func _ready() -> void:
+		for k in ["gold", "red", "green", "willow", "blue"]:
+			T[k] = load("res://art/fx/fw_%s.png" % k)
+		for i in 4:
+			var b := TextureRect.new()
+			b.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			b.visible = false
+			add_child(b)
+			pool.append(b)
+		for i in 3:
+			var t := TextureRect.new()
+			t.texture = load("res://art/fx/fw_trail.png")
+			t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			t.size = Vector2(18, 96)
+			t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			t.visible = false
+			add_child(t)
+			trails.append(t)
+	func rocket(x: float, y: float, dur: float, done: Callable) -> void:
+		var t: TextureRect = null
+		for q in trails:
+			if not q.visible:
+				t = q
+				break
+		if t == null:
+			done.call(x, y)
+			return
+		t.visible = true
+		t.modulate.a = strength
+		var y0 := 844.0 * 0.5   # from behind the roof
+		t.position = Vector2(x - 9, y0)
+		var tw := t.create_tween()
+		tw.tween_property(t, "position:y", y - 8.0, dur).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.tween_callback(func():
+			t.visible = false
+			done.call(x, y))
+	func big(x: float, y: float, kind: String, sz: float) -> void:
+		var b: TextureRect = null
+		for q in pool:
+			if not q.visible:
+				b = q
+				break
+		if b == null:
+			return
+		b.texture = T[kind]
+		b.visible = true
+		b.size = Vector2(sz, sz)
+		b.pivot_offset = b.size / 2.0
+		b.position = Vector2(x, y) - b.size / 2.0
+		b.scale = Vector2.ONE * 0.2
+		b.modulate = Color(1, 1, 1, strength)
+		var tw := b.create_tween()
+		tw.tween_property(b, "scale", Vector2.ONE, 0.45).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+		tw.parallel().tween_property(b, "position:y", b.position.y + (26.0 if kind == "willow" else 10.0), 1.3)
+		tw.parallel().tween_property(b, "modulate:a", 0.0, 0.85).set_delay(0.45)
+		tw.tween_callback(func(): b.visible = false)
