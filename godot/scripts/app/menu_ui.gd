@@ -217,6 +217,20 @@ func _view_area(n: int) -> void:
 	p.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	lbl(v, "Area %d · %s" % [n, AREA_N[n - 1]], Vector2(0, 30), Vector2(390, 40), 24, Color.WHITE, 8, Color(0.1, 0.08, 0.2))
 	lbl(v, "Tap to close", Vector2(0, 790), Vector2(390, 30), 16, Color(1, 1, 1, 0.85), 6, Color(0.1, 0.08, 0.2))
+	# a few ready-made firework bursts (the title's pooled pictures)
+	var fw := TitleScreen.SpriteFw.new()
+	fw.size = Vector2(390, 844)
+	fw.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(fw)
+	var tm := Timer.new()
+	tm.wait_time = 0.8
+	v.add_child(tm)
+	tm.timeout.connect(func():
+		var x := randf_range(60, 330)
+		fw.rocket(x, randf_range(120, 300), 0.7, func(bx: float, by: float):
+			app.sfx.play("pop", 0.25)
+			fw.big(bx, by, ["gold", "red", "green", "willow", "blue"][randi() % 5], 150 + randf() * 80)))
+	tm.start()
 	app.tap(v, func(): v.queue_free())
 
 # ---------------------------------------------------------------- Trophy Room

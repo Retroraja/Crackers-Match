@@ -1,4 +1,38 @@
-# Current state — 100-level APK (25 Nov 2026), branch claude/project-thread-nyydf2 (PR #1)
+# Current state — menu APK (26 Nov 2026), branch claude/project-thread-nyydf2 (PR #1)
+
+APK: https://github.com/Retroraja/Crackers-Match/releases/download/godot-dev/CrackersMatchGodot.apk
+AAB (Play, version code 3, API 36): same release, CrackersMatchGodot.aab
+
+## New in this APK (26 Nov)
+1. Top bar (scripts/app/top_bar.gd, art/topbar): gold profile frame (opens Profile), cream gold-rim pills (coins,
+   lives, diyas; pill built at full size by tools/pic/pill_build.py), big icons half outside, blue Canva gear, soft
+   dark fade; numbers shrink to fit, 1,000,000+ = 1.2M.
+2. Lives (cm_app lives_now/use_life/add_life, scripts/app/lives_box.gd): 5 max, +1 every 30 min (timer in the heart
+   pill, "Full" at 5). Give up or Leave mid-level takes 1. At 0, Play opens "Out of lives": ad +1 or 900 coins refill.
+3. Bottom menu (scripts/app/menu_ui.gd, art/menu from tools/pic/menu_art.py): Areas, Trophies, Home (raised),
+   Lucky Wheel, Crackers; gold top line + divider lines; tab sound sfx/ui_tab.wav + light vibration; Level/Build
+   buttons 32 px higher. Android back closes a page.
+4. Areas page: area picture cards; finished = View (picture + firework bursts), current = "Builds n/N", later =
+   Locked, Area 5 Madurai "Coming soon".
+5. Trophy Room: 6 permanent trophies (Rocket Master, 3-Star Hero, Chakra Spinner, Obstacle Breaker, Level Winner,
+   Builder), bronze/silver/gold steps, green Claim = coins, gold + Complete. Stats in S.stat (from the daily events).
+6. Lucky Wheel: 8 prizes (100/50/200 coins, 500 chest, Rocket, Hammer, Bomb, +1 life), free spin once a day,
+   "Spin again" with an ad (3 a day), timer to midnight, lit-bulb picture blinks while spinning. Wheel = one picture.
+7. Profile: avatar, name (Guest), "Sign in with Google Play" button (says "comes soon" in this APK), records.
+8. Level screen theme per area (scripts/app/level_theme.gd): solid colour bar + gold line, cream Target/Moves cards
+   with ribbons, man in a gold arch, meter + locked boosters in the area colour, cream board floor.
+   Area 1 royal blue, 2 deep maroon, 3 peacock teal, 4 midnight navy, 5 ruby red. Star bar hidden.
+9. Shop = round glowing badge like Daily (right side); Test button under it.
+10. Popups: violet -> navy blue (card, hard card, banners, settings, rewards, dims).
+11. Area 2: after build 6 a fade card "Inside the shop!" before picture 2.
+12. Area 3: parcel labels are Chennai places (T. Nagar, Mylapore, Adyar, Anna Nagar, Velachery) + big CHENNAI tag;
+    room pictures re-rendered; start lines say Chennai.
+13. From before (in code since 25-26 Nov): title picture by phone clock + new fireworks, win screen buttons 40 px up,
+    level 2 meter tip lower, Seven Shot shells inside the board, new obstacle sounds + crate sounds + faster chakra.
+NOT in it: Diya / 1000 Wala pictures (wait for his OK), gold floor tile sound (wait for his file), real Google
+sign-in / cloud save (button only). Dev: tools/shot (screenshots: godot -- --do=EXPR --step=SEC:EXPR --at=SEC:PNG).
+
+# Before: 100-level APK (25 Nov 2026), branch claude/project-thread-nyydf2 (PR #1)
 
 APK: https://github.com/Retroraja/Crackers-Match/releases/download/godot-dev/CrackersMatchGodot.apk
 
