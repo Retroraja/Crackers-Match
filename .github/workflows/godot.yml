@@ -67,6 +67,11 @@ jobs:
           export GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=android
           ../godot-bin --headless --path . --install-android-build-template --export-release "Android" build/CrackersMatchGodot.apk
           ls -la build
+          # Play Store file (AAB), same key, same package
+          sed -i 's/^gradle_build\/export_format=0/gradle_build\/export_format=1/' export_presets.cfg
+          ../godot-bin --headless --path . --export-release "Android" build/CrackersMatchGodot.aab
+          git checkout export_presets.cfg
+          ls -la build
       - name: Publish download
         env:
           GH_TOKEN: ${{ github.token }}
@@ -75,5 +80,5 @@ jobs:
           TAG=godot-dev
           if printf '%s' "$MSG" | grep -q "\[final\]"; then TAG=godot-test; fi
           gh release delete "$TAG" --yes --cleanup-tag || true
-          gh release create "$TAG" godot/build/CrackersMatchGodot.apk --target "$GITHUB_SHA" --title "Crackers Match Godot (test build)" --prerelease \
+          gh release create "$TAG" godot/build/CrackersMatchGodot.apk godot/build/CrackersMatchGodot.aab --target "$GITHUB_SHA" --title "Crackers Match Godot (test build)" --prerelease \
             --notes "Godot build ${GITHUB_RUN_NUMBER}. Installs next to the old app. Download CrackersMatchGodot.apk on your phone and open it."
