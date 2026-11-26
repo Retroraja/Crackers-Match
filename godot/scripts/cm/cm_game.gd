@@ -3454,6 +3454,9 @@ func _fireball_arc(sx: float, sy: float, tx: float, ty: float, h: float, q: Arra
 		draw_circle(Vector2(px, py), rad * 0.5, Color.WHITE)
 		fx.append({"k": "spark", "x": px, "y": py, "vx": rnd(-40, 40), "vy": rnd(-20, 60), "col": Color("#FFD24A"), "a": 0.0, "l": 0.3})
 		if k >= 1.0:
+			# 26 Nov: each fireball gets a small whoosh-pop when it lands
+			snd("pop", {"v": 0.5, "rate": rnd(0.85, 1.05)})
+			snd("swoosh", {"v": 0.25, "rate": rnd(1.3, 1.5), "cut": 0.2})
 			hit(q[0], q[1], {"d": 0.0, "pw": 1.2})
 			return false
 		return true, 0.5)

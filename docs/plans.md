@@ -23,6 +23,8 @@
 #    make the move clear: after build 6 a short fade + "Inside the shop!" card, then picture 2 (pic_street _place).
 #  - Cracker meter tip (level 2): DONE in code 25 Nov: "Drag the cracker onto the board!" moved down under the
 #    meter (toast28 y 150 -> 208) so the meter stays visible.
+#  - Special sounds DONE 26 Nov: Ground Chakra = the flowerpot hiss, faster and higher (spinning); Flowerpot keeps
+#    its hiss + each of the 7 fireballs has a small whoosh-pop on landing (cm_game _fireball_arc).
 #  - Breakable sounds DONE 26 Nov: all real recordings from his Pixabay files: pot = clay pot break, diya = plate
 #    break, soda = glass break, bangles = lightbulb break, coconut = bone crack (soft short hit + full split),
 #    matchbox = matches box, newspaper = paper rip (short + full), gift = sealing tape rip + slap. All <1 s.
