@@ -31,6 +31,7 @@ var TUT := 0
 var trail: Control
 var lift_nodes: Array = []
 var top: TopBar
+var menu: MenuUI
 var sec_t := 0.0
 
 func build(a, street: Street) -> void:
@@ -77,14 +78,12 @@ func build(a, street: Street) -> void:
 	home.add_child(tb)
 	UISkin.button(tb, "red")
 	app.tap(tb, app.open_test)
-	var nav := {31: "Events", 33: "Ranks", 39: "Team", 42: "Crackers"}
-	for i in nav:
-		var n: String = nav[i]
-		app.tap(LH.nodes[i], func():
-			if n == "Crackers":
-				app.sheet("bag")
-			else:
-				show_toast(n + " comes soon"))
+	# 26 Nov: new bottom menu with its pages (scripts/app/menu_ui.gd); Level/Build move up so nothing overlaps
+	LH.nodes[30].visible = false
+	LH.node("hbtns").position.y -= 32
+	menu = MenuUI.new()
+	home.add_child(menu)
+	menu.build(app, home)
 	# windows
 	LB = WebLayout.new()
 	bp = LB.build("res://ui/st_build.json", self)
@@ -728,4 +727,4 @@ func _wrap(c: Control, w: float) -> void:
 
 # ---------------------------------------------------------------- menu pages (26 Nov)
 func open_page(k: String) -> void:
-	show_toast(k.capitalize() + " comes soon")
+	menu.open(k)

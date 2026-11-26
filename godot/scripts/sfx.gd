@@ -7,7 +7,7 @@ const NAMES := ["blastnew", "rocket", "chakra", "atom", "matchbox", "sparkler", 
 	"chime0", "chime1", "chime2", "coin0", "coin1", "coin2", "coin3", "coin4", "coin5", "coin6", "coin7", "coin8",
 	"bk_stone", "bk_knock", "bk_saw", "bk_plank", "bk_hum", "bk_rustle", "bk_dirt", "bk_cloth", "bk_done", "bk_hammer", "bk_thud", "bk_rise", "bk_tada", "story_page", "story_pen", "story_chime", "story_dream", "story_rise", "story_step", "story_sigh", "story_ting", "z_crackle", "z_zap",
 	"ob_pot", "ob_soda", "ob_coco_knock", "ob_coco_split", "ob_match_flick", "ob_match_spark", "ob_news_loose", "ob_news_burst",
-	"ob_bangle", "ob_gift_tear", "ob_gift_open", "ob_diya", "ob_crate", "ob_crate_hit"]
+	"ob_bangle", "ob_gift_tear", "ob_gift_open", "ob_diya", "ob_crate", "ob_crate_hit", "ui_tab"]
 var mus_on := true
 var fx_on := true
 var _duck := 0.3

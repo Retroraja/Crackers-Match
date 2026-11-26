@@ -12,7 +12,7 @@ def cut(path):
     im=Image.fromarray(np.dstack([a,al*255]).astype(np.uint8),'RGBA'); return im.crop(im.getbbox())
 def fit(im,w): return im.resize((int(w),int(im.height*w/im.width)),Image.LANCZOS)
 COLS=[(236,40,140),(30,180,240),(255,196,20),(80,200,40),(140,60,230),(255,120,20),(30,100,235),(235,30,40)]
-def wheel(WS,parts='art/wheel'):
+def wheel(WS,parts='art/wheel',bulbs=True):
     K=2; N=WS*K; R=N/2; yy,xx=np.mgrid[0:N,0:N]+0.5; dx=xx-R; dy=yy-R; r=np.hypot(dx,dy)
     ang=(np.degrees(np.arctan2(dy,dx))+90)%360; seg=(ang//45).astype(int)%8
     Rin=R*0.80; img=np.zeros((N,N,4),float)
@@ -39,6 +39,7 @@ def wheel(WS,parts='art/wheel'):
         o=np.abs(r-rr_)<1.2*K; img[o,:3]=img[o,:3]*0.55
     a=np.clip(R-r+0.5,0,1); img[...,3]=np.minimum(img[...,3],a*255)
     W_=Image.fromarray(img.astype(np.uint8),'RGBA').resize((WS,WS),Image.LANCZOS)
+    if not bulbs: return W_
     # bulbs on the rim
     b=fit(cut(parts+'/bulb.png'),WS*0.062); rb=WS/2*0.90
     for i in range(16):
@@ -46,3 +47,14 @@ def wheel(WS,parts='art/wheel'):
     return W_
 def hub(WS,parts='art/wheel'): return fit(cut(parts+'/hub.png'),WS*0.24)
 def pointer(WS,parts='art/wheel'): return fit(cut(parts+'/ptr.png'),WS*0.13)
+
+def bulbs_lit(WS,parts='art/wheel',odd=0):
+    # every second bulb brighter with a soft glow (shown/hidden to blink while the wheel spins)
+    from PIL import ImageEnhance
+    b=fit(cut(parts+'/bulb.png'),WS*0.062); b2=ImageEnhance.Brightness(b).enhance(1.45)
+    L=Image.new('RGBA',(WS,WS),(0,0,0,0)); G=Image.new('RGBA',(WS,WS),(0,0,0,0)); gd=ImageDraw.Draw(G); rb=WS/2*0.90
+    for i in range(odd,16,2):
+        q=math.radians(i*22.5-90+11.25); x=WS/2+math.cos(q)*rb; y=WS/2+math.sin(q)*rb; rr=WS*0.05
+        gd.ellipse([x-rr,y-rr,x+rr,y+rr],fill=(255,240,160,170))
+        L.alpha_composite(b2,(int(x-b2.width/2),int(y-b2.height/2)))
+    G=G.filter(ImageFilter.GaussianBlur(WS*0.012)); G.alpha_composite(L); return G

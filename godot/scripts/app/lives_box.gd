@@ -52,8 +52,9 @@ func build(parent: Control, a) -> void:
 	TopBar.pic("art/ui-coin.webp", Vector2(270 - 40, 13), Vector2(26, 26), buy)
 	(buy.get_node("txt") as Label).position.x -= 14
 	app.tap(ad, func():
-		app.show_ad(func():
-			app.add_life(1)
+		app.show_ad(func(ok: bool):
+			if ok:
+				app.add_life(1)
 			refresh()))
 	app.tap(buy, func():
 		if int(app.S.coins) < app.REFILL_COST:
@@ -62,7 +63,7 @@ func build(parent: Control, a) -> void:
 			return
 		app.S.coins = int(app.S.coins) - app.REFILL_COST
 		app.add_life(app.LIFE_MAX)
-		app.sfx.play("coin", 0.6)
+		app.sfx.play("coin3", 0.6)
 		refresh())
 	app.tap(n.card, func(): pass)
 	app.tap(dim, close)

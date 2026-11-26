@@ -2883,6 +2883,9 @@ func won(mv: int) -> void:
 	var stars := 3 if mv >= 5 else (2 if mv >= 2 else 1)
 	if stars == 3:
 		c += 30
+		var stt: Dictionary = S.get("stat", {})
+		stt["star3"] = int(stt.get("star3", 0)) + 1
+		S.stat = stt
 	var first: bool = int(cur) >= int(S.lv)
 	win_prev = int(cur)
 	if d > old:
@@ -4159,6 +4162,9 @@ func on_back() -> void:
 	if exit_box and exit_box.root.visible:
 		exit_box.close()
 		return
+	if lives_box and lives_box.root.visible:
+		lives_box.close()
+		return
 	if back_skip.is_valid():
 		var f := back_skip
 		back_skip = Callable()
@@ -4194,6 +4200,9 @@ func on_back() -> void:
 		return
 	if home_ui and home_ui.bp.visible:
 		home_ui.bp.visible = false
+		return
+	if home_ui and home_ui.menu and not home_ui.menu.at_home() and home_ui.home.visible:
+		home_ui.menu.open("home")
 		return
 	if home_ui and home_ui.notif.visible:
 		S.notif28 = 1
@@ -4787,6 +4796,9 @@ func _dt_def(id: String) -> Dictionary:
 	return {}
 
 func _daily_ev(k: String, n: int) -> void:
+	var stt: Dictionary = S.get("stat", {})
+	stt[k] = int(stt.get(k, 0)) + n
+	S.stat = stt
 	var d := dtask()
 	var ready := false
 	for id in d.ids:
