@@ -3,6 +3,11 @@
 #   Play Games Services setup -> Android credential (SHA-1 F5:AD:62:1E:E0:41:3A:CA:F6:4B:56:98:E6:9B:8D:44:D1:DC:56:45)
 #   -> turn on Saved Games -> add his Gmail as tester -> send the Play Games Project ID.
 # NEXT FIXES (25 Nov, after the 100-level APK):
+#  - LIVES (his OK 26 Nov): real lives like Royal Match. 5 hearts max; losing a level takes 1 heart; +1 heart every
+#    30 min (timer in the heart pill, "Full" at 5); at 0 hearts: wait, watch an ad (+1) or pay coins (refill all).
+#  - TOP BAR (26 Nov, talking): too crowded. Remove the diya pill (Build button shows diyas). Premium design:
+#    coins, lives, settings only, even gaps, shiny Canva pills, coin/heart icons half outside the pill, small gold
+#    profile frame, soft dark fade behind. Picture first.
 #  - Title: DONE in code 25 Nov: option 1 angle, picture by phone clock (afternoon 6-16 art/web/title_aft.webp,
 #    evening 16-19 title_eve.webp, night 19-6 title_base.webp). Fireworks = ready-made bursts (no circles, v2,
 #    tools/pic/title_bursts.py, title.gd SpriteFw), softer by day. Approved 15:23.
