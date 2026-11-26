@@ -25,6 +25,10 @@
 #    meter (toast28 y 150 -> 208) so the meter stays visible.
 #  - Clay pot sound: DONE 26 Nov: his pick = the first new one (tools/pot_tab_sounds.py), made louder, now
 #    sfx/ob_pot.wav. Kenney recordings were rejected ("don't feel like sounds").
+#  - Areas tab (his OK 26 Nov): FIRST tab, in place of Events. One picture card per area (1 Sivakasi Street,
+#    2 GHILLI Crackers, 3 Order Room, 4 Delivery Hub, 5 Madurai locked "Coming soon"); finished areas: View button
+#    (finished picture + fireworks); current area: "Builds 5/9". Events come later as their own icons on the
+#    home screen (each event its own name/icon, like other games), not a bottom tab.
 #  - Bottom menu (talked 26 Nov, waiting): bar flat to the screen bottom (no border/strip), raised selected tab with
 #    name, page slide; tab sound = sfx/ui_tab.wav = his file "retro arcade menu navigate" (Pixabay, vadim_makes_sound); his 2nd file "ui sound" (Pixabay, arnav_geddada) saved as sfx/ui_tab2.wav; no slide sound, light vibration if on;
 #    each tab gets a simple page. Profile icon (top-left Hydrogen Bomb, does nothing now): his call.
