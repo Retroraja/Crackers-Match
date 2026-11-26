@@ -4,6 +4,10 @@
 #   OAuth Android client "Crackers Match" (Play signing SHA-1 90:6B:5A:A0:94:83:FF:DA:B5:E3:BF:32:39:A7:A2:AC:57:76:86:9E)
 #     = 37177410253-35uaicfbi9u0ht61k8hhmstlem8c1leq.apps.googleusercontent.com (docs/play-games/oauth-client-play.json)
 #   2nd client "Crackers Match Test" with our key SHA-1 F5:AD:...:56:45 (for sideloaded APKs).
+#   SIGN-IN PLAN (his OK 26 Nov): play as GUEST first (progress saved on phone). Profile page (open by tapping the
+#   gold profile frame, top bar left) shows avatar, name ("Guest"), green "Sign in with Google Play" button under
+#   the name, records. After sign-in: button -> small "Saved to cloud" tick; cloud save starts only after the tap;
+#   new phone: sign in -> progress comes back. Needs a Godot Play Games plugin + app id 37177410253.
 #   CI now also makes CrackersMatchGodot.aab (godot.yml). Bump version/code for every Play upload.
 # NEXT FIXES (25 Nov, after the 100-level APK):
 #  - TROPHY ROOM page (26 Nov, previews/trophy-room.png): scrollable list, permanent trophies (Rocket Master,
