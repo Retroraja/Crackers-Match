@@ -1,3 +1,7 @@
+# REMIND HIM: Play Console steps for cloud save (Google Play Games Saved Games), he will do them later:
+#   create app (package com.retroraja.crackersmatch.godot, private draft, same app he publishes later) ->
+#   Play Games Services setup -> Android credential (SHA-1 F5:AD:62:1E:E0:41:3A:CA:F6:4B:56:98:E6:9B:8D:44:D1:DC:56:45)
+#   -> turn on Saved Games -> add his Gmail as tester -> send the Play Games Project ID.
 # NEXT FIXES (25 Nov, after the 100-level APK):
 #  - Title: DONE in code 25 Nov: option 1 angle, picture by phone clock (afternoon 6-16 art/web/title_aft.webp,
 #    evening 16-19 title_eve.webp, night 19-6 title_base.webp). Fireworks = ready-made bursts (no circles, v2,
