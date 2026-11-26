@@ -1,7 +1,10 @@
-# REMIND HIM: Play Console steps for cloud save (Google Play Games Saved Games), he will do them later:
-#   create app (package com.retroraja.crackersmatch.godot, private draft, same app he publishes later) ->
-#   Play Games Services setup -> Android credential (SHA-1 F5:AD:62:1E:E0:41:3A:CA:F6:4B:56:98:E6:9B:8D:44:D1:DC:56:45)
-#   -> turn on Saved Games -> add his Gmail as tester -> send the Play Games Project ID.
+# PLAY GAMES SETUP (26 Nov, he did it in Play Console):
+#   app com.retroraja.crackersmatch.godot, AAB v2 (API 36) on Internal testing. Cloud project crackers-match.
+#   Play Games Project ID (app id) = 37177410253. Saved Games: turn on in Edit properties (check).
+#   OAuth Android client "Crackers Match" (Play signing SHA-1 90:6B:5A:A0:94:83:FF:DA:B5:E3:BF:32:39:A7:A2:AC:57:76:86:9E)
+#     = 37177410253-35uaicfbi9u0ht61k8hhmstlem8c1leq.apps.googleusercontent.com (docs/play-games/oauth-client-play.json)
+#   2nd client "Crackers Match Test" with our key SHA-1 F5:AD:...:56:45 (for sideloaded APKs).
+#   CI now also makes CrackersMatchGodot.aab (godot.yml). Bump version/code for every Play upload.
 # NEXT FIXES (25 Nov, after the 100-level APK):
 #  - TROPHY ROOM page (26 Nov, previews/trophy-room.png): scrollable list, permanent trophies (Rocket Master,
 #    Star Collector, Chakra Spinner, Sparkler Fan, Builder, 3-Star Hero...); each has bronze -> silver -> gold steps;
