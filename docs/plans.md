@@ -32,6 +32,11 @@
 #  - Bottom menu (talked 26 Nov, waiting): bar flat to the screen bottom (no border/strip), raised selected tab with
 #    name, page slide; tab sound = sfx/ui_tab.wav = his file "retro arcade menu navigate" (Pixabay, vadim_makes_sound); his 2nd file "ui sound" (Pixabay, arnav_geddada) saved as sfx/ui_tab2.wav; no slide sound, light vibration if on;
 #    each tab gets a simple page. Profile icon (top-left Hydrogen Bomb, does nothing now): his call.
+#  - Level screen THEMES (26 Nov): clean style like his Royal Match picture: solid colour top bar, cream cards
+#    with ribbon labels (Target / Moves), man in an arch frame with a gold edge, thin gold line, Cracker meter in
+#    the theme colour (below the line, no overlap), cream board floor, booster boxes in the theme colour. No
+#    patterns/sparkles (he found those silly). 10 colours, one per area later: previews/themes/ (themes.json,
+#    tools/pic/themes_mock.py). Mockups only; no black. Not built yet.
 #  - Win screen: DONE in code 25 Nov (his pick option 1): old look, no card/border, no piggy/next-build line,
 #    Next + Reward buttons 40 px higher (not at the screen's bottom edge).
 # BUILT 25 Nov (100-level APK, see current-state.md): every item of the NEXT BUILD LIST below except 17 (rangoli,
