@@ -19,21 +19,22 @@ def put(img,x,y,sh=True):
     im.alpha_composite(img,(int(x),int(y)))
 Y=40  # bar centre line (pt)
 # profile in a gold frame
-d=ImageDraw.Draw(im); px,py,ps=10,Y-4-22,48
+d=ImageDraw.Draw(im); px,py,ps=10,Y+4-22,44
 fr=Image.new('RGBA',(ps*S,ps*S),(0,0,0,0)); fd=ImageDraw.Draw(fr)
 fd.rounded_rectangle([0,0,ps*S-1,ps*S-1],10*S,fill=(232,176,48)); fd.rounded_rectangle([3*S,3*S,ps*S-3*S,ps*S-3*S],8*S,fill=(255,226,120))
 fd.rounded_rectangle([5*S,5*S,ps*S-5*S,ps*S-5*S],7*S,fill=(70,120,200))
-put(fr,px*S,py*S); av=icon('art/crk/b10.webp',34*S); put(av,(px+ps/2)*S-av.width/2,(py+ps/2)*S-av.height/2,False)
+put(fr,px*S,py*S); av=icon('art/crk/b10.webp',30*S); put(av,(px+ps/2)*S-av.width/2,(py+ps/2)*S-av.height/2,False)
 def pillbox(x,w,ic,txt,badge=None):
-    p=pill.resize((w*S,int(34*S)),Image.LANCZOS); put(p,x*S,(Y+4-17)*S)
-    d=ImageDraw.Draw(im); d.text(((x+w/2+12)*S,(Y+4)*S),txt,font=F(19),fill=(28,40,92),anchor='mm')
-    i=icon(ic,46*S); put(i,(x-14)*S,(Y+4)*S-i.height/2)
-    if badge: d.text(((x+9)*S,(Y+5)*S),badge,font=F(20),fill='white',anchor='mm',stroke_width=3*S,stroke_fill=(120,10,30))
-pillbox(84,104,'art/ui-coin.webp','55585')
-pillbox(214,104,'art/web/fe-heart.png','Full','5')
+    p=pill.resize((w*S,int(32*S)),Image.LANCZOS); put(p,x*S,(Y+4-16)*S)
+    d=ImageDraw.Draw(im); d.text(((x+(20+w)/2+3)*S,(Y+4)*S),txt,font=F(16 if len(txt)<5 else 15),fill=(28,40,92),anchor='mm')
+    i=icon(ic,40*S); put(i,(x-14)*S,(Y+4)*S-i.height/2)
+    if badge: d.text(((x+6)*S,(Y+5)*S),badge,font=F(18),fill='white',anchor='mm',stroke_width=3*S,stroke_fill=(120,10,30))
+pillbox(72,72,'art/ui-coin.webp','55585')
+pillbox(166,72,'art/web/fe-heart.png','Full','5')
+pillbox(260,72,'art/ui-diya.webp','8')
 # plus on coin
 pl=Image.new('RGBA',(18*S,18*S),(0,0,0,0)); pd=ImageDraw.Draw(pl); pd.ellipse([0,0,18*S-1,18*S-1],fill=(255,255,255)); pd.ellipse([2*S,2*S,16*S,16*S],fill=(46,170,60))
-pd.text((9*S,8.5*S),'+',font=F(16),fill='white',anchor='mm'); put(pl,(84+10)*S,(Y+14)*S,False)
-gr=gear.resize((46*S,46*S),Image.LANCZOS); put(gr,(390-10-46)*S,(Y+4-23)*S)
+pd.text((9*S,8.5*S),'+',font=F(16),fill='white',anchor='mm'); put(pl,(72+6)*S,(Y+12)*S,False)
+gr=gear.resize((42*S,42*S),Image.LANCZOS); put(gr,(390-10-42)*S,(Y+4-21)*S)
 im.convert('RGB').save('../previews/top-bar.png')
 im.crop((0,0,W,260*S)).convert('RGB').save('/tmp/tb.png')
