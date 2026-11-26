@@ -8,3 +8,9 @@
 - One APK with everything agreed, not one per task. No preview videos per task unless he asks.
 - Test phones: his OPPO A78 and Moto, his wife's Redmi 12 (weakest — the speed target).
 - Save plans/decisions to `docs/` (and the claude.ai project if attached) when he agrees on something.
+
+
+## Rule (26 Nov): icons and UI pictures = premium generated art
+For icons, badges and UI pictures, generate rich 3D glossy art with Canva (generate-image, plain white background,
+no text), cut the background, and use that. Do NOT draw icons/panels in code (PIL / simple 3D shapes): he finds
+those flat and simple. Code-drawn pictures only for quick layout mockups, clearly called mockups.
