@@ -9,6 +9,15 @@
 #   the name, records. After sign-in: button -> small "Saved to cloud" tick; cloud save starts only after the tap;
 #   new phone: sign in -> progress comes back. Needs a Godot Play Games plugin + app id 37177410253.
 #   CI now also makes CrackersMatchGodot.aab (godot.yml). Bump version/code for every Play upload.
+# NEXT FIXES (26 Nov night, his list; build ONLY when he says "build"; he is testing the menu APK and may add more):
+#  1. Proper sounds for every special: rocket full whoosh + blast; ground chakra blast on landing (hiss gave a tick);
+#     flowerpot, sky shot (+ small pops on landing), rail, sparkler play their own files (they only gave a swoosh).
+#  2. Soft scroll for Daily sheet, Areas, Trophy Room (Godot scroll flings too hard).
+#  3. Trophy Room: 12 trophies (add Matchbox Maker, Bomb Maker, Booster Fan, Coin Collector, Lucky Spinner, Daily Player).
+#  4. Soft tap sound (ui_tab, low) instead of the strong swoosh on Shop, Daily, Piggy, Profile.
+#  5. Back arrow (top left) on every page: Profile, Areas, Trophies, Lucky Wheel.
+#  6. Tall phones: bottom menu bar and level booster area reach the real screen bottom (no blank strip).
+#  7. Google Play sign-in + cloud save (plugin, app id 37177410253; plan in "SIGN-IN PLAN" above).
 # BUILT 26 Nov (menu APK, see current-state.md): top bar, lives, bottom menu + Areas/Trophy Room/Lucky Wheel/Profile,
 # level screen theme per area (1 royal blue, 2 maroon, 3 teal, 4 navy, 5 ruby), Shop badge, popups navy, Area 2
 # "Inside the shop!" card, Area 3 Chennai labels. Still waiting: Diya + 1000 Wala (his OK, picture first), gold
