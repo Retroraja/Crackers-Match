@@ -133,9 +133,9 @@ im = Image.blend(im, Image.merge("RGB", [n] * 3), 0.08)
 im.save(f"{OUT}/floor_bright.jpg", quality=90)
 print("floor ok")
 
-# ---- parcel tags for other towns
+# ---- parcel tags: Chennai places (26 Nov); tag5 = the big CHENNAI tag on top
 F = ImageFont.truetype(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../godot/fonts/LilitaOne.ttf"), 30)
-for i, (town, col) in enumerate([("KANCHIPURAM", (214, 40, 70)), ("VELLORE", (46, 134, 222)), ("MADURAI", (46, 173, 91)), ("SALEM", (255, 122, 26))]):
+for i, (town, col) in enumerate([("T. NAGAR", (214, 40, 70)), ("MYLAPORE", (46, 134, 222)), ("ADYAR", (46, 173, 91)), ("ANNA NAGAR", (255, 122, 26)), ("VELACHERY", (150, 60, 200)), ("CHENNAI", (200, 30, 40))]):
     im = Image.new("RGB", (256, 96), (250, 246, 232))
     d = ImageDraw.Draw(im)
     d.rectangle([0, 0, 255, 95], outline=col, width=8)

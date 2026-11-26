@@ -690,11 +690,11 @@ func builds() -> void:
 				box(str_m, Vector3(0, 0.14, 0), Vector3(0.385, 0.285, 0.02), pn)
 				box(str_m, Vector3(0, 0.14, 0), Vector3(0.02, 0.285, 0.425), pn)
 				if iz == 1:
-					var tg := quad(pic_mat("res://art/a3/tag%d.jpg" % (ti % 4)), Vector3(0.07, 0.16, 0.213), Vector2(0.2, 0.075), Vector3(0, 0, randf_range(-0.1, 0.1)), pn)
+					var tg := quad(pic_mat("res://art/a3/tag%d.jpg" % (ti % 5)), Vector3(0.07, 0.16, 0.213), Vector2(0.2, 0.075), Vector3(0, 0, randf_range(-0.1, 0.1)), pn)
 					tg.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 					ti += 1
-	# a big tag on top: the first parcel going to Madurai
-	var big := quad(pic_mat("res://art/a3/tag2.jpg"), Vector3(0.0, 1.06, 0.1), Vector2(0.42, 0.16), Vector3(-1.0, 0, 0), ro)
+	# a big tag on top: CHENNAI (26 Nov: the small tags are Chennai places; Madurai stays the Area 5 surprise)
+	var big := quad(pic_mat("res://art/a3/tag5.jpg"), Vector3(0.0, 1.06, 0.1), Vector2(0.42, 0.16), Vector3(-1.0, 0, 0), ro)
 	big.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# order slips on the board: one per build from build 2 on
 	for i in 8:

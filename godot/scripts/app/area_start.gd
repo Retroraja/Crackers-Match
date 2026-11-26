@@ -11,7 +11,7 @@ class_name AreaStartScene
 
 var pic: TextureRect
 var start_area := 2
-const CAPS3 := ["“Thatha, your next step…\nlight up more towns.”", "Orders need space…\ntime to open the back room!", "“Orders are coming.\nLet's set up this room!”"]
+const CAPS3 := ["“Thatha, your next step…\norders from all over Chennai!”", "Orders need space…\ntime to open the back room!", "“Orders are coming.\nLet's set up this room!”"]
 const CAPS4 := ["Orders from all over Chennai…\nthe temple festival!", "Weddings, schools, parties…\neveryone wants GHILLI crackers.", "“Our old van can do it.\nLet's fix it and start delivering!”"]
 const CAPS := ["The first load of crackers\nis ready for Chennai!", "Chennai.  Bunder Street,\nwhere the big city buys its crackers.", "“Our first shop…\na little rusty, but it's ours.”"]
 
@@ -29,7 +29,7 @@ func play(height: float) -> void:
 	super.play(height)
 	(card.get_node("a") as Label).text = "A R E A   %d" % start_area
 	(card.get_node("t") as Label).text = ["Bunder Street, Chennai", "Busy Days at GHILLI", "GHILLI Delivery Hub"][clampi(start_area, 2, 4) - 2]
-	(card.get_node("u") as Label).text = ["our first shop in the big city", "the first steps to more towns", "deliveries all over Chennai"][clampi(start_area, 2, 4) - 2]
+	(card.get_node("u") as Label).text = ["our first shop in the big city", "orders from all over Chennai", "deliveries all over Chennai"][clampi(start_area, 2, 4) - 2]
 	grade.visible = false
 	# a happy moment: the cheerful game music instead of the story theme, no wind
 	amb.stop()
