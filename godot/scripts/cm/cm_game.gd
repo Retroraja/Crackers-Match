@@ -96,6 +96,9 @@ var fly3d: CMFly
 var sfx: Sfx
 var lite := false
 var floor_node: Node2D
+var floor_a := Color("#CEC6EC")   # 26 Nov: level theme sets these (cream floor, edge in the area colour)
+var floor_b := Color("#DCD6F2")
+var floor_edge := Color("#3A1466")
 
 func rnd(a: float, b_: float) -> float:
 	return a + randf() * (b_ - a)
@@ -1951,11 +1954,11 @@ class CMFloor extends Node2D:
 		for p in cells:
 			g_fill(p.x - 6, p.y - 5, u + 12, u + 11, 12, Color("#E9A72A"))
 		for p in cells:
-			g_fill(p.x - 3, p.y - 3, u + 6, u + 6, 9, Color("#3A1466"))
+			g_fill(p.x - 3, p.y - 3, u + 6, u + 6, 9, g.floor_edge)
 		for r in g.R:
 			for k in g.C:
 				if not g.hole(r, k):
-					draw_rect(Rect2(OX + k * u, OY + r * u, u, u), Color("#CEC6EC") if (r + k) % 2 else Color("#DCD6F2"))
+					draw_rect(Rect2(OX + k * u, OY + r * u, u, u), g.floor_a if (r + k) % 2 else g.floor_b)
 	func g_fill(x: float, y: float, w: float, h: float, rad: float, col: Color) -> void:
 		draw_colored_polygon(g.rr_poly(x, y, w, h, rad), col)
 

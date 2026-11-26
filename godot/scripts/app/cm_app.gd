@@ -87,6 +87,7 @@ var deb: CMDeb
 var f3: CMFly
 var face: CMFace
 var lite := false
+var theme_base := Color8(32, 78, 160)
 var cur = 0            # level index, or "b" for the bonus round
 var BL := {}           # bonus level
 var realG := {}
@@ -892,6 +893,7 @@ func start(i) -> void:
 		realG[str(k)] = L0.goal[k]
 	gi_keys = ""
 	slots()
+	LevelTheme.apply(self, int(BL.after) - 1 if is_bonus() else int(i))
 	sfx.mus_start()
 	sfx.duck(0.3)
 	stars_on = [false, false, false]
@@ -925,14 +927,14 @@ func draw_hud() -> void:
 	var small: Control = G.nodes[21]
 	var items := {}
 	if REW != null:
-		set_t(small, "REWARD")
+		set_t(small, "Reward")
 		items["rew"] = [icon("coin"), str(REW)]
 	elif is_bonus():
 		set_t(small, "COINS")
 		var got: int = (int(BL.goal.coin) - maxi(0, int(realG.get("coin", 0)))) - int(inflight.get("coin", 0))
 		items["coin"] = [icon("coin"), str(got * int(BL.val))]
 	else:
-		set_t(small, "TARGET")
+		set_t(small, "Target")
 		for k in realG:
 			var v: int = maxi(0, int(realG[k])) + int(inflight.get(k, 0))
 			items[k] = [icon(k), str(v) if v > 0 else ""]
@@ -1278,6 +1280,7 @@ func slots() -> void:
 		var kk := k
 		tap(c, func(): _slot_down(kk), true)
 		slot_nodes[k] = c
+	LevelTheme.paint_slots(self)
 	coin_t(G.node("gCoins"), int(S.coins))
 
 # booster price pill: [coin] 500, grown to the left from its right edge
