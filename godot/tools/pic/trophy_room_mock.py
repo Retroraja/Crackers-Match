@@ -44,7 +44,7 @@ d.text((195*S,158*S),'22 of 45 trophies',font=F(14),fill=(140,110,70),anchor='mm
 rows=[('art/web/ui-rocket-l.webp','Rocket Master','Fire 500 rockets',312,500,'silver','300'),
       ('art/web/fe-star.png','Star Collector','Earn 300 stars',300,300,'claim','500'),
       ('art/web/ui-chakra.webp','Chakra Spinner','Use 100 chakras',41,100,'bronze','100'),
-      ('art/web/ui-star.webp','Sparkler Fan','Make 50 sparklers',50,50,'gold','done'),
+      ('art/crk/b11.webp','Sparkler Fan','Make 50 sparklers',50,50,'gold','done'),
       ('art/web/ui-diya.webp','Builder','Finish Area 2',8,12,'none','500'),
       ('art/web/ui-flowerpot-l.webp','3-Star Hero','3-star 50 levels',31,50,'bronze','300')]
 y=186
