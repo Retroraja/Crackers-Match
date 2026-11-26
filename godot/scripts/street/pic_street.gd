@@ -264,6 +264,10 @@ func slide_to(p: int, done: Callable) -> void:
 			done.call()
 		return
 	var from := cur
+	# 26 Nov: Area 2, build 6 -> 7 (shop front -> inside): a short fade with an "Inside the shop!" card, not a slide
+	if area == 2 and from == 0 and p == 1 and done.is_valid():
+		_fade_inside(p, done)
+		return
 	var dir := 1.0 if p > from else -1.0
 	pics[p].visible = true
 	cur = p
@@ -280,6 +284,37 @@ func slide_to(p: int, done: Callable) -> void:
 		_layout()
 		if done.is_valid():
 			done.call())
+	sfx.emit("open")
+
+func _fade_inside(p: int, done: Callable) -> void:
+	var from := cur
+	var blk := ColorRect.new()
+	blk.color = Color(0.02, 0.02, 0.06, 0.0)
+	blk.position = Vector2(-50, -50)
+	blk.size = view.size + Vector2(100, 100)
+	blk.mouse_filter = Control.MOUSE_FILTER_STOP
+	view.add_child(blk)
+	var l := TopBar.label(34, Color(1, 0.93, 0.7), 10, Color(0.35, 0.05, 0.1))
+	l.text = "Inside the shop!"
+	var kk := view.size.x / 390.0
+	l.size = Vector2(390, 60)
+	l.scale = Vector2(kk, kk)
+	l.position = Vector2(50, 50 + view.size.y / 2 - 30 * kk)
+	l.modulate.a = 0.0
+	blk.add_child(l)
+	var tw := view.create_tween()
+	tw.tween_property(blk, "color:a", 1.0, 0.4)
+	tw.tween_property(l, "modulate:a", 1.0, 0.3)
+	tw.tween_callback(func():
+		pics[from].visible = false
+		cur = p
+		_layout())
+	tw.tween_interval(1.0)
+	tw.tween_property(l, "modulate:a", 0.0, 0.25)
+	tw.tween_property(blk, "color:a", 0.0, 0.45)
+	tw.tween_callback(func():
+		blk.queue_free()
+		done.call())
 	sfx.emit("open")
 
 # the home screen passes drags on the empty street here: swipe to the earlier pictures and back

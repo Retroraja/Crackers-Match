@@ -51,7 +51,7 @@ func build(parent: Control) -> void:
 	parent.add_child(root)
 	# the board behind is dimmed (radial: lighter purple in the middle, near black at the edges)
 	mk(root, [0, 0, 390, 844], {"bg": [{"t": "rad", "cen": [0.5, 0.45], "shape": [0.75, 0.75], "circle": false,
-		"st": [[0, rgba("#2a0f50", 0.75)], [1, rgba("#0a0318", 0.93)]]}]})
+		"st": [[0, rgba("#2a0f50", 0.75)], [1, rgba("#030a1c", 0.93)]]}]})
 	s1 = _card(222, 452, "Out of Moves", "You're almost there! Keep going?", true)
 	s2 = _card(260, 318, "Level Failed", "So close! You only needed a little more.", false)
 	for t in ["title1", "title2", "big"]:

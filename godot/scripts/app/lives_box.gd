@@ -30,7 +30,7 @@ func build(parent: Control, a) -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_STOP
 	root.visible = false
 	parent.add_child(root)
-	var dim := mk(root, [0, -400, 390, 1644], {"bgc": UISkin.rgba("#0a0318", 0.62)})
+	var dim := mk(root, [0, -400, 390, 1644], {"bgc": UISkin.rgba("#030a1c", 0.62)})
 	var card := mk(root, [35, 250, 320, 330], UISkin.card_box(), null, "card")
 	mk(card, [35, 272, 320, 40], null, LoseUI.txt("Lives", "LilitaOne", 30, UISkin.TITLE), "t")
 	UISkin.title_label(n.t.get_node("txt"))

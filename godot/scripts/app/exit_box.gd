@@ -26,7 +26,7 @@ func build(parent: Control, app) -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_STOP
 	root.visible = false
 	parent.add_child(root)
-	mk(root, [0, 0, 390, 844], {"bgc": UISkin.rgba("#0a0318", 0.6)})
+	mk(root, [0, 0, 390, 844], {"bgc": UISkin.rgba("#030a1c", 0.6)})
 	var card := mk(root, [45, 322, 300, 200], UISkin.card_box(), null, "card")
 	# (child boxes are given in screen coordinates, like LoseUI)
 	mk(card, [45, 352, 300, 40], null, LoseUI.txt("Exit game?", "LilitaOne", 30, UISkin.TITLE), "t")

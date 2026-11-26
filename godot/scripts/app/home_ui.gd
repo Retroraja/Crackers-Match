@@ -74,7 +74,7 @@ func build(a, street: Street) -> void:
 	home.add_child(top)
 	top.build(app)
 	# 25 Nov test tools (his test version, not hidden)
-	var tb := WebLayout.new().make({"i": 0, "id": "", "tag": "div", "r": [330, 124, 50, 28], "op": 1, "txt": LoseUI.txt("Test", "Sora-800", 13, "#ffffff")}, Vector2.ZERO)
+	var tb := WebLayout.new().make({"i": 0, "id": "", "tag": "div", "r": [320, 186, 50, 28], "op": 1, "txt": LoseUI.txt("Test", "Sora-800", 13, "#ffffff")}, Vector2.ZERO)
 	home.add_child(tb)
 	UISkin.button(tb, "red")
 	app.tap(tb, app.open_test)
@@ -325,6 +325,11 @@ func _build_piggy() -> void:
 	pig_ad.visible = false
 	pig.add_child(pig_ad)
 	app.tap(pig, app.piggy_tap)
+	# 26 Nov: Shop = same glowing round badge as Daily, same height, mirrored on the right
+	var hs: Control = LH.node("hShop")
+	for c in hs.get_children():
+		(c as CanvasItem).visible = false
+	_round_icon(hs, Vector2(390 - 16 - 64, 88), load("res://art/web/ic-coinpile.png"), "Shop")
 	dt_dot = AppFx.badge("!", Color("#E8123C"), Vector2(22, 22), WebLayout.font("TitanOne"), 13, 11, 2)
 	dt_dot.position = Vector2(46, -6)
 	hd.add_child(dt_dot)
