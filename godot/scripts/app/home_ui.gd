@@ -30,6 +30,8 @@ var hand_tw: Tween
 var TUT := 0
 var trail: Control
 var lift_nodes: Array = []
+var top: TopBar
+var sec_t := 0.0
 
 func build(a, street: Street) -> void:
 	app = a
@@ -65,6 +67,11 @@ func build(a, street: Street) -> void:
 	app.tap(LH.node("hShop"), func(): app.sheet("shop"))
 	app.tap(LH.node("hDaily"), func(): app.sheet("daily"))
 	_build_piggy()
+	# 26 Nov: new premium top bar replaces the web one
+	LH.nodes[1].visible = false
+	top = TopBar.new()
+	home.add_child(top)
+	top.build(app)
 	# 25 Nov test tools (his test version, not hidden)
 	var tb := WebLayout.new().make({"i": 0, "id": "", "tag": "div", "r": [330, 124, 50, 28], "op": 1, "txt": LoseUI.txt("Test", "Sora-800", 13, "#ffffff")}, Vector2.ZERO)
 	home.add_child(tb)
@@ -170,7 +177,18 @@ func build(a, street: Street) -> void:
 	st.task_done.connect(_task_done)
 	st.sfx.connect(func(n: String): app.street_sfx(n))
 
+func refresh_top() -> void:
+	if top:
+		top.refresh(int(app.S.coins), app.lives_now(), app.life_txt(), st.diyas)
+
 func _process(dt: float) -> void:
+	sec_t -= dt
+	if sec_t <= 0:
+		sec_t = 1.0
+		if home.visible:
+			refresh_top()
+		if app.lives_box:
+			app.lives_box.tick()
 	if toast_t > 0:
 		toast_t -= dt
 		if toast_t <= 0:
@@ -364,9 +382,7 @@ func refresh() -> void:
 		bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var bar: Control = LH.node("hBar")
 	app.resize_box(bar, Vector2(117.0 * n / st.TASKS.size(), bar.size.y))
-	app.set_t(LH.node("tDy"), str(st.diyas))
-	# the home pill sits next to the lives pill: big numbers shrink the font a little instead (25 Nov)
-	app.fit_t(LH.node("tCoin"), str(app.S.coins), 50.0)
+	refresh_top()
 	var c := st.can_do()
 	app.set_t(badge, str(c))
 	badge.visible = c > 0
@@ -709,3 +725,7 @@ func _wrap(c: Control, w: float) -> void:
 		if ch is Label:
 			ch.autowrap_mode = l.autowrap_mode
 			ch.size = l.size
+
+# ---------------------------------------------------------------- menu pages (26 Nov)
+func open_page(k: String) -> void:
+	show_toast(k.capitalize() + " comes soon")

@@ -377,6 +377,57 @@ func load_save() -> void:
 	S.lv = int(S.lv)
 	S.coins = int(S.coins)
 
+# ---------------------------------------------------------------- lives (26 Nov, like Royal Match)
+# 5 max; losing a level (Give up, or Leave mid-level) takes 1; +1 every 30 min; at 0: wait, ad +1, or coins refill.
+const LIFE_MAX := 5
+const LIFE_SEC := 1800
+const REFILL_COST := 900
+var lives_box: LivesBox
+
+func lives_now() -> int:
+	var l := int(S.get("lives", LIFE_MAX))
+	if l >= LIFE_MAX:
+		S.lives = LIFE_MAX
+		S.life_t = 0
+		return LIFE_MAX
+	var now := int(Time.get_unix_time_from_system())
+	var t0 := int(S.get("life_t", now))
+	if t0 <= 0 or t0 > now + LIFE_SEC:
+		t0 = now
+	var add := (now - t0) / LIFE_SEC
+	l = mini(LIFE_MAX, l + add)
+	S.lives = l
+	S.life_t = 0 if l >= LIFE_MAX else t0 + add * LIFE_SEC
+	return l
+
+func life_txt() -> String:
+	if lives_now() >= LIFE_MAX:
+		return "Full"
+	var left := maxi(0, int(S.life_t) + LIFE_SEC - int(Time.get_unix_time_from_system()))
+	return "%d:%02d" % [left / 60, left % 60]
+
+func use_life() -> void:
+	var l := lives_now()
+	if l >= LIFE_MAX:
+		S.life_t = int(Time.get_unix_time_from_system())
+	S.lives = maxi(0, l - 1)
+	save()
+
+func add_life(k: int) -> void:
+	S.lives = mini(LIFE_MAX, lives_now() + k)
+	if S.lives >= LIFE_MAX:
+		S.life_t = 0
+	save()
+
+func lives_card(out := false) -> void:
+	if lives_box == null:
+		lives_box = LivesBox.new()
+		lives_box.build(top_layer, self)
+	lives_box.open(out)
+
+func open_page(k: String) -> void:
+	home_ui.open_page(k)
+
 func save() -> void:
 	var f := FileAccess.open(save_path, FileAccess.WRITE)
 	if f:
@@ -788,8 +839,10 @@ func ask_leave() -> void:
 		return
 	game.paused = true
 	_board_input()
-	ask("Leave level?", "Your moves and progress in this level will be lost.", "Keep playing", "Leave", func():
+	ask("Leave level?", "You will lose a life. Your moves and progress in this level will be lost.", "Keep playing", "Leave", func():
 		game.paused = false
+		if not is_bonus():
+			use_life()
 		quit_level(), func():
 		game.paused = false
 		_board_input())
@@ -1639,6 +1692,7 @@ func _build_overlays() -> void:
 		var fl: Dictionary = S.get("fails", {})
 		fl[str(cur)] = int(fl.get(str(cur), 0)) + 1
 		S.fails = fl
+		use_life()
 		save()
 		lose_step(2)
 		sfx.play("swoosh", 0.4))
@@ -2344,6 +2398,9 @@ func _card_ad() -> void:
 		sfx.play("fanfare", 0.4))
 
 func _card_play() -> void:
+	if lives_now() <= 0:
+		lives_card(true)
+		return
 	open_modal(L_card.root, false)
 	open_modal(L_hard.root, false)
 	var lvd: Dictionary = levels[card_i]
