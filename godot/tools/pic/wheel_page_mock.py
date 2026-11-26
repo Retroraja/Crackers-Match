@@ -1,6 +1,6 @@
 # 26 Nov: Lucky Wheel page mockup (royal blue theme), premium wheel art from Canva + our prize icons
 import math, numpy as np
-from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
+from PIL import ImageChops, Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 from scipy import ndimage
 S=2; W,H=390*S,844*S
 F=lambda n: ImageFont.truetype('art/LilitaOne.ttf',int(n*S))
@@ -42,9 +42,17 @@ edge=set(np.unique(np.concatenate([lab[0],lab[-1],lab[:,0],lab[:,-1]])))-{0}
 bg=np.isin(lab,list(edge)); fg=ndimage.binary_erosion(ndimage.binary_fill_holes(~bg),iterations=2)
 # edge pixels take the colour of the nearest solid inside pixel (no white fringe)
 _,ix=ndimage.distance_transform_edt(~ndimage.binary_erosion(fg,iterations=1),return_indices=True); a=a[ix[0],ix[1]]
-al=ndimage.gaussian_filter(fg.astype(float),0.7)
-wh=Image.fromarray(np.dstack([a,al*255]).astype(np.uint8),'RGBA'); wh=wh.crop(wh.getbbox())
-WS=330*S; wh=wh.resize((WS,int(WS*wh.height/wh.width)),Image.LANCZOS); wh=ImageEnhance.Sharpness(wh).enhance(1.3)
+# smooth round edge: fit the rim circle, draw it clean at full size; keep the pointer from the cut
+ys,xs=np.nonzero(fg); L,R,B=xs.min(),xs.max(),ys.max(); rr=(R-L+1)/2; ccx=(L+R+1)/2; ccy=B+1-rr
+yy,xx=np.mgrid[0:fg.shape[0],0:fg.shape[1]]; outside=((xx+.5-ccx)**2+(yy+.5-ccy)**2)>(rr-1.5)**2
+ptr=fg&outside&(yy<ccy-rr*0.6)&(np.abs(xx+.5-ccx)<rr*0.22)
+x0,y0=L,ys.min(); k=330*S/(R-L+1); WS=330*S; HS=int(round((B+1-y0)*k))
+rgb=Image.fromarray(a[y0:B+1,L:R+1].astype(np.uint8),'RGB').resize((WS,HS),Image.LANCZOS)
+rgb=ImageEnhance.Contrast(ImageEnhance.Color(rgb).enhance(1.12)).enhance(1.08).filter(ImageFilter.UnsharpMask(3*S,90,2))
+SS=4; m=Image.new('L',(WS*SS,HS*SS),0); c2x=(ccx-L)*k*SS; c2y=(ccy-y0)*k*SS; r2=(rr-1.2)*k*SS
+ImageDraw.Draw(m).ellipse([c2x-r2,c2y-r2,c2x+r2,c2y+r2],fill=255); m=m.resize((WS,HS),Image.LANCZOS)
+pm=Image.fromarray((ndimage.gaussian_filter(ptr[y0:B+1,L:R+1].astype(float),0.7)*255).astype(np.uint8)).resize((WS,HS),Image.LANCZOS)
+wh=rgb.convert('RGBA'); wh.putalpha(ImageChops.lighter(m,pm))
 glow=Image.new('RGBA',(W,H),(0,0,0,0)); ImageDraw.Draw(glow).ellipse([cx-185*S,cy-185*S,cx+185*S,cy+185*S],fill=(255,220,120,120)); im.alpha_composite(glow.filter(ImageFilter.GaussianBlur(24*S)))
 wx,wy=int(cx-WS/2),int(cy-wh.height/2+8*S); im.alpha_composite(wh,(wx,wy))
 # prizes on the 8 segments (centre of the wheel = image centre slightly below the pointer)
