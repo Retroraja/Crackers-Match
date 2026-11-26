@@ -1,6 +1,6 @@
 # PLAY GAMES SETUP (26 Nov, he did it in Play Console):
 #   app com.retroraja.crackersmatch.godot, AAB v2 (API 36) on Internal testing. Cloud project crackers-match.
-#   Play Games Project ID (app id) = 37177410253. Saved Games: turn on in Edit properties (check).
+#   Play Games Project ID (app id) = 37177410253. Saved Games ON. Both clients saved. SETUP DONE 26 Nov 17:40.
 #   OAuth Android client "Crackers Match" (Play signing SHA-1 90:6B:5A:A0:94:83:FF:DA:B5:E3:BF:32:39:A7:A2:AC:57:76:86:9E)
 #     = 37177410253-35uaicfbi9u0ht61k8hhmstlem8c1leq.apps.googleusercontent.com (docs/play-games/oauth-client-play.json)
 #   2nd client "Crackers Match Test" with our key SHA-1 F5:AD:...:56:45 (for sideloaded APKs).
