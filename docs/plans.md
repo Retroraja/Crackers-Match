@@ -22,7 +22,7 @@
 #  - Clay pot sound: DONE 26 Nov: his pick = the first new one (tools/pot_tab_sounds.py), made louder, now
 #    sfx/ob_pot.wav. Kenney recordings were rejected ("don't feel like sounds").
 #  - Bottom menu (talked 26 Nov, waiting): bar flat to the screen bottom (no border/strip), raised selected tab with
-#    name, page slide; tab sound = sfx/ui_tab.wav (loud "tock", no slide sound; picked for him 26 Nov), light vibration if on;
+#    name, page slide; tab sound = sfx/ui_tab.wav = his file "retro arcade menu navigate" (Pixabay, vadim_makes_sound); his 2nd file "ui sound" (Pixabay, arnav_geddada) saved as sfx/ui_tab2.wav; no slide sound, light vibration if on;
 #    each tab gets a simple page. Profile icon (top-left Hydrogen Bomb, does nothing now): his call.
 #  - Win screen: DONE in code 25 Nov (his pick option 1): old look, no card/border, no piggy/next-build line,
 #    Next + Reward buttons 40 px higher (not at the screen's bottom edge).
