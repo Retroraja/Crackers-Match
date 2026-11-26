@@ -3,6 +3,16 @@
 #   Play Games Services setup -> Android credential (SHA-1 F5:AD:62:1E:E0:41:3A:CA:F6:4B:56:98:E6:9B:8D:44:D1:DC:56:45)
 #   -> turn on Saved Games -> add his Gmail as tester -> send the Play Games Project ID.
 # NEXT FIXES (25 Nov, after the 100-level APK):
+#  - TROPHY ROOM page (26 Nov, previews/trophy-room.png): scrollable list, permanent trophies (Rocket Master,
+#    Star Collector, Chakra Spinner, Sparkler Fan, Builder, 3-Star Hero...); each has bronze -> silver -> gold steps;
+#    finishing a step shows a green Claim button = coin reward; all done = gold trophy + "Complete". Top shows counts.
+#  - LUCKY WHEEL page (26 Nov, previews/lucky-wheel.png, art/wheel/, tools/pic/wheel_build.py): 8 prizes (100/50/200
+#    coins, 500-coin chest, Rocket, Bomb, Hammer, +1 life); SPIN FREE once a day; Spin again = watch ad; timer;
+#    bulbs blink while spinning. Wheel rim/segments built at full size (sharp); hub/pointer/bulbs Canva.
+#  - Crate sounds DONE 26 Nov: wood + steel crates same sounds; first hit = sfx/ob_crate_hit (his "small break"),
+#    last hit = sfx/ob_crate (his crate destroy, quieter). Gold floor tile still old paper sound (waiting his file).
+#  - PROFILE page (talked 26 Nov): avatar, name, my records; progress saved with Play Games cloud save (he does the
+#    Play Console steps later; remind him).
 #  - LIVES (his OK 26 Nov): real lives like Royal Match. 5 hearts max; losing a level takes 1 heart; +1 heart every
 #    30 min (timer in the heart pill, "Full" at 5); at 0 hearts: wait, watch an ad (+1) or pay coins (refill all).
 #  - TOP BAR (26 Nov, talking): too crowded. Remove the diya pill (Build button shows diyas). Premium design:
