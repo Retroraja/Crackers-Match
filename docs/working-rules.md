@@ -1,5 +1,9 @@
 # Working with Rajarajan (rules he set)
 
+## TOP RULE (26 Nov, all chats): TALK FIRST. Build ONLY when he says "build" / "build the APK".
+- Any other message (even "ok", "yes", "do it" about a plan): talk first, do not change code, commit, push or build.
+- Answer only in English, even when he writes in Tamil.
+
 - Talk only unless he clearly says to build ("go", "build", "make it", "do it", "add ..."). Most chats are brainstorming.
 - "ok" / "yes" = agreement, NOT a go. If his message ends with a question, ONLY answer it.
 - He can say "Talk" mid-work = stop and talk.
