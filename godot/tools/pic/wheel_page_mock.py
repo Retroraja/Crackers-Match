@@ -39,9 +39,12 @@ d=ImageDraw.Draw(im); d.text((195*S,92*S),'Spin every day for free prizes!',font
 a=np.array(Image.open('/tmp/v/wheel_src.png').convert('RGB')).astype(float); mn=a.min(2); sat=a.max(2)-mn
 light=(mn>238)|((mn>150)&(sat<22)); lab,n=ndimage.label(light)
 edge=set(np.unique(np.concatenate([lab[0],lab[-1],lab[:,0],lab[:,-1]])))-{0}
-bg=np.isin(lab,list(edge)); al=ndimage.gaussian_filter(np.where(bg,0.0,1.0),0.6)
+bg=np.isin(lab,list(edge)); fg=ndimage.binary_erosion(ndimage.binary_fill_holes(~bg),iterations=2)
+# edge pixels take the colour of the nearest solid inside pixel (no white fringe)
+_,ix=ndimage.distance_transform_edt(~ndimage.binary_erosion(fg,iterations=1),return_indices=True); a=a[ix[0],ix[1]]
+al=ndimage.gaussian_filter(fg.astype(float),0.7)
 wh=Image.fromarray(np.dstack([a,al*255]).astype(np.uint8),'RGBA'); wh=wh.crop(wh.getbbox())
-WS=330*S; wh=wh.resize((WS,int(WS*wh.height/wh.width)),Image.LANCZOS); wh=ImageEnhance.Sharpness(wh).enhance(1.6)
+WS=330*S; wh=wh.resize((WS,int(WS*wh.height/wh.width)),Image.LANCZOS); wh=ImageEnhance.Sharpness(wh).enhance(1.3)
 glow=Image.new('RGBA',(W,H),(0,0,0,0)); ImageDraw.Draw(glow).ellipse([cx-185*S,cy-185*S,cx+185*S,cy+185*S],fill=(255,220,120,120)); im.alpha_composite(glow.filter(ImageFilter.GaussianBlur(24*S)))
 wx,wy=int(cx-WS/2),int(cy-wh.height/2+8*S); im.alpha_composite(wh,(wx,wy))
 # prizes on the 8 segments (centre of the wheel = image centre slightly below the pointer)
