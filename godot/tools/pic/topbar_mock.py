@@ -26,10 +26,12 @@ fd.rounded_rectangle([5*S,5*S,ps*S-5*S,ps*S-5*S],7*S,fill=(70,120,200))
 put(fr,px*S,py*S); av=icon('art/crk/b10.webp',30*S); put(av,(px+ps/2)*S-av.width/2,(py+ps/2)*S-av.height/2,False)
 def pillbox(x,w,ic,txt,badge=None):
     p=pill.resize((w*S,int(32*S)),Image.LANCZOS); put(p,x*S,(Y+4-16)*S)
-    d=ImageDraw.Draw(im); d.text(((x+(20+w)/2+3)*S,(Y+4)*S),txt,font=F(16 if len(txt)<5 else 15),fill=(28,40,92),anchor='mm')
+    d=ImageDraw.Draw(im); fs=17
+    while fs>9 and ImageDraw.Draw(im).textlength(txt,font=F(fs))>(w-32)*S: fs-=0.5
+    d.text(((x+(20+w)/2+3)*S,(Y+4)*S),txt,font=F(fs),fill=(28,40,92),anchor='mm')
     i=icon(ic,40*S); put(i,(x-14)*S,(Y+4)*S-i.height/2)
     if badge: d.text(((x+6)*S,(Y+5)*S),badge,font=F(18),fill='white',anchor='mm',stroke_width=3*S,stroke_fill=(120,10,30))
-pillbox(72,72,'art/ui-coin.webp','55585')
+pillbox(72,72,'art/ui-coin.webp',sys.argv[1] if len(sys.argv)>1 else '55585')
 pillbox(166,72,'art/web/fe-heart.png','Full','5')
 pillbox(260,72,'art/ui-diya.webp','8')
 # plus on coin

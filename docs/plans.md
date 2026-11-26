@@ -8,6 +8,8 @@
 #  - TOP BAR (26 Nov, talking): too crowded. Remove the diya pill (Build button shows diyas). Premium design:
 #    coins, lives, settings only, even gaps, shiny Canva pills, coin/heart icons half outside the pill, small gold
 #    profile frame, soft dark fade behind. Picture first.
+#    (his OK) diya pill stays: 3 cream pills + gear (previews/top-bar.png). Numbers never overlap: text shrinks to
+#    fit inside the pill; from 1,000,000 show short form (1.2M) so it stays readable.
 #  - Title: DONE in code 25 Nov: option 1 angle, picture by phone clock (afternoon 6-16 art/web/title_aft.webp,
 #    evening 16-19 title_eve.webp, night 19-6 title_base.webp). Fireworks = ready-made bursts (no circles, v2,
 #    tools/pic/title_bursts.py, title.gd SpriteFw), softer by day. Approved 15:23.
