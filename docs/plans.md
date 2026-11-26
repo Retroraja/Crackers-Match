@@ -19,6 +19,11 @@
 #    make the move clear: after build 6 a short fade + "Inside the shop!" card, then picture 2 (pic_street _place).
 #  - Cracker meter tip (level 2): DONE in code 25 Nov: "Drag the cracker onto the board!" moved down under the
 #    meter (toast28 y 150 -> 208) so the meter stays visible.
+#  - Clay pot sound: DONE 26 Nov: his pick = the first new one (tools/pot_tab_sounds.py), made louder, now
+#    sfx/ob_pot.wav. Kenney recordings were rejected ("don't feel like sounds").
+#  - Bottom menu (talked 26 Nov, waiting): bar flat to the screen bottom (no border/strip), raised selected tab with
+#    name, page slide; tab sound = sfx/ui_tab.wav + sfx/ui_slide.wav (first set), light vibration if on;
+#    each tab gets a simple page. Profile icon (top-left Hydrogen Bomb, does nothing now): his call.
 #  - Win screen: DONE in code 25 Nov (his pick option 1): old look, no card/border, no piggy/next-build line,
 #    Next + Reward buttons 40 px higher (not at the screen's bottom edge).
 # BUILT 25 Nov (100-level APK, see current-state.md): every item of the NEXT BUILD LIST below except 17 (rangoli,
