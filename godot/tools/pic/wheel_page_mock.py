@@ -35,28 +35,14 @@ for k in range(16):
 im.alpha_composite(rays)
 ribbon(im,195,28,230,'Lucky Wheel',BASE)
 d=ImageDraw.Draw(im); d.text((195*S,92*S),'Spin every day for free prizes!',font=F(16),fill=(255,240,200),anchor='mm',stroke_width=2*S,stroke_fill=(20,40,100))
-# wheel: cut the Canva art's white background
-a=np.array(Image.open('/tmp/v/wheel_src.png').convert('RGB')).astype(float); mn=a.min(2); sat=a.max(2)-mn
-light=(mn>238)|((mn>150)&(sat<22)); lab,n=ndimage.label(light)
-edge=set(np.unique(np.concatenate([lab[0],lab[-1],lab[:,0],lab[:,-1]])))-{0}
-bg=np.isin(lab,list(edge)); fg=ndimage.binary_erosion(ndimage.binary_fill_holes(~bg),iterations=2)
-# edge pixels take the colour of the nearest solid inside pixel (no white fringe)
-_,ix=ndimage.distance_transform_edt(~ndimage.binary_erosion(fg,iterations=1),return_indices=True); a=a[ix[0],ix[1]]
-# smooth round edge: fit the rim circle, draw it clean at full size; keep the pointer from the cut
-ys,xs=np.nonzero(fg); L,R,B=xs.min(),xs.max(),ys.max(); rr=(R-L+1)/2; ccx=(L+R+1)/2; ccy=B+1-rr
-yy,xx=np.mgrid[0:fg.shape[0],0:fg.shape[1]]; outside=((xx+.5-ccx)**2+(yy+.5-ccy)**2)>(rr-1.5)**2
-ptr=fg&outside&(yy<ccy-rr*0.6)&(np.abs(xx+.5-ccx)<rr*0.22)
-x0,y0=L,ys.min(); k=330*S/(R-L+1); WS=330*S; HS=int(round((B+1-y0)*k))
-rgb=Image.fromarray(a[y0:B+1,L:R+1].astype(np.uint8),'RGB').resize((WS,HS),Image.LANCZOS)
-rgb=ImageEnhance.Contrast(ImageEnhance.Color(rgb).enhance(1.12)).enhance(1.08).filter(ImageFilter.UnsharpMask(3*S,90,2))
-SS=4; m=Image.new('L',(WS*SS,HS*SS),0); c2x=(ccx-L)*k*SS; c2y=(ccy-y0)*k*SS; r2=(rr-1.2)*k*SS
-ImageDraw.Draw(m).ellipse([c2x-r2,c2y-r2,c2x+r2,c2y+r2],fill=255); m=m.resize((WS,HS),Image.LANCZOS)
-pm=Image.fromarray((ndimage.gaussian_filter(ptr[y0:B+1,L:R+1].astype(float),0.7)*255).astype(np.uint8)).resize((WS,HS),Image.LANCZOS)
-wh=rgb.convert('RGBA'); wh.putalpha(ImageChops.lighter(m,pm))
+import sys; sys.path.insert(0,'tools/pic'); import wheel_build as WB
+WS=330*S; wh=WB.wheel(WS)
 glow=Image.new('RGBA',(W,H),(0,0,0,0)); ImageDraw.Draw(glow).ellipse([cx-185*S,cy-185*S,cx+185*S,cy+185*S],fill=(255,220,120,120)); im.alpha_composite(glow.filter(ImageFilter.GaussianBlur(24*S)))
-wx,wy=int(cx-WS/2),int(cy-wh.height/2+8*S); im.alpha_composite(wh,(wx,wy))
+wx,wy=int(cx-WS/2),int(cy-WS/2+8*S)
+ds=Image.new('RGBA',(W,H),(0,0,0,0)); ImageDraw.Draw(ds).ellipse([wx,wy+10*S,wx+WS,wy+WS+10*S],fill=(0,0,30,110)); im.alpha_composite(ds.filter(ImageFilter.GaussianBlur(8*S)))
+im.alpha_composite(wh,(wx,wy))
 # prizes on the 8 segments (centre of the wheel = image centre slightly below the pointer)
-wcx,wcy=cx,wy+wh.height*0.535
+wcx,wcy=cx,wy+WS/2
 prizes=[('art/ui-coin.webp','100'),('art/crk/b6.webp',''),('art/ui-coin.webp','50'),('art/crk/b17.webp',''),('art/web/fe-heart.png','+1'),('art/ui-coin.webp','200'),('art/crk/b10.webp',''),('art/web/ui-chest.webp','500')]
 for i,(p,lab_) in enumerate(prizes):
     ang=-math.pi/2+math.pi/8+i*math.pi/4
@@ -64,6 +50,8 @@ for i,(p,lab_) in enumerate(prizes):
     ic=icon(p,int(40*S)); sh=Image.new('RGBA',(W,H),(0,0,0,0))
     im.alpha_composite(ic,(int(px-ic.width/2),int(py-ic.height/2-(6*S if lab_ else 0))))
     if lab_: ImageDraw.Draw(im).text((px,py+16*S),lab_,font=F(15),fill='white',anchor='mm',stroke_width=2*S,stroke_fill=(60,20,10))
+hb=WB.hub(WS); im.alpha_composite(hb,(int(wcx-hb.width/2),int(wcy-hb.height/2)))
+pt=WB.pointer(WS); im.alpha_composite(pt,(int(wcx-pt.width/2),int(wy-pt.height*0.45)))
 # buttons and timer
 btn(im,[70,556,320,622],(120,220,100),(40,160,50),'SPIN FREE',28)
 btn(im,[90,634,300,686],(255,190,60),(225,120,20),'Spin again',20,'Watch a video')
