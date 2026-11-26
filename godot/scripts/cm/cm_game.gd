@@ -849,10 +849,11 @@ func hit_ob(e: Dictionary, p: Array, blast_: bool) -> void:
 		if t == "coin":
 			sfx.coin(randi() % 8)
 		elif dead:
-			# 26 Nov: real wood-crate break (his Pixabay file), same for wooden and steel crates
+			# 26 Nov: real wood-crate break (his Pixabay file) when any crate breaks; the steel crate's
+			# first hit (bands snap) = a short, softer crack
 			sfx.ob("ob_crate", 1.0, 1.0)
 		else:
-			sfx.ob("ob_crate", 1.0, 1.0)
+			sfx.ob("ob_crate_hit", 1.0, 0.95)
 	if t == "coin":
 		deb.bits(x, y, 9, ["#FFD23F", "#FFF3B0", "#F5A623"], 5, 1)
 		spark(x, y, 10, ["#FFE27A", "#FFFFFF"], 200)
