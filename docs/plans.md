@@ -40,6 +40,9 @@
 #      picture + crackle), each pop breaks its tile. He will judge it in the game (no mock).
 #  15. Gold floor tile sound (his file, 27 Nov): sfx/ob_gold.wav = double coin clink (his clip C, ~0.9 s, loud).
 #      In cm_game.gd floor hit: gold floor -> sfx.ob("ob_gold") instead of "paper"; add "ob_gold" to Sfx NAMES.
+#  16. Diya obstacle new art (his OK 27 Nov, no picture first; he judges in game): real 3D clay diya (Canva, cut
+#      and kept at a sharp size), ~80% of the tile, centred; normal + cracked (after a hit) + stack versions.
+#      Small still flame painted in the picture (no live fire, no FPS cost). Replaces fix 10's resize.
 #  RULE for every fix: must not crash the game and must not lower FPS.
 # BUILT 26 Nov (menu APK, see current-state.md): top bar, lives, bottom menu + Areas/Trophy Room/Lucky Wheel/Profile,
 # level screen theme per area (1 royal blue, 2 maroon, 3 teal, 4 navy, 5 ruby), Shop badge, popups navy, Area 2
