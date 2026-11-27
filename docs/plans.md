@@ -35,6 +35,9 @@
 #      Every cracker locked until its level (greyed, lock icon, "Unlocks at Level N" instead of the count):
 #      Rocket 2, Colour Matchbox 3, Ground Chakra 5, Lakshmi Vedi Hammer 5, Bomb 8, Sparkler 12, Flowerpot 22,
 #      Sky Shot 32, Snake 42, Rail 52, 1000 Wala 62, Seven Shot 72, Mayil Matchbox 101 (same as UNL / SBU in cm_app).
+#  14. 1000 Wala (27 Nov): NO line/string drawn along the path. Same 15-tile zig-zag path (same gameplay); a small
+#      red cracker picture (our b0, pooled) sits on each path tile, they pop one by one along the path (gold flash
+#      picture + crackle), each pop breaks its tile. He will judge it in the game (no mock).
 #  RULE for every fix: must not crash the game and must not lower FPS.
 # BUILT 26 Nov (menu APK, see current-state.md): top bar, lives, bottom menu + Areas/Trophy Room/Lucky Wheel/Profile,
 # level screen theme per area (1 royal blue, 2 maroon, 3 teal, 4 navy, 5 ruby), Shop badge, popups navy, Area 2
