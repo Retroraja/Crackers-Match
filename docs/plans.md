@@ -38,7 +38,7 @@
 #  14. 1000 Wala (27 Nov): NO line/string drawn along the path. Same 15-tile zig-zag path (same gameplay); a small
 #      red cracker picture (our b0, pooled) sits on each path tile, they pop one by one along the path (gold flash
 #      picture + crackle), each pop breaks its tile. He will judge it in the game (no mock).
-#  15. Gold floor tile sound (his file, 27 Nov): sfx/ob_gold.wav (coins clinking, 0.75 s cut from 1.72 s, louder).
+#  15. Gold floor tile sound (his file, 27 Nov): sfx/ob_gold.wav = double coin clink (his clip C, ~0.9 s, loud).
 #      In cm_game.gd floor hit: gold floor -> sfx.ob("ob_gold") instead of "paper"; add "ob_gold" to Sfx NAMES.
 #  RULE for every fix: must not crash the game and must not lower FPS.
 # BUILT 26 Nov (menu APK, see current-state.md): top bar, lives, bottom menu + Areas/Trophy Room/Lucky Wheel/Profile,
