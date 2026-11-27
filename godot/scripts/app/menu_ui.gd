@@ -16,6 +16,7 @@ var tab_lbl: Label
 var cur := "home"
 var pages := {}
 var page_root: Control
+var nav_fill: ColorRect
 
 # ---------------------------------------------------------------- trophies
 # id, name, line, icon, stat key, three steps, coins per step
@@ -26,6 +27,12 @@ const TRO := [
 	{"id": "break", "n": "Obstacle Breaker", "t": "Break %d obstacles", "ic": "art/crate.webp", "k": "break", "g": [200, 1000, 3000], "c": [100, 250, 400]},
 	{"id": "win", "n": "Level Winner", "t": "Win %d levels", "ic": "art/web/fe-trophy.png", "k": "win", "g": [25, 60, 100], "c": [150, 300, 500]},
 	{"id": "build", "n": "Builder", "t": "Finish Area %d", "ic": "art/ui-diya.webp", "k": "areas", "g": [1, 2, 3], "c": [300, 500, 800]},
+	{"id": "match", "n": "Matchbox Maker", "t": "Make %d colour matchboxes", "ic": "art/crk/b14.webp", "k": "make_matchbox", "g": [10, 40, 100], "c": [100, 200, 300]},
+	{"id": "bomb", "n": "Bomb Maker", "t": "Make %d bombs", "ic": "art/crk/b10.webp", "k": "make_atom", "g": [10, 40, 100], "c": [100, 200, 300]},
+	{"id": "boost", "n": "Booster Fan", "t": "Use %d boosters", "ic": "art/crk/b17.webp", "k": "booster", "g": [10, 50, 150], "c": [100, 200, 300]},
+	{"id": "coins", "n": "Coin Collector", "t": "Win %d coins in levels", "ic": "art/ui-coin.webp", "k": "coins_won", "g": [1000, 5000, 20000], "c": [100, 250, 500]},
+	{"id": "spin", "n": "Lucky Spinner", "t": "Spin the Lucky Wheel %d times", "ic": "art/web/nav-wheel.png", "k": "spin", "g": [5, 20, 60], "c": [100, 200, 300]},
+	{"id": "daily", "n": "Daily Player", "t": "Finish %d daily tasks", "ic": "art/web/ui-gift.webp", "k": "daily", "g": [10, 40, 100], "c": [100, 250, 400]},
 ]
 
 static func np(src: String, pos: Vector2, sz: Vector2, m: int, parent: Control) -> NinePatchRect:
@@ -73,6 +80,14 @@ func build(a, parent: Control) -> void:
 	nav.position = Vector2(0, BAR_Y)
 	nav.size = Vector2(390, 102)
 	add_child(nav)
+	# 27 Nov: tall phones - the bar's blue goes on down to the real screen bottom (no blank strip)
+	var fill := ColorRect.new()
+	fill.color = Color8(26, 60, 146)
+	fill.position = Vector2(0, 100)
+	fill.size = Vector2(390, 0)
+	fill.mouse_filter = Control.MOUSE_FILTER_STOP
+	nav.add_child(fill)
+	nav_fill = fill
 	var bar := TopBar.pic("art/menu/navbar.png", Vector2.ZERO, Vector2(390, 102), nav)
 	bar.stretch_mode = TextureRect.STRETCH_SCALE
 	bar.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -88,6 +103,10 @@ func build(a, parent: Control) -> void:
 		app.tap(hit, func(): tab(k))
 	tab_lbl = lbl(nav, "", Vector2(0, 74), Vector2(78, 20), 13, Color.WHITE, 5, Color(0.08, 0.16, 0.4))
 	_select("home")
+
+func fit_bottom(off: float) -> void:
+	if nav_fill:
+		nav_fill.size.y = off + 4.0
 
 func _select(k: String) -> void:
 	cur = k
@@ -120,6 +139,8 @@ func tab(k: String) -> void:
 	open(k)
 
 func open(k: String) -> void:
+	if k == "profile":
+		app.sfx.play("ui_tab", 0.45)
 	_select(k if k in TABS else "home")
 	for p in pages.values():
 		p.visible = false
@@ -142,6 +163,15 @@ func _make_page(k: String) -> Control:
 	var bg := TopBar.pic("art/menu/page_bg.webp", Vector2(0, -300), Vector2(390, 1444), pg)
 	bg.stretch_mode = TextureRect.STRETCH_SCALE
 	TopBar.pic("art/menu/rib_%s.png" % k, Vector2(195 - 118, 18), Vector2(236, 48), pg)
+	# back to Home (26 Nov)
+	var bk := Control.new()
+	bk.position = Vector2(12, 20)
+	bk.size = Vector2(44, 44)
+	pg.add_child(bk)
+	TopBar.pic("art/menu/back.png", Vector2.ZERO, Vector2(44, 44), bk)
+	app.tap(bk, func():
+		app.sfx.play("ui_tab", 0.45)
+		open("home"))
 	var body := Control.new()
 	body.name = "body"
 	body.size = Vector2(390, 844)
@@ -150,17 +180,18 @@ func _make_page(k: String) -> Control:
 	return pg
 
 func _scroll(pg: Control, top: float) -> VBoxContainer:
-	var sc := ScrollContainer.new()
+	var sc := SoftScroll.new()
 	sc.position = Vector2(0, top)
 	sc.size = Vector2(390, BAR_Y - 16 - top)
-	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	sc.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
-	sc.scroll_deadzone = 8
 	pg.get_node("body").add_child(sc)
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 8)
 	vb.custom_minimum_size = Vector2(390, 0)
 	sc.add_child(vb)
+	# the list height is known once the rows are in
+	(func():
+		if is_instance_valid(vb):
+			sc.set_height(vb.get_combined_minimum_size().y)).call_deferred()
 	return vb
 
 func _clear(pg: Control) -> Control:
@@ -332,7 +363,7 @@ const PRIZES := [
 	{"t": "+1 life", "k": "life", "n": 1, "w": 10, "ic": "art/web/fe-heart.png"},
 	{"t": "200 coins", "k": "coins", "n": 200, "w": 12, "ic": "art/ui-coin.webp"},
 	{"t": "Bomb", "k": "atom", "n": 1, "w": 6, "ic": "art/crk/b10.webp"},
-	{"t": "500 coins chest", "k": "coins", "n": 500, "w": 2, "ic": "art/web/ui-chest.webp"},
+	{"t": "500 coins chest", "k": "coins", "n": 500, "w": 2, "ic": "art/web/shop_chest.png"},
 ]
 const AD_SPINS := 3
 var wheel: Control
@@ -411,6 +442,7 @@ func _spin(ad: bool) -> void:
 			wa = {}
 		wa[app.today()] = int(wa.get(app.today(), 0)) + 1
 		app.S.wheel_ads = wa
+	app.stat_add("spin", 1)
 	app.save()
 	var i := _pick()
 	spinning = true
@@ -450,8 +482,11 @@ func _fill_profile(pg: Control) -> void:
 	TopBar.pic("art/topbar/frame.png", Vector2(195 - 45, 96), Vector2(90, 90), body)
 	TopBar.pic("art/crk/b10.webp", Vector2(195 - 30, 111), Vector2(60, 60), body)
 	lbl(body, str(app.S.get("name", "Guest")), Vector2(16, 190), Vector2(358, 30), 24, Color8(16, 39, 80))
-	var b := button(body, "green", "Sign in with Google Play", Rect2(48, 224, 294, 40), 17)
-	app.tap(b, func(): app.home_ui.show_toast("Google Play sign-in comes soon"))
+	if app.cloud and app.cloud.signed:
+		lbl(body, "Saved to Google Play", Vector2(16, 228), Vector2(358, 30), 18, Color8(40, 140, 60))
+	else:
+		var b := button(body, "green", "Sign in with Google Play", Rect2(48, 224, 294, 40), 17)
+		app.tap(b, func(): app.cloud.sign_in())
 	np("art/menu/card.png", Vector2(16, 284), Vector2(358, 300), 20, body)
 	lbl(body, "My records", Vector2(16, 296), Vector2(358, 28), 20, Color8(16, 39, 80))
 	var tro := 0
@@ -470,6 +505,10 @@ func _fill_profile(pg: Control) -> void:
 		TopBar.pic(recs[j][0], Vector2(36, y), Vector2(30, 30), body)
 		lbl(body, recs[j][1], Vector2(78, y), Vector2(200, 30), 17, Color8(90, 60, 40), 0, Color.BLACK, HORIZONTAL_ALIGNMENT_LEFT)
 		lbl(body, recs[j][2], Vector2(250, y), Vector2(104, 30), 19, Color8(16, 39, 80), 0, Color.BLACK, HORIZONTAL_ALIGNMENT_RIGHT)
+
+func refresh_profile() -> void:
+	if pages.has("profile") and pages.profile.visible:
+		_fill_profile(pages.profile)
 
 # ---------------------------------------------------------------- every frame: only the blinking bulbs and the timer
 var sec := 0.0

@@ -84,6 +84,7 @@ func build(a, street: Street) -> void:
 	menu = MenuUI.new()
 	home.add_child(menu)
 	menu.build(app, home)
+	menu.fit_bottom(app.stage.position.y)
 	# windows
 	LB = WebLayout.new()
 	bp = LB.build("res://ui/st_build.json", self)

@@ -1,4 +1,16 @@
-# Current state — menu APK (26 Nov 2026), branch claude/project-thread-nyydf2 (PR #1)
+# Current state — APK 0.3 (code 4), 27 Nov 2026, branch claude/project-thread-nyydf2
+
+Built from docs/plans.md fixes 1-16 (26-27 Nov list):
+1 special cracker sounds (own files + blasts, 24 sound players) · 2 soft scroll (scripts/app/soft_scroll.gd) ·
+3 Trophy Room 12 trophies (S.stat) · 4 soft ui_tab sound on Shop/Daily/Piggy/Profile · 5 back arrow on pages ·
+6 tall phones: menu blue to the bottom, level coins pill + boosters at the real bottom · 7 Google Play sign-in +
+cloud save (addons/GodotPlayGameServices v3.2.0, scripts/app/cloud.gd, CI writes pgs_strings.xml with app id
+37177410253; min SDK 23) · 8 new app icon (art/icon, adaptive) · 9 win-screen man slimmer/straight · 10+16 new
+clay diya obstacle (art/brk/diyab*.png, 80% of tile) · 11 Shop without coin packs (ad rewards, lives, boosters;
+unlimited lives S.unl_until) · 12 new chest art/web/shop_chest.png everywhere · 13 My Crackers locks + Mayil first ·
+14 1000 Wala without the line (red cracker pictures on path tiles) · 15 gold floor tile double clink sfx/ob_gold.wav.
+
+# Before: menu APK (26 Nov 2026), branch claude/project-thread-nyydf2 (PR #1)
 
 APK: https://github.com/Retroraja/Crackers-Match/releases/download/godot-dev/CrackersMatchGodot.apk
 AAB (Play, version code 3, API 36): same release, CrackersMatchGodot.aab

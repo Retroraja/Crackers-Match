@@ -7,7 +7,7 @@ const NAMES := ["blastnew", "rocket", "chakra", "atom", "matchbox", "sparkler", 
 	"chime0", "chime1", "chime2", "coin0", "coin1", "coin2", "coin3", "coin4", "coin5", "coin6", "coin7", "coin8",
 	"bk_stone", "bk_knock", "bk_saw", "bk_plank", "bk_hum", "bk_rustle", "bk_dirt", "bk_cloth", "bk_done", "bk_hammer", "bk_thud", "bk_rise", "bk_tada", "story_page", "story_pen", "story_chime", "story_dream", "story_rise", "story_step", "story_sigh", "story_ting", "z_crackle", "z_zap",
 	"ob_pot", "ob_soda", "ob_coco_knock", "ob_coco_split", "ob_match_flick", "ob_match_spark", "ob_news_loose", "ob_news_burst",
-	"ob_bangle", "ob_gift_tear", "ob_gift_open", "ob_diya", "ob_crate", "ob_crate_hit", "ui_tab"]
+	"ob_bangle", "ob_gift_tear", "ob_gift_open", "ob_diya", "ob_crate", "ob_crate_hit", "ui_tab", "ob_gold"]
 var mus_on := true
 var fx_on := true
 var _duck := 0.3
@@ -25,7 +25,7 @@ func _ready() -> void:
 			var p := "res://sfx/%s.%s" % [n, ext]
 			if ResourceLoader.exists(p):
 				streams[n] = load(p)
-	for i in 16:
+	for i in 24:
 		var a := AudioStreamPlayer.new()
 		add_child(a)
 		pool.append(a)
@@ -124,7 +124,16 @@ func _player() -> AudioStreamPlayer:
 	for a in pool:
 		if not a.playing:
 			return a
-	return pool[0]
+	# all busy: take the one nearest its end, never always the first (that one could be a blast)
+	var best: AudioStreamPlayer = pool[0]
+	var left := 99.0
+	for a in pool:
+		if a.stream:
+			var l := a.stream.get_length() - a.get_playback_position()
+			if l < left:
+				left = l
+				best = a
+	return best
 
 # name, volume 0..1, pitch, delay seconds, cut length seconds (0 = full)
 func play(n: String, v: float = 1.0, pitch: float = 1.0, delay: float = 0.0, cut: float = 0.0, off: float = 0.0) -> void:

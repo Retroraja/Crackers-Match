@@ -246,6 +246,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--perf=1"): print("TEXMEM after_home %d MB" % (Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576))
 	_build_overlays()
 	_fit()
+	cloud = Cloud.new()
+	add_child(cloud)
+	cloud.start(self)
 	if OS.get_cmdline_user_args().has("--perf=1"): print("TEXMEM after_overlays %d MB" % (Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576))
 	top_layer = _layer("top")
 	ghost = TextureRect.new()
@@ -276,6 +279,14 @@ func _fit() -> void:
 	var vs := get_viewport().get_visible_rect().size
 	stage.position = Vector2(0, maxf(0.0, (vs.y - 844.0) / 2.0))
 	_tall_fix(stage, 0)
+	# 27 Nov: tall phones - the level screen's coins pill and booster boxes sit at the real screen bottom
+	if G and G.node("slots") and G.node("gCoins"):
+		for nd: Control in [G.node("slots"), G.node("gCoins").get_parent()]:
+			if not nd.has_meta("y0"):
+				nd.set_meta("y0", nd.position.y)
+			nd.position.y = float(nd.get_meta("y0")) + stage.position.y
+	if home_ui and home_ui.menu:
+		home_ui.menu.fit_bottom(stage.position.y)
 
 # 23 Nov, tall phones (his Moto): the 390x844 stage sits in the middle of a taller screen. Every full-screen
 # backdrop (the game's blurred picture, the dim behind the level card and other windows) is stretched to cover the
@@ -384,6 +395,7 @@ const LIFE_MAX := 5
 const LIFE_SEC := 1800
 const REFILL_COST := 900
 var lives_box: LivesBox
+var cloud: Cloud
 
 func lives_now() -> int:
 	var l := int(S.get("lives", LIFE_MAX))
@@ -408,6 +420,8 @@ func life_txt() -> String:
 	return "%d:%02d" % [left / 60, left % 60]
 
 func use_life() -> void:
+	if unlimited_left() > 0:
+		return
 	var l := lives_now()
 	if l >= LIFE_MAX:
 		S.life_t = int(Time.get_unix_time_from_system())
@@ -587,6 +601,8 @@ func tap(c: Control, f: Callable, on_press := false) -> void:
 	c.mouse_filter = Control.MOUSE_FILTER_STOP
 	c.gui_input.connect(func(e: InputEvent):
 		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT and e.pressed == on_press:
+			if not on_press and Time.get_ticks_msec() < SoftScroll.block_until:
+				return   # the finger was scrolling a list, not tapping
 			lastAct = now()
 			f.call())
 
@@ -1280,6 +1296,12 @@ func slots() -> void:
 		var kk := k
 		tap(c, func(): _slot_down(kk), true)
 		slot_nodes[k] = c
+	# 27 Nov: the boxes are placed from the layout's own spot; the box row may sit lower on tall phones
+	var sl_dy: float = sl.position.y - float(sl.get_meta("y0", sl.position.y))
+	if sl_dy != 0.0:
+		for c in sl.get_children():
+			if c is Control and not c.is_queued_for_deletion():
+				c.position.y += sl_dy
 	LevelTheme.paint_slots(self)
 	coin_t(G.node("gCoins"), int(S.coins))
 
@@ -1399,6 +1421,7 @@ func _end_drag(p: Vector2) -> void:
 		elif game.place(d.k, c[0], c[1]):
 			ok = true
 			S.inv[d.k] = inv(d.k) - 1
+			stat_add("booster", 1)
 			save()
 			slots()
 	if ok:
@@ -2424,6 +2447,7 @@ func _card_play() -> void:
 		for j in use.size():
 			var k: String = use[j]
 			S.inv[k] = inv(k) - 1
+			stat_add("booster", 1)
 			_after(0.5 + j * 0.25, func():
 				if game and not game.over:
 					drop(k))
@@ -2898,6 +2922,9 @@ func won(mv: int) -> void:
 		S.fails.erase(key)
 	var c0: int = S.coins
 	S.coins += c
+	stat_add("coins_won", c)
+	if cloud:
+		cloud.push.call_deferred()
 	var rw = L.get("reward")
 	if first and rw != null:
 		add_inv(rw.k, int(rw.n))
@@ -2981,7 +3008,7 @@ func won(mv: int) -> void:
 			sfx.play("fanfare", 0.5))
 	if chest:
 		later(2.8, func():
-			popup("Level %d chest!" % (int(cur) + 1), [["art/ui-chest.webp", "+200 coins", "You have %d" % S.coins], ["crk:b%d" % IDX.atom, "+1 Bomb", "You have %d" % inv("atom")], ["crk:b%d" % IDX.rocket, "+2 Rocket", "You have %d" % inv("rocket")]])
+			popup("Level %d chest!" % (int(cur) + 1), [["art/web/shop_chest.png", "+200 coins", "You have %d" % S.coins], ["crk:b%d" % IDX.atom, "+1 Bomb", "You have %d" % inv("atom")], ["crk:b%d" % IDX.rocket, "+2 Rocket", "You have %d" % inv("rocket")]])
 			sfx.play("win", 0.6))
 
 # ================================================================== 23 Nov win screen (agreed 20 Nov, items 1 2 3 4 6)
@@ -4736,7 +4763,7 @@ var L_sh: WebLayout      # sheet chrome + shop row templates
 var L_sd: WebLayout      # daily templates
 var L_ss: WebLayout      # settings templates
 var L_sb: WebLayout      # bag templates
-var sh_scroll: ScrollContainer
+var sh_scroll: SoftScroll
 var sh_body: Control
 var sh_name := ""
 
@@ -4752,8 +4779,7 @@ func _build_sheets() -> void:
 	var body: Control = L_sh.node("sBody")
 	for c in body.get_children():
 		c.visible = false
-	sh_scroll = ScrollContainer.new()
-	sh_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	sh_scroll = SoftScroll.new()
 	sh_scroll.position = body.position
 	sh_scroll.size = Vector2(body.size.x, 400)
 	body.get_parent().add_child(sh_scroll)
@@ -4798,10 +4824,13 @@ func _dt_def(id: String) -> Dictionary:
 			return t
 	return {}
 
-func _daily_ev(k: String, n: int) -> void:
+func stat_add(k: String, n: int) -> void:
 	var stt: Dictionary = S.get("stat", {})
 	stt[k] = int(stt.get(k, 0)) + n
 	S.stat = stt
+
+func _daily_ev(k: String, n: int) -> void:
+	stat_add(k, n)
 	var d := dtask()
 	var ready := false
 	for id in d.ids:
@@ -4811,6 +4840,7 @@ func _daily_ev(k: String, n: int) -> void:
 			d.p[id] = mini(int(T.n), before + n)
 			if before < int(T.n) and int(d.p[id]) >= int(T.n):
 				ready = true
+				stat_add("daily", 1)
 	if ready and screens.has("game") and screens.game.visible:
 		toast28("Daily task done! Claim it in Daily.")
 	if home_ui:
@@ -4835,7 +4865,7 @@ func _piggy_add() -> void:
 func piggy_tap() -> void:
 	var p := int(S.get("piggy", 0))
 	if p < PIG_MAX:
-		sfx.play("swoosh", 0.4)
+		sfx.play("ui_tab", 0.45)
 		ask("Piggy bank  %d/%d" % [p, PIG_MAX], "Win levels to fill it. When it's full, watch a short video and get %d coins." % PIG_MAX, "Got it", "", Callable())
 		return
 	show_ad(func(ok: bool):
@@ -4865,7 +4895,7 @@ func daily_can() -> bool:
 
 func sheet(n: String) -> void:
 	sh_name = n
-	sfx.play("swoosh", 0.5)
+	sfx.play("ui_tab", 0.45)   # 26 Nov: soft tap, the swoosh was too strong
 	var ttl: String = {"shop": "Shop", "daily": "Daily rewards & tasks", "bag": "My crackers", "set": "Settings"}[n]
 	set_t(L_sh.node("sTitle"), ttl)
 	for c in sh_body.get_children():
@@ -4878,6 +4908,8 @@ func sheet(n: String) -> void:
 		"set": y = _set_rows()
 	sh_body.custom_minimum_size = Vector2(354, y)
 	sh_body.size = sh_body.custom_minimum_size
+	sh_scroll.set_height(sh_body.size.y)
+	sh_scroll.reset()
 	# the sheet grows with its content, up to the shop's height
 	var box: Control = L_sh.nodes[1]
 	var h := minf(658.0, y + 84 + 24)
@@ -4969,6 +5001,59 @@ func _coin_text_left(b: Control, num: String) -> void:
 	l.position.x = x0 + 20
 	l.size.x = w + 4
 
+# 27 Nov: no real-money coin packs (he will ask when; CP stays in the code). More ad rewards + lives + boosters.
+const SHOP_CHEST := [{"t": "coins", "n": 150}, {"t": "coins", "n": 250}, {"t": "inv", "k": "rocket"}, {"t": "inv", "k": "hammer"}, {"t": "inv", "k": "atom"}, {"t": "life"}]
+const UNL_COST := 1500
+const UNL_SEC := 1800
+const SHOP_PACK := {"rocket": 900, "matchbox": 1900, "chakra": 1200, "atom": 1500, "hammer": 1200}
+
+func _shop_head(t: String, y: float) -> float:
+	var h := _text_row(L_sh, 7, y)
+	set_t(h, t)
+	return y + 23
+
+# one shop row; act runs on tap (it decides itself); returns the new y
+func _shop_row(y: float, img: String, t1: String, t2: String, btn: String, on: bool, coin: bool, act: Callable) -> float:
+	var r := _srow(L_sh, 8, y, img, t1, t2)
+	var b := kid(r, "button")
+	_sbtn(b, btn, on, coin)
+	tap(b, func():
+		if not on:
+			sfx.play("nope")
+			return
+		act.call())
+	return y + float(r.get_meta("h")) + 10
+
+func _shop_ad(act: Callable) -> void:
+	show_ad(func(ok: bool):
+		if not ok:
+			return
+		act.call()
+		save()
+		sfx.play("fanfare", 0.5)
+		home_ui.refresh_top()
+		sheet("shop"))
+
+func _day_flag(k: String) -> int:
+	var d: Dictionary = S.get(k, {})
+	return int(d.get("n", 0)) if d.get("day", "") == today() else 0
+
+func _day_add(k: String) -> void:
+	S[k] = {"day": today(), "n": _day_flag(k) + 1}
+
+func _shop_chest_open() -> void:
+	_day_add("shopchest")
+	var rw: Dictionary = SHOP_CHEST[randi() % SHOP_CHEST.size()]
+	if rw.t == "coins":
+		S.coins = int(S.coins) + int(rw.n)
+		toast28("Chest: +%d coins!" % int(rw.n))
+	elif rw.t == "inv":
+		add_inv(rw.k, 1)
+		toast28("Chest: +1 %s!" % LBL[rw.k])
+	else:
+		add_life(1)
+		toast28("Chest: +1 life!")
+
 func _shop_rows() -> float:
 	var y := 0.0
 	var p := _text_row(L_sh, 5, y)
@@ -4979,73 +5064,72 @@ func _shop_rows() -> float:
 		lbl(p).position.x = 0
 		lbl(p).horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	y += 30
-	var ha := _text_row(L_sh, 7, y)
-	set_t(ha, "Free coins")
-	y += 23
+	y = _shop_head("Free with ads", y)
+	# daily free chest: once a day, a random reward
+	var ch_ok := _day_flag("shopchest") == 0
+	y = _shop_row(y, "art/web/shop_chest.png", "Daily free chest", "Once a day: coins, a booster or a life!" if ch_ok else "Come back tomorrow!", "Open" if ch_ok else "Tomorrow", ch_ok, false, func():
+		_shop_ad(_shop_chest_open))
 	var left := shop_ads_left()
-	var ra := _srow(L_sh, 8, y, "art/ui-coin.webp", "+%d coins" % SHOP_AD, "Watch a video. %d left today." % left)
-	var ba := kid(ra, "button")
-	_sbtn(ba, "Watch" if left > 0 else "Tomorrow", left > 0, false)
-	tap(ba, func():
-		if shop_ads_left() <= 0:
-			sfx.play("nope")
-			return
-		show_ad(func(ok: bool):
-			if not ok:
-				return
+	y = _shop_row(y, "art/ui-coin.webp", "+%d coins" % SHOP_AD, "Watch a video. %d left today." % left, "Watch" if left > 0 else "Tomorrow", left > 0, false, func():
+		_shop_ad(func():
 			var d: Dictionary = S.get("shopad", {})
 			if d.get("day", "") != today():
 				d = {"day": today(), "n": 0}
 			d.n = int(d.n) + 1
 			S.shopad = d
-			S.coins = int(S.coins) + SHOP_AD
-			save()
-			sfx.play("fanfare", 0.5)
-			sheet("shop")))
-	y += float(ra.get_meta("h")) + 10
-	var h3 := _text_row(L_sh, 7, y)
-	set_t(h3, "Start boosters (3 each)")
-	y += 23
-	for k in SB:
-		var r := _srow(L_sh, 8, y, "crk:b%d" % IDX[k], LBL[k] + " ×3", SBD[k])
-		var b := kid(r, "button")
-		_sbtn(b, str(PACK[k]), true, true)
+			S.coins = int(S.coins) + SHOP_AD))
+	# coin chest +300: three videos in a row (counts today)
+	var cc := int(S.get("coinchest", {}).get("n", 0)) if S.get("coinchest", {}).get("day", "") == today() else 0
+	var cc_done := _day_flag("coinchest_got") > 0
+	y = _shop_row(y, "art/web/giftc1.webp", "Coin chest +300", ("Watch 3 videos. %d of 3 watched." % cc) if not cc_done else "Come back tomorrow!", "Watch" if not cc_done else "Tomorrow", not cc_done, false, func():
+		_shop_ad(func():
+			var n := cc + 1
+			S.coinchest = {"day": today(), "n": n}
+			if n >= 3:
+				_day_add("coinchest_got")
+				S.coins = int(S.coins) + 300
+				toast28("Coin chest: +300 coins!")))
+	for k in ["rocket", "hammer"]:
+		var used := _day_flag("shopfree_" + k) > 0
 		var kk: String = k
-		tap(b, func():
-			if S.coins < PACK[kk]:
-				sfx.play("nope")
-				return
-			S.coins -= PACK[kk]
+		y = _shop_row(y, "crk:b%d" % IDX[k], "Free " + ("Rocket" if k == "rocket" else "Hammer"), "Watch a video for 1 %s." % LBL[k] if not used else "Come back tomorrow!", "Free" if not used else "Tomorrow", not used, false, func():
+			_shop_ad(func():
+				_day_add("shopfree_" + kk)
+				add_inv(kk, 1)))
+	var lv := lives_now()
+	y = _shop_row(y, "art/web/fe-heart.png", "+1 life", "Watch a video. Lives: %d / %d" % [lv, LIFE_MAX], "+1" if lv < LIFE_MAX else "Full", lv < LIFE_MAX, false, func():
+		_shop_ad(func(): add_life(1)))
+	y = _shop_head("Lives", y + 2)
+	y = _shop_row(y, "art/web/fe-heart.png", "Refill all lives", "Get all %d lives now." % LIFE_MAX, str(REFILL_COST), lv < LIFE_MAX and int(S.coins) >= REFILL_COST, true, func():
+		S.coins = int(S.coins) - REFILL_COST
+		add_life(LIFE_MAX)
+		sfx.play("fanfare", 0.4)
+		home_ui.refresh_top()
+		sheet("shop"))
+	var unl := unlimited_left()
+	y = _shop_row(y, "art/web/fe-heart.png", "Unlimited lives", ("No lives lost for 30 minutes.") if unl <= 0 else ("Active: %d:%02d left" % [unl / 60, unl % 60]), str(UNL_COST), unl <= 0 and int(S.coins) >= UNL_COST, true, func():
+		S.coins = int(S.coins) - UNL_COST
+		S.unl_until = int(Time.get_unix_time_from_system()) + UNL_SEC
+		add_life(LIFE_MAX)
+		save()
+		sfx.play("fanfare", 0.4)
+		home_ui.refresh_top()
+		sheet("shop"))
+	y = _shop_head("Start boosters (3 each)", y + 2)
+	for k in SB + ["hammer"]:
+		var kk: String = k
+		var price: int = SHOP_PACK[k]
+		y = _shop_row(y, "crk:b%d" % IDX[k], LBL[k] + " ×3", SBD.get(k, "Break any one piece before you swap."), str(price), int(S.coins) >= price, true, func():
+			S.coins -= price
 			add_inv(kk, 3)
 			save()
 			sfx.play("fanfare", 0.4)
+			home_ui.refresh_top()
 			sheet("shop"))
-		y += float(r.get_meta("h")) + 10
-	var h3b := _text_row(L_sh, 7, y + 2)
-	set_t(h3b, "Coins")
-	y += 25
-	for i in CP.size():
-		var cp: Dictionary = CP[i]
-		if cp.get("st", false) and S.get("starter", false):
-			continue
-		var r := _srow(L_sh, 8, y, "art/ui-coin.webp", cp.n, "1,000 coins + 2 of each start booster. One time only." if cp.get("st", false) else "%s coins" % _commas(int(cp.c)))
-		var b := kid(r, "button")
-		_sbtn(b, cp.p, true, false)
-		tap(b, func():
-			S.coins += int(cp.c)
-			if cp.get("st", false):
-				S.starter = 1
-				for k in SB:
-					add_inv(k, 2)
-			save()
-			sfx.play("fanfare", 0.5)
-			sheet("shop"))
-		y += float(r.get_meta("h")) + 10
-	var note := _text_row(L_sh, 5, y)
-	if kid(note, "b"):
-		kid(note, "b").visible = false
-	set_t(note, "Test build: coin packs are free.")
-	return y + 30
+	return y + 10
+
+func unlimited_left() -> int:
+	return maxi(0, int(S.get("unl_until", 0)) - int(Time.get_unix_time_from_system()))
 
 func _commas(n: int) -> String:
 	var s := str(n)
@@ -5129,7 +5213,7 @@ func _dtask_rows(y: float) -> float:
 			sheet("daily"))
 		y += float(r.get_meta("h")) + 8
 	var all_ok: bool = d.got.size() >= 3
-	var ra := _srow(L_sh, 8, y, "art/ui-chest.webp", "All three tasks", "+%d coins" % DALL)
+	var ra := _srow(L_sh, 8, y, "art/web/shop_chest.png", "All three tasks", "+%d coins" % DALL)
 	var bb := kid(ra, "button")
 	_sbtn(bb, "Done" if int(d.get("all", 0)) else ("Claim" if all_ok else "%d/3" % d.got.size()), all_ok and not int(d.get("all", 0)), false)
 	tap(bb, func():
@@ -5144,11 +5228,36 @@ func _dtask_rows(y: float) -> float:
 	y += float(ra.get_meta("h")) + 10
 	return y
 
+# 27 Nov: My Crackers - Mayil Matchbox (Legendary) first; every cracker locked until its level (grey + lock)
+const BAG_UNL := {"rocket": 2, "matchbox": 3, "chakra": 5, "hammer": 5, "atom": 8, "sparkler": 12, "flowerpot": 22, "skyshot": 32, "snake": 42, "rail": 52, "wala": 62, "seven": 72}
+func _bag_lock(r: Control, lv: int) -> void:
+	for c in r.get_children():
+		if c is CanvasItem and c.has_meta("web") and c.get_meta("web").tag == "img":
+			c.modulate = Color(0.55, 0.55, 0.6, 0.85)
+	var lk := TextureRect.new()
+	lk.texture = load("res://art/menu/lock.png")
+	lk.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	lk.size = Vector2(30, 30)
+	lk.position = Vector2(8, 6)
+	lk.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	r.add_child(lk)
+
 func _bag_rows() -> float:
 	var y := 0.0
+	var reached := int(S.lv) + 1
+	# Mayil Matchbox (legendary) on top, locked until level 101
+	var m := _srow(L_sb, 5, y, "art/toy/mayil.png", "Mayil Matchbox", "LEGENDARY  ·  Unlocks at Level 101" if reached < 101 else "LEGENDARY  ·  × %d" % inv("mayil"))
+	if reached < 101:
+		_bag_lock(m, 101)
+	y += float(m.get_meta("h")) + 10
 	var ks: Array = SB + SL
+	ks.sort_custom(func(x, z): return int(BAG_UNL.get(x, 1)) < int(BAG_UNL.get(z, 1)))
 	for k in ks:
-		var r := _srow(L_sb, 5, y, "crk:b%d" % IDX[k], "%s × %d" % [LBL[k], inv(k)], SBD.get(k, DESC2.get(k, "")))
+		var need := int(BAG_UNL.get(k, 1))
+		var locked := reached < need
+		var r := _srow(L_sb, 5, y, "crk:b%d" % IDX[k], LBL[k] if locked else "%s × %d" % [LBL[k], inv(k)], ("Unlocks at Level %d" % need) if locked else SBD.get(k, DESC2.get(k, "")))
+		if locked:
+			_bag_lock(r, need)
 		y += float(r.get_meta("h")) + 10
 	var p := _text_row(L_ss, 23, y)
 	set_t(p, "Rocket, Flowerpot, Ground Chakra and Sky Shot are made by matching on the board.")

@@ -930,7 +930,10 @@ func hit_fl(r: int, c: int) -> void:
 		spark(x, y, 16, ["#FFF3B0", "#FFD24A", "#FFFFFF"], 240)
 		ring(x, y, "#FFE58A", S * 0.8, 4)
 	if sfx:
-		sfx.ob("paper", 1.3)
+		if f.t == "gold":
+			sfx.ob("ob_gold", 1.0, rnd(0.94, 1.1))   # 27 Nov: his coin clink (double), not paper
+		else:
+			sfx.ob("paper", 1.3)
 	if f.hp <= 0:
 		fl.erase(key)
 		if f.t == "gold":
@@ -1971,8 +1974,8 @@ func snd(n: String, o: Dictionary = {}) -> void:
 # sound.js SFX.special
 func special_sound(k: int) -> void:
 	if k == 6 or k == 15 or k == 16:
-		snd("swoosh", {"v": 0.5, "rate": 1.3})
-		snd("rocket", {"off": 0.25, "v": 0.6, "cut": 0.45})
+		snd("swoosh", {"v": 0.4, "rate": 1.3})
+		snd("rocket", {"v": 0.85})
 	else:
 		snd("swoosh", {"v": 0.4, "rate": 1.4})
 
@@ -2040,9 +2043,11 @@ func go(r: int, c: int, k: int, dr: int, dc: int) -> void:
 		if k == 6:
 			d_rocket(tr, tc, -1, 0, 6)
 			d_rocket(tr, tc, 1, 0, 6)
+			at(0.2, func(): snd("blast", {"v": 0.7, "rate": 1.05}))
 		elif k == 15 or k == 16:
 			d_rocket(tr, tc, 0, 1, 15)
 			d_rocket(tr, tc, 0, -1, 16)
+			at(0.2, func(): snd("blast", {"v": 0.7, "rate": 1.05}))
 		elif k == 11:
 			sparkler_fork(tr, tc, -1 if tap else dr, 0 if tap else dc)
 		elif k == 7:
@@ -2262,7 +2267,7 @@ func fly_chakra(r: int, c: int) -> void:
 					ring(x1, y1, "#FFD24A", u * 2.2, 8)
 					ring(x1, y1, "#FF2FA8", u * 1.6, 6)
 					pop(x1, y1, "#FF2FA8", 1.4)
-					snd("chakra", {"off": 1.12, "v": 0.95, "cut": 0.45})
+					snd("blast", {"v": 0.75, "rate": 1.1})
 					hit(tg[0], tg[1], {"d": 0.0, "pw": 1.4})
 					# landing on gold always breaks the gold under it (18 Nov)
 					var tk := "%d,%d" % [tg[0], tg[1]]
@@ -2537,7 +2542,7 @@ func ride(r: int, c: int, tr: int, tc: int, pay, dur: float, done: Callable) -> 
 		fx.append({"k": "spark", "x": p.x + rnd(-8, 8), "y": p.y + rnd(-8, 8), "vx": rnd(-90, 90), "vy": rnd(-90, 90), "col": Color("#FFD24A" if randf() < 0.5 else "#FF5AA0"), "a": 0.0, "l": 0.3})
 		if f >= 1.0:
 			ring(x1, y1, "#FF5AA0", u * 1.2, 6)
-			snd("chakra", {"off": 1.12, "v": 0.8, "cut": 0.4})
+			snd("blast", {"v": 0.6, "rate": 1.15})
 			done.call(tr, tc)
 			return false
 		return true, dur + 0.05)
@@ -3186,6 +3191,7 @@ func hammer2(r: int, c: int) -> void:
 
 # fx.js sparkler with the b28 "fork" shape: three straight then a fork at the end
 func sparkler_fork(orr: int, oc: int, dr: int, dc: int) -> void:
+	snd("sparkler", {"v": 0.7})
 	var u = float(U)
 	var sx = 1 if dr != 0 else 0
 	var sy = 1 if dc != 0 else 0
@@ -3422,6 +3428,7 @@ func c_star(x: float, y: float, col: Color, sz: float) -> void:
 
 # Flowerpot: a fountain of sparks, then 7 fireballs arc onto tiles ahead (goal tiles first)
 func d_pot(r: int, c: int, dr: int, dc: int) -> void:
+	snd("flowerpot", {"v": 0.9})
 	var x := cx(c)
 	var y := cy(r)
 	var u := float(U)
@@ -3474,6 +3481,8 @@ func _skyfx() -> void:
 			"st": load("res://art/fx/star_trail.png"), "fl": load("res://art/fx/flash_gold.png")}
 
 func skyshot(r: int, c: int, col: int, dr: int, dc: int, own := true) -> void:
+	if own:
+		snd("skyshot", {"v": 0.85, "cut": 2.6})
 	_skyfx()
 	var x := cx(c)
 	var y := cy(r)
@@ -3549,6 +3558,8 @@ func skyshot(r: int, c: int, col: int, dr: int, dc: int, own := true) -> void:
 					draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 					if k >= 1.0:
 						spark(tx, ty, 4, ["#FFD24A", "#FFFFFF"], 150)
+						if n % 3 == 0:
+							snd("pop", {"v": 0.4, "rate": rnd(1.0, 1.3)})
 						hit(p[0], p[1], {"d": 0.0, "pw": 1.1})
 						return false
 					return true, 0.32))
@@ -3605,26 +3616,21 @@ func wala(r: int, c: int, dr: int, dc: int) -> void:
 		b[r][c] = null
 		ring(x, y, "#E8123C", 70, 7)
 		snd("wala", {"v": 0.8}))
-	# the string: drawn while it is laid, then it burns away from the start as the bangs run
+	# 27 Nov: no string line any more - a small red cracker (the board's own red piece picture) appears on each
+	# tile of the path as it is laid; each one is gone once the bangs pass it
+	var WSZ := U * 0.5
 	obj(func(t, dt):
 		var lay: float = clampf((t - 0.18) / LAY, 0.0, 1.0) * tot
 		var burn: float = st.burnt
-		if lay <= burn:
-			return t < 0.18 + LAY + RUN + 0.1
-		var steps := int((lay - burn) / 7.0) + 1
-		var prev: Vector2 = at_d.call(burn)
-		for q in steps:
-			var dd: float = burn + (lay - burn) * (q + 1) / steps
-			var p2: Vector2 = at_d.call(dd)
-			draw_line(prev, p2, Color("#5A0A14"), 5.0)
-			draw_line(prev, p2, Color("#E8123C"), 3.0)
-			prev = p2
-		# little crackers on the string
-		var n := int((lay - burn) / 13.0)
-		for q in n:
-			var pp: Vector2 = at_d.call(burn + q * 13.0 + 6.0)
-			draw_rect(Rect2(pp.x - 3, pp.y - 5, 6, 10), Color("#C8102E"))
-			draw_rect(Rect2(pp.x - 3, pp.y - 5, 6, 2), Color("#FFD24A"))
+		for n in range(1, pts.size()):
+			var dn: float = seg[n]
+			if dn <= burn or dn > lay:
+				continue
+			var pp: Vector2 = pts[n]
+			var tilt := 0.35 if n % 2 else -0.35
+			draw_set_transform(pp, tilt, Vector2.ONE)
+			draw_texture_rect(T[0], Rect2(-WSZ / 2, -WSZ / 2, WSZ, WSZ), false)
+		draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
 		return t < 0.18 + LAY + RUN + 0.1, 0.18 + LAY + RUN + 0.2)
 	# the chain of bangs
 	var NB := 28
@@ -3655,6 +3661,7 @@ func wala(r: int, c: int, dr: int, dc: int) -> void:
 
 # Rail Cracker: races along its row (or column), turns at the end and comes back on the next one
 func d_rail(r: int, c: int, dr: int, dc: int) -> void:
+	snd("rail", {"v": 0.9})
 	var e = b[r][c]
 	if e != null:
 		e.shakeT = 0.16

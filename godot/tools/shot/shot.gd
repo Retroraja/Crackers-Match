@@ -30,5 +30,30 @@ func _ready() -> void:
 func _run(e: String) -> void:
 	var ex := Expression.new()
 	if ex.parse(e) != OK: print("SHOT parse error ", e); return
-	ex.execute([], app)
+	if e.begins_with("rec_") or e.begins_with("place_any"):
+		ex.execute([], self)
+		return
+	var res = ex.execute([], app)
 	if ex.has_execute_failed(): print("SHOT exec failed ", e)
+	elif res != null: print("SHOT %.2f " % (Time.get_ticks_msec() / 1000.0), e, " -> ", res)
+
+# audio recording of the master bus: --step=SEC:rec_start()  ... --step=SEC:rec_stop("/tmp/x.wav")
+var _rec: AudioEffectRecord
+func rec_start() -> void:
+	_rec = AudioEffectRecord.new()
+	AudioServer.add_bus_effect(0, _rec)
+	_rec.set_recording_active(true)
+func rec_stop(p: String) -> void:
+	_rec.set_recording_active(false)
+	var w := _rec.get_recording()
+	if w: w.save_to_wav(p); print("SHOT wav ", p)
+func place_any(k: String) -> void:
+	var g = app.game
+	print("SHOT busy=", g.busy, " over=", g.over, " moves=", g.moves)
+	for r in g.R:
+		for c in g.C:
+			var e = g.at2(r, c)
+			if e != null and not e.has("ob") and e.k >= 0 and e.k < 6 and g.place(k, r, c):
+				print("SHOT %.2f placed " % (Time.get_ticks_msec() / 1000.0), k, " at ", r, ",", c)
+				return
+	print("SHOT could not place ", k)

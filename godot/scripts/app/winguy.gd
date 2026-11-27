@@ -86,7 +86,7 @@ func _draw() -> void:
 	var cx := 226.0
 	var oy0 := 0.0
 	var bob := 0.0
-	var lean := -0.1
+	var lean := 0.0
 	var base := Vector2(cx, H + 40 + oy0)
 	var sh := Vector2(cx - 76, H - 200 + oy0 + bob)
 	if t > 0.94 and not fired:
@@ -114,7 +114,7 @@ func _draw() -> void:
 	c.translate(cx, H + 70); c.scale(1.2, 1.2); c.translate(-cx, -(H + 70)); c.translate(base.x, base.y); c.rotate(lean); c.translate(-base.x, -base.y)
 	var Y := func(v: float) -> float: return H + v + oy0 + bob
 	var cg := "#2C2B34"
-	c.begin(); c.move(cx - 72, H + 60 + oy0); c.line(cx - 62, Y.call(-80)); c.bez(cx - 64, Y.call(-120), cx - 78, Y.call(-160), cx - 84, Y.call(-182)); c.bez(cx - 100, Y.call(-212), cx - 60, Y.call(-226), cx - 34, Y.call(-236)); c.line(cx + 34, Y.call(-236)); c.bez(cx + 60, Y.call(-226), cx + 86, Y.call(-218), cx + 92, Y.call(-186)); c.bez(cx + 84, Y.call(-140), cx + 66, Y.call(-110), cx + 62, Y.call(-80)); c.line(cx + 72, H + 60 + oy0); c.close(); c.fill(Color(cg))
+	c.begin(); c.move(cx - 72, H + 60 + oy0); c.line(cx - 62, Y.call(-80)); c.bez(cx - 64, Y.call(-120), cx - 78, Y.call(-160), cx - 84, Y.call(-182)); c.bez(cx - 92, Y.call(-212), cx - 60, Y.call(-226), cx - 34, Y.call(-236)); c.line(cx + 34, Y.call(-236)); c.bez(cx + 60, Y.call(-226), cx + 84, Y.call(-216), cx + 86, Y.call(-186)); c.bez(cx + 84, Y.call(-140), cx + 66, Y.call(-110), cx + 62, Y.call(-80)); c.line(cx + 72, H + 60 + oy0); c.close(); c.fill(Color(cg))
 	c.save(); c.translate(-7, 0)
 	c.begin(); c.move(cx - 30, Y.call(-236)); c.line(cx + 30, Y.call(-236)); c.line(cx + 4, Y.call(-96)); c.line(cx - 4, Y.call(-96)); c.close(); c.fill(Color("#F2F3F7"))
 	c.begin(); c.move(cx - 27, Y.call(-238)); c.line(cx - 1, Y.call(-200)); c.line(cx - 34, Y.call(-186)); c.close(); c.move(cx + 27, Y.call(-238)); c.line(cx + 1, Y.call(-200)); c.line(cx + 34, Y.call(-186)); c.close(); c.fill(Color("#D5D6DF"))
@@ -123,12 +123,11 @@ func _draw() -> void:
 	c.begin(); c.arc(cx - 2, Y.call(-70), 4, 0, TAU); c.fill(Color("#F4C542"))
 	c.begin(); c.move(cx + 72, Y.call(-146)); c.line(cx + 40, Y.call(-152)); c.line(cx + 42, Y.call(-140)); c.line(cx + 70, Y.call(-134)); c.close(); c.fill(Color("#FF2FA8"))
 	c.restore()
-	c.begin(); c.move(cx + 44, Y.call(-232)); c.bez(cx + 92, Y.call(-228), cx + 118, Y.call(-206), cx + 120, Y.call(-168)); c.bez(cx + 122, Y.call(-120), cx + 112, Y.call(-78), cx + 104, Y.call(-34)); c.line(cx + 72, Y.call(-32)); c.bez(cx + 74, Y.call(-80), cx + 72, Y.call(-120), cx + 64, Y.call(-156)); c.close(); c.fill(Color(cg))
-	c.begin(); c.move(cx + 64, Y.call(-156)); c.bez(cx + 72, Y.call(-120), cx + 74, Y.call(-80), cx + 72, Y.call(-32)); c.stroke("#17161B", 2)
-	c.save(); c.translate(cx + 88, Y.call(-28)); c.rotate(1.57); c.begin(); c.rrect(-10, -19, 10, 38, 4); c.fill(Color.WHITE); c.restore()
-	hand(Vector2(cx + 88, Y.call(-24)), 1.57, 0)
+	c.begin(); c.move(cx + 50, Y.call(-232)); c.bez(cx + 86, Y.call(-228), cx + 104, Y.call(-208), cx + 106, Y.call(-170)); c.bez(cx + 108, Y.call(-120), cx + 102, Y.call(-78), cx + 96, Y.call(-34)); c.line(cx + 70, Y.call(-32)); c.bez(cx + 74, Y.call(-80), cx + 72, Y.call(-120), cx + 64, Y.call(-156)); c.close(); c.fill(Color(cg))
+	c.save(); c.translate(cx + 83, Y.call(-28)); c.rotate(1.57); c.begin(); c.rrect(-10, -19, 10, 38, 4); c.fill(Color.WHITE); c.restore()
+	hand(Vector2(cx + 83, Y.call(-24)), 1.57, 0)
 	var bl := fmod(t, 3.1) > 3
-	head(cx - 10, H - 310 + oy0 + bob, 0.1, bl, 1)
+	head(cx - 4, H - 310 + oy0 + bob, 0.0, bl, 1)
 	var u := clampf((t - 0.7) / 0.42, 0.0, 1.0)
 	u = 2 * u * u if u < 0.5 else 1 - 2 * (1 - u) * (1 - u)
 	var q := func(p0: float, p1: float, p2: float) -> float:
@@ -139,8 +138,7 @@ func _draw() -> void:
 	var L := 88.0
 	var E := Vector2(sh.x + cos(a1) * L, sh.y + sin(a1) * L)
 	var Hh := Vector2(E.x + cos(a2) * L, E.y + sin(a2) * L)
-	limb(sh, E, 27, 25, cg)
-	limb(E, Hh, 25, 19, cg)
-	c.begin(); c.move(sh.x + cos(a1 - 1.57) * 27, sh.y + sin(a1 - 1.57) * 27); c.line(E.x + cos(a2 - 1.57) * 24, E.y + sin(a2 - 1.57) * 24); c.stroke("#17161B", 2)
+	limb(sh, E, 22, 21, cg)
+	limb(E, Hh, 21, 17, cg)
 	hand(Hh, a2, 0.5 + u * 0.5)
 	c.restore()

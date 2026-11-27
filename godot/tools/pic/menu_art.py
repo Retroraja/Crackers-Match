@@ -5,7 +5,7 @@ from PIL import Image, ImageDraw, ImageFilter
 K=3  # 3x of the 390-wide layout
 def save(im,p): im.save(p); print(p, im.size)
 # cream pill with gold rim (Canva), kept near its own size so it stays sharp
-pill=WB.cut('art/topbar/pill_src.png'); save(pill,'art/topbar/pill.png')
+import pill_build; save(pill_build.pill(72,32),'art/topbar/pill.png')   # full size (the Canva pill was too soft)
 gear=WB.cut('art/topbar/gear_src.png'); save(gear.resize((42*K,int(42*K*gear.height/gear.width)),Image.LANCZOS),'art/topbar/gear.png')
 # small gold profile frame (as in the approved preview)
 ps=44*K; fr=Image.new('RGBA',(ps,ps),(0,0,0,0)); fd=ImageDraw.Draw(fr)
@@ -89,7 +89,7 @@ for col,tint in {'bronze':(205,127,50),'silver':(200,205,215),'gold':(255,200,50
 # lucky wheel: segments + rim at full size, prize icons on it; lit bulbs as a separate layer (blink = show/hide)
 WSZ=330; WS=WSZ*K
 wh=WB.wheel(WS)
-prizes=[('art/ui-coin.webp','100'),('art/crk/b6.webp',''),('art/ui-coin.webp','50'),('art/crk/b17.webp',''),('art/web/fe-heart.png','+1'),('art/ui-coin.webp','200'),('art/crk/b10.webp',''),('art/web/ui-chest.webp','500')]
+prizes=[('art/ui-coin.webp','100'),('art/crk/b6.webp',''),('art/ui-coin.webp','50'),('art/crk/b17.webp',''),('art/web/fe-heart.png','+1'),('art/ui-coin.webp','200'),('art/crk/b10.webp',''),('art/web/shop_chest.png','500')]
 dw=ImageDraw.Draw(wh)
 for i,(p_,lab) in enumerate(prizes):
     ang=-math.pi/2+math.pi/8+i*math.pi/4; r=WS*0.30; px,py=WS/2+math.cos(ang)*r,WS/2+math.sin(ang)*r
