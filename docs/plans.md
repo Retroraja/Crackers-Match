@@ -18,6 +18,8 @@
 #  5. Back arrow (top left) on every page: Profile, Areas, Trophies, Lucky Wheel.
 #  6. Tall phones: bottom menu bar and level booster area reach the real screen bottom (no blank strip).
 #  7. Google Play sign-in + cloud save (plugin, app id 37177410253; plan in "SIGN-IN PLAN" above).
+#  8. New app icon = previews/icons/icon-2.png (3x3 board cut, specials on gold tiles, lit middle red, gold corner
+#     ornaments; tools/pic/app_icon.py). Fitted to rounded-square phone icons. Set as launcher icon (all sizes).
 # BUILT 26 Nov (menu APK, see current-state.md): top bar, lives, bottom menu + Areas/Trophy Room/Lucky Wheel/Profile,
 # level screen theme per area (1 royal blue, 2 maroon, 3 teal, 4 navy, 5 ruby), Shop badge, popups navy, Area 2
 # "Inside the shop!" card, Area 3 Chennai labels. Still waiting: Diya + 1000 Wala (his OK, picture first), gold
