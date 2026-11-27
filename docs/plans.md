@@ -23,6 +23,8 @@
 #  9. Win-screen man (approved 27 Nov): keep the old code man, only: slimmer right shoulder/hip sleeve, slimmer
 #     sweeping arm, head and body straight (no tilt/lean), no black sleeve lines. Ready file:
 #     docs/pending/winguy_next.gd.txt -> copy over godot/scripts/app/winguy.gd. Skin and hair stay as they are.
+#  10. Diya stack breakable: picture too big, spills onto the next tile -> 80% of the tile, centred (levels 53, 56...).
+#  RULE for every fix: must not crash the game and must not lower FPS.
 # BUILT 26 Nov (menu APK, see current-state.md): top bar, lives, bottom menu + Areas/Trophy Room/Lucky Wheel/Profile,
 # level screen theme per area (1 royal blue, 2 maroon, 3 teal, 4 navy, 5 ruby), Shop badge, popups navy, Area 2
 # "Inside the shop!" card, Area 3 Chennai labels. Still waiting: Diya + 1000 Wala (his OK, picture first), gold
