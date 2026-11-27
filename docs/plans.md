@@ -31,6 +31,10 @@
 #      1500; Start boosters x3: Rocket 900, Colour Matchbox 1900, Ground Chakra 1200, Bomb 1500, Hammer 1200.
 #  12. New 3D chest art (Canva, red+gold rangoli, open lid with coins): art/web/shop_chest.png. Use it EVERYWHERE a
 #      chest shows (Shop, Lucky Wheel 500-coin prize, rewards, popups) instead of art/web/ui-chest.webp.
+#  13. My Crackers page: first row = Mayil Matchbox (LEGENDARY tag, peacock art, lock, "Unlocks at Level 101").
+#      Every cracker locked until its level (greyed, lock icon, "Unlocks at Level N" instead of the count):
+#      Rocket 2, Colour Matchbox 3, Ground Chakra 5, Lakshmi Vedi Hammer 5, Bomb 8, Sparkler 12, Flowerpot 22,
+#      Sky Shot 32, Snake 42, Rail 52, 1000 Wala 62, Seven Shot 72, Mayil Matchbox 101 (same as UNL / SBU in cm_app).
 #  RULE for every fix: must not crash the game and must not lower FPS.
 # BUILT 26 Nov (menu APK, see current-state.md): top bar, lives, bottom menu + Areas/Trophy Room/Lucky Wheel/Profile,
 # level screen theme per area (1 royal blue, 2 maroon, 3 teal, 4 navy, 5 ruby), Shop badge, popups navy, Area 2
