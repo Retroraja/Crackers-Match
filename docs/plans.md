@@ -49,7 +49,12 @@
 #      default = Google Play name), Avatar grid (~12: new premium Canva Diwali characters + some crackers; some locked,
 #      unlock with trophies), frame colour (gold/silver/ruby/emerald, unlock with trophies), Save. Shown in the top-bar
 #      profile frame too; saved to the cloud.
-#  P2. Tall phones: he still sees a blank strip at the bottom of the level screen (check on his phone size).
+#  P2. Tall phones, level screen (his screenshot 27 Nov): boosters are at the bottom now, but the extra height is one big
+#      empty gap between board and boosters. Move Cracker meter + board down by half the extra (even gaps); on very tall
+#      phones let the board grow a little (max ~8%). Also the thin light strip at the very top: the top bar colour must
+#      reach the top edge (level_theme "up" rect is not showing).
+#  P3. Smooth scroll (Shop, Daily, My Crackers, Trophies, Areas): longer glide (slower slow-down), stronger flick (higher
+#      max speed), soft rubber-band bounce at the ends, speed from the last ~100 ms of the swipe. scripts/app/soft_scroll.gd.
 # BUILT 26 Nov (menu APK, see current-state.md): top bar, lives, bottom menu + Areas/Trophy Room/Lucky Wheel/Profile,
 # level screen theme per area (1 royal blue, 2 maroon, 3 teal, 4 navy, 5 ruby), Shop badge, popups navy, Area 2
 # "Inside the shop!" card, Area 3 Chennai labels. Still waiting: Diya + 1000 Wala (his OK, picture first), gold
