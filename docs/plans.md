@@ -25,7 +25,7 @@
 #     docs/pending/winguy_next.gd.txt -> copy over godot/scripts/app/winguy.gd. Skin and hair stay as they are.
 #  10. Diya stack breakable: picture too big, spills onto the next tile -> 80% of the tile, centred (levels 53, 56...).
 #  11. Shop (approved 27 Nov, previews/shop-no-coin-packs.png): HIDE the real-money coin packs (Starter, 1,000-15,000
-#      coins) for a few months (keep the code, one switch to turn on later, after the company account + DUNS).
+#      coins). He: NO real-money packs, maybe several months; do not bring it up again unless he asks.
 #      Shop = "You have N coins"; Free with ads: Daily free chest (NEW, once a day: coins / booster / life), +50 coins,
 #      Coin chest +300 (3 videos in a row), Free Rocket, Free Hammer, +1 life; Lives: Refill all 900, Unlimited 30 min
 #      1500; Start boosters x3: Rocket 900, Colour Matchbox 1900, Ground Chakra 1200, Bomb 1500, Hammer 1200.
