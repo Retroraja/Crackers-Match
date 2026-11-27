@@ -44,6 +44,12 @@
 #      and kept at a sharp size), ~80% of the tile, centred; normal + cracked (after a hit) + stack versions.
 #      Small still flame painted in the picture (no live fire, no FPS cost). Replaces fix 10's resize.
 #  RULE for every fix: must not crash the game and must not lower FPS.
+# NEXT PLAN (after build 0.3, 27 Nov; build only when he says "build"):
+#  P1. Edit Profile (later): pencil/Edit button by the name -> card: Name box (max 14, simple bad-word block,
+#      default = Google Play name), Avatar grid (~12: new premium Canva Diwali characters + some crackers; some locked,
+#      unlock with trophies), frame colour (gold/silver/ruby/emerald, unlock with trophies), Save. Shown in the top-bar
+#      profile frame too; saved to the cloud.
+#  P2. Tall phones: he still sees a blank strip at the bottom of the level screen (check on his phone size).
 # BUILT 26 Nov (menu APK, see current-state.md): top bar, lives, bottom menu + Areas/Trophy Room/Lucky Wheel/Profile,
 # level screen theme per area (1 royal blue, 2 maroon, 3 teal, 4 navy, 5 ruby), Shop badge, popups navy, Area 2
 # "Inside the shop!" card, Area 3 Chennai labels. Still waiting: Diya + 1000 Wala (his OK, picture first), gold
