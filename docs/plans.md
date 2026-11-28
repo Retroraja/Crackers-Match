@@ -59,7 +59,7 @@
 #  P5. Daily tasks: pool of ~12 (make Rockets / Bombs / Matchboxes, fire Chakras, break obstacles, clear gold tiles,
 #      win levels, get 3 stars, use a booster, spin the wheel, break pots ...); each day 3 random, easy -> hard.
 #  P6. Trophy coins lower: bronze 20, silver 40, gold 80 (big ones like Builder a little more).
-#  P7. Colour Matchbox: also breaks the breakables (pots, crates, diyas ...) right next to each cracker it removes
+#  P7. Colour Matchbox: also breaks the breakables (pots, crates, 2-hit crates, diyas ...) right next to each cracker it removes, and the gold floor tile UNDER each removed cracker
 #      (one hit each, like a match next to them).
 # BUILT 26 Nov (menu APK, see current-state.md): top bar, lives, bottom menu + Areas/Trophy Room/Lucky Wheel/Profile,
 # level screen theme per area (1 royal blue, 2 maroon, 3 teal, 4 navy, 5 ruby), Shop badge, popups navy, Area 2
