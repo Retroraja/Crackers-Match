@@ -56,6 +56,11 @@
 #  P3. Smooth scroll (Shop, Daily, My Crackers, Trophies, Areas): longer glide (slower slow-down), stronger flick (higher
 #      max speed), soft rubber-band bounce at the ends, speed from the last ~100 ms of the swipe. scripts/app/soft_scroll.gd.
 #  P4. TEST ONLY: give 200,000 coins once (S.test_coins flag) when the next test build opens. Remove before public launch.
+#  P5. Daily tasks: pool of ~12 (make Rockets / Bombs / Matchboxes, fire Chakras, break obstacles, clear gold tiles,
+#      win levels, get 3 stars, use a booster, spin the wheel, break pots ...); each day 3 random, easy -> hard.
+#  P6. Trophy coins lower: bronze 20, silver 40, gold 80 (big ones like Builder a little more).
+#  P7. Colour Matchbox: also breaks the breakables (pots, crates, diyas ...) right next to each cracker it removes
+#      (one hit each, like a match next to them).
 # BUILT 26 Nov (menu APK, see current-state.md): top bar, lives, bottom menu + Areas/Trophy Room/Lucky Wheel/Profile,
 # level screen theme per area (1 royal blue, 2 maroon, 3 teal, 4 navy, 5 ruby), Shop badge, popups navy, Area 2
 # "Inside the shop!" card, Area 3 Chennai labels. Still waiting: Diya + 1000 Wala (his OK, picture first), gold
