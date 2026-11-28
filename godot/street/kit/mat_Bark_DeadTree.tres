@@ -1,0 +1,12 @@
+[gd_resource type="StandardMaterial3D" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://street/art/Bark_DeadTree.webp" id="1_m1ufp"]
+[ext_resource type="Texture2D" path="res://street/art/Bark_DeadTree_Normal.webp" id="2_gabsj"]
+
+[resource]
+cull_mode = 2
+albedo_texture = ExtResource("1_m1ufp")
+roughness = 0.85
+normal_enabled = true
+normal_texture = ExtResource("2_gabsj")
+texture_filter = 5

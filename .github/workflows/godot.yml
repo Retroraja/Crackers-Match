@@ -1,0 +1,92 @@
+name: Godot APK
+on:
+  push:
+    paths:
+      - 'godot/**'
+      - 'tools/cmads-android/**'
+      - '.github/workflows/godot.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: godot-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    if: ${{ !contains(github.event.head_commit.message, '[preview]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Get Godot 4.3 and export templates
+        run: |
+          wget -q https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          wget -q https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
+          unzip -q Godot_v4.3-stable_linux.x86_64.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot-bin
+          mkdir -p ~/.local/share/godot/export_templates/4.3.stable tpl
+          unzip -q Godot_v4.3-stable_export_templates.tpz -d tpl
+          mv tpl/templates/* ~/.local/share/godot/export_templates/4.3.stable/
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Build the ads plugin (AAR)
+        run: |
+          cd tools/cmads-android
+          gradle :cmads:assembleRelease --no-daemon -q
+          mkdir -p ../../godot/addons/cmads/bin
+          cp cmads/build/outputs/aar/cmads-release.aar ../../godot/addons/cmads/bin/
+      - name: Android settings and debug key
+        run: |
+          # one fixed key (tools/android/cm-dev.keystore) so every new APK installs over the old one
+          cp tools/android/cm-dev.keystore "$HOME/debug.keystore"
+          mkdir -p ~/.config/godot
+          cat > ~/.config/godot/editor_settings-4.3.tres <<EOT
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_SDK_ROOT"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          export/android/debug_keystore = "$HOME/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOT
+          sed -i 's/^          //' ~/.config/godot/editor_settings-4.3.tres
+          cat ~/.config/godot/editor_settings-4.3.tres
+      - name: Import and export
+        run: |
+          cd godot
+          ../godot-bin --headless --editor --quit --path . || true
+          mkdir -p build
+          export GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$HOME/debug.keystore"
+          export GODOT_ANDROID_KEYSTORE_RELEASE_USER=androiddebugkey
+          export GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=android
+          # 27 Nov: install the Android build template ourselves, then add the Play Games app id (needed by the
+          # GodotPlayGameServices plugin's manifest entry @string/game_services_project_id)
+          mkdir -p android/build
+          unzip -qo ~/.local/share/godot/export_templates/4.3.stable/android_source.zip -d android/build
+          echo -n "4.3.stable" > android/.build_version
+          touch android/build/.gdignore
+          mkdir -p android/build/res/values
+          echo '<?xml version="1.0" encoding="utf-8"?><resources><string translatable="false" name="game_services_project_id">37177410253</string></resources>' > android/build/res/values/pgs_strings.xml
+          ../godot-bin --headless --path . --install-android-build-template --export-release "Android" build/CrackersMatchGodot.apk
+          ls -la build
+          # Play Store file (AAB), same key, same package
+          sed -i 's/^gradle_build\/export_format=0/gradle_build\/export_format=1/' export_presets.cfg
+          ../godot-bin --headless --path . --export-release "Android" build/CrackersMatchGodot.aab
+          git checkout export_presets.cfg
+          ls -la build
+      - name: Publish download
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MSG: ${{ github.event.head_commit.message }}
+        run: |
+          TAG=godot-dev
+          if printf '%s' "$MSG" | grep -q "\[final\]"; then TAG=godot-test; fi
+          gh release delete "$TAG" --yes --cleanup-tag || true
+          gh release create "$TAG" godot/build/CrackersMatchGodot.apk godot/build/CrackersMatchGodot.aab --target "$GITHUB_SHA" --title "Crackers Match Godot (test build)" --prerelease \
+            --notes "Godot build ${GITHUB_RUN_NUMBER}. Installs next to the old app. Download CrackersMatchGodot.apk on your phone and open it."

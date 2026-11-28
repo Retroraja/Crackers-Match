@@ -1,0 +1,11 @@
+plugins { id 'com.android.library' }
+android {
+    namespace 'com.retroraja.cmads'
+    compileSdk 34
+    defaultConfig { minSdk 21 }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
+dependencies {
+    compileOnly 'org.godotengine:godot:4.3.0.stable'
+    implementation 'com.google.android.gms:play-services-ads:23.6.0'
+}

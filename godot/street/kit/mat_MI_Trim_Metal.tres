@@ -1,0 +1,13 @@
+[gd_resource type="StandardMaterial3D" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://street/art/T_Trim_Metal_BaseColor.webp" id="1_t7yps"]
+[ext_resource type="Texture2D" path="res://street/art/T_Trim_Metal_Normal.webp" id="2_2fksr"]
+
+[resource]
+cull_mode = 2
+albedo_texture = ExtResource("1_t7yps")
+metallic = 0.5
+roughness = 0.5
+normal_enabled = true
+normal_texture = ExtResource("2_2fksr")
+texture_filter = 5

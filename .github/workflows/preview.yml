@@ -1,0 +1,58 @@
+name: Preview video
+# Records a scene of the Godot game to an MP4 (no APK). Runs on a push whose message has [preview]
+# (the APK workflow skips those), or by hand once this file is on the default branch.
+# The video goes to the "preview-video" release.
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      t:
+        description: dev scene (--t=)
+        default: areaend
+      name:
+        description: file name (no .mp4)
+        default: area1-end
+      secs:
+        description: longest run in seconds
+        default: '1200'
+permissions:
+  contents: write
+jobs:
+  record:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[preview]')
+    runs-on: ubuntu-latest
+    env:
+      T: ${{ github.event.inputs.t || 'areaend,area2' }}
+      NAME: ${{ github.event.inputs.name || 'area1-end' }}
+      SECS: ${{ github.event.inputs.secs || '1200' }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get Godot 4.3, Xvfb, Mesa, ffmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb mesa-utils libgl1-mesa-dri ffmpeg > /dev/null
+          wget -q https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q Godot_v4.3-stable_linux.x86_64.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot-bin
+      - name: Import
+        run: |
+          cd godot
+          ../godot-bin --headless --import --path . > /dev/null 2>&1 || true
+          ../godot-bin --headless --editor --quit --path . > /dev/null 2>&1 || true
+          ../godot-bin --headless --editor --quit --path . 2>&1 | grep -i "error" | grep -v "imported\|Make sure\|at: " | head -30 || true
+          ls .godot/imported | wc -l
+      - name: Check scripts and take screenshots
+        run: |
+          cd godot
+          export LIBGL_ALWAYS_SOFTWARE=1
+          for t in area2; do
+            timeout 420 xvfb-run -a -s "-screen 0 1280x1800x24" ../godot-bin --path . --rendering-driver opengl3 \
+              --resolution 360x780 -- --t=$t --wait=1 --quit=1 --shots=$PWD/../shot-$t > ../log-$t.txt 2>&1 || true
+            echo "== $t"; grep -E "DBG" ../log-$t.txt | head; grep -E -A2 "SCRIPT ERROR|Parse Error|Invalid|Nonexistent" ../log-$t.txt | grep -v "imported" | head -40 || true
+          done
+      - name: Push screenshots to the ci-shots branch
+        run: |
+          mkdir -p /tmp/sh && cp shot-*.png /tmp/sh/ || true
+          git config user.name ci && git config user.email ci@example.com
+          git checkout --orphan ci-shots && git rm -rfq . && cp /tmp/sh/* . && git add *.png && git commit -qm shots && git push -f origin ci-shots
